@@ -4,6 +4,8 @@
 *.a
 *.elf
 *.map
+*.log
+*.dSYM/
 
 # Windows compilation output
 *.exe

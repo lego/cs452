@@ -2,7 +2,7 @@ ENTRY (main)
 
 MEMORY
 {
-ram : ORIGIN = 0x00000000, LENGTH = 32M
+ram : ORIGIN = 0x00044F88, LENGTH = 32M
 rom : ORIGIN = 0x60000000, LENGTH = 8M
 }
 
@@ -15,12 +15,13 @@ _DataStart = . ;
 _DataEnd = . ;
 } >ram
 
-bss : /* Uninitialized data. */
+.bss : /* Uninitialized data. */
 {
 _BssStart = . ;
 *(.bss)
 _BssEnd = . ;
 } >ram
+
 
 text : /* The actual instructions. */
 {
@@ -31,4 +32,6 @@ text : /* The actual instructions. */
 *(.glue_7)
 *(.glue_7t)
 } >ram
+
+rodata : { *(.rodata.str1.4) } >ram
 }

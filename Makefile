@@ -1,17 +1,17 @@
 # Mark everything as PHONY since compilation is fast, and I don't want to
 #   forget to update this every time files are added to sub-projects
-.PHONY: libbwio.a main.elf
+.PHONY: lib main.elf
 
-all: libbwio.a main.elf
+all: lib main.elf
 
-libbwio.a:
-	cd bwio/src && make
+lib:
+	./armcheck; cd lib && make
 
 main.elf:
-	cd src && make
+	./armcheck; cd src && make
 
 clean:
 	# clean bwio
-	cd bwio/src && make clean
+	cd lib && make clean
 	# clean main
 	cd src && make clean

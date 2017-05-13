@@ -1,10 +1,14 @@
 #
 # Makefile for busy-wait IO tests
 #
-XCC     = gcc
-AS	= as
-LD      = ld
-CFLAGS  = -c -fPIC -Wall -I. -I../bwio/include -mcpu=arm920t -msoft-float
+## Disable builtin rules, including %.o: %.c
+MAKEFLAGS += --no-builtin-rules
+.SUFFIXES:
+
+CC     = gcc
+AS     = as
+LD     = ld
+CFLAGS = -c -fPIC -Wall -I. -I../include -mcpu=arm920t -msoft-float
 # -g: include hooks for gdb
 # -c: only compile
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -14,18 +18,26 @@ CFLAGS  = -c -fPIC -Wall -I. -I../bwio/include -mcpu=arm920t -msoft-float
 ASFLAGS	= -mcpu=arm920t -mapcs-32
 # -mapcs: always generate a complete stack frame
 
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../bwio/lib
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../lib
+LIBRARIES= -lbwio -lbasic -lio_util -lgcc
+# List of libraries to link
+# WARNING: Fucking scary as hell if you put -lgcc before anything, nothing works
 
-all:  main.s main.elf
+all: main.elf
 
-main.s: main.c
-	../armcheck; $(XCC) -S $(CFLAGS) main.c
+%.s: %.c
+	$(CC) -S -c $(CFLAGS) $(INCLUDES) $< -o $@
 
-main.o: main.s
-	../armcheck; $(AS) $(ASFLAGS) -o main.o main.s
+%.o: %.s
+	$(AS) $(ASFLAGS) $< -o $@
 
-main.elf: main.o
-	../armcheck; $(LD) $(LDFLAGS) -o $@ main.o -lbwio -lgcc
+%.elf: %.o
+	$(LD) $(LDFLAGS) -o $@ $< $(LIBRARIES)
 
 clean:
-	-rm -f main.elf *.s *.o main.map
+	-rm -f *.elf *.s *.o *.map
+
+.PHONY: clean
+
+
+.PRECIOUS: %.s %.map
