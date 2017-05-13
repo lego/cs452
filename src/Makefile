@@ -8,12 +8,16 @@ MAKEFLAGS += --no-builtin-rules
 CC     = gcc
 AS     = as
 LD     = ld
-CFLAGS = -c -fPIC -Wall -I. -I../include -mcpu=arm920t -msoft-float
+CFLAGS = -c -fPIC -Wall -mcpu=arm920t -msoft-float
 # -g: include hooks for gdb
 # -c: only compile
 # -mcpu=arm920t: generate code for the 920t architecture
 # -fpic: emit position-independent code
 # -Wall: report all warnings
+
+KERNEL_INCLUDES=-I.
+USER_INCLUDES=-I../userland
+INCLUDES=-I../include
 
 ASFLAGS	= -mcpu=arm920t -mapcs-32
 # -mapcs: always generate a complete stack frame
@@ -26,10 +30,17 @@ LIBRARIES= -lbwio -lbasic -lio_util -lgcc
 all: main.elf
 
 %.s: %.c
-	$(CC) -S -c $(CFLAGS) $(INCLUDES) $< -o $@
+	$(CC) -S -c $(CFLAGS) $(KERNEL_INCLUDES) $(INCLUDES) $< -o $@
 
 %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
+
+%.s: ../userland/%.c
+	$(CC) -S -c $(CFLAGS) $(USER_INCLUDES) $(INCLUDES) $< -o $@
+
+%.o: %.s
+	$(AS) $(ASFLAGS) $< -o $@
+
 
 %.elf: %.o
 	$(LD) $(LDFLAGS) -o $@ $< $(LIBRARIES)

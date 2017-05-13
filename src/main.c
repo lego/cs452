@@ -37,11 +37,11 @@ void handle(KernelRequest *request) {
 int main() {
   ts7200_init();
   bwputstr(COM2, "hello");
-  // initialize();
-  // while (true) {
-  //   TaskDescriptor *next_task = schedule();
-  //   KernelRequest *request = activate(next_task);
-  //   handle(request);
-  // }
+  initialize();
+  while (true) {
+    TaskDescriptor *next_task = schedule();
+    KernelRequest *request = activate(next_task);
+    handle(request);
+  }
   return 0;
 }
