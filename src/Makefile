@@ -14,18 +14,18 @@ CFLAGS  = -c -fPIC -Wall -I. -I../bwio/include -mcpu=arm920t -msoft-float
 ASFLAGS	= -mcpu=arm920t -mapcs-32
 # -mapcs: always generate a complete stack frame
 
-LDFLAGS = -init main -Map iotest.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../bwio/lib
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../bwio/lib
 
-all:  iotest.s iotest.elf
+all:  main.s main.elf
 
-iotest.s: iotest.c iotest.h
-	$(XCC) -S $(CFLAGS) iotest.c
+main.s: main.c
+	$(XCC) -S $(CFLAGS) main.c
 
-iotest.o: iotest.s
-	$(AS) $(ASFLAGS) -o iotest.o iotest.s
+main.o: main.s
+	$(AS) $(ASFLAGS) -o main.o main.s
 
-iotest.elf: iotest.o
-	$(LD) $(LDFLAGS) -o $@ iotest.o -lbwio -lgcc
+main.elf: main.o
+	$(LD) $(LDFLAGS) -o $@ main.o -lbwio -lgcc
 
 clean:
-	-rm -f iotest.elf *.s *.o iotest.map
+	-rm -f main.elf *.s *.o main.map
