@@ -29,7 +29,7 @@ bwio.a: bwio.o
 	$(AR) $(ARFLAGS) $@ bwio.o
 
 install: bwio.a
-	cp bwio.a ../lib
+	cp bwio.a ../lib/libbwio.a
 
 clean:
 	-rm -f *.s *.a *.o
