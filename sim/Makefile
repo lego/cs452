@@ -27,7 +27,7 @@ all: main.a
 	$(CC) -c $(CFLAGS) $(USER_INCLUDES) $(INCLUDES) $< -o $@
 
 %.o: ../src/%.c
-	$(CC) -c $(CFLAGS) $(KERNEL_INCLUDES) $(INCLUDES) $< -o $@
+	$(CC) -c $(CFLAGS) $(USER_INCLUDES) $(KERNEL_INCLUDES) $(INCLUDES) $< -o $@
 
 %.o: ../lib/%.c
 	$(CC) -c $(CFLAGS) $(INCLUDES) $< -o $@
@@ -35,7 +35,7 @@ all: main.a
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(INCLUDES) -Wno-varargs $< -o $@
 
-main.a: $(SIM_FILES) $(USERLAND_FILES) $(KERNEL_FILES) basic.o
+main.a: $(SIM_FILES) $(USERLAND_FILES) $(KERNEL_FILES) $(LIB_FILES)
 	$(CC) $(CFLAGS) $(KERNEL_INCLUDES) $(INCLUDES) $^ -lncurses -o main.a
 
 clean:

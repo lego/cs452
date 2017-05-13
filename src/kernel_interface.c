@@ -1,8 +1,8 @@
 #include <kernel.h>
 
-int Create( int priority, void (*code)( ) ) {
-  return 0;
-}
+// int Create( int priority, void (*code)( ) ) {
+//   return 0;
+// }
 
 int MyTid( ) {
   return 0;

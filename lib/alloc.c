@@ -1,0 +1,15 @@
+#include <alloc.h>
+
+static char memory[10000];
+static unsigned int current_location;
+
+void *alloc(unsigned int size) {
+  // FIXME: align memory
+  current_location += size;
+  return (void *) memory + current_location - size;
+}
+
+int free(void *ptr) {
+  // Herp derp, do nothing
+  return 0;
+}

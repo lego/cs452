@@ -22,15 +22,21 @@ INCLUDES=-I../include
 ASFLAGS	= -mcpu=arm920t -mapcs-32
 # -mapcs: always generate a complete stack frame
 
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../lib
-LIBRARIES= -lbwio -lbasic -lio_util -lgcc
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L../lib -L../arm
+LIBRARIES= -lbwio -lbasic -lio_util -lalloc -lgcc
 # List of libraries to link
 # WARNING: Fucking scary as hell if you put -lgcc before anything, nothing works
+
+USERLAND_SRCS=$(wildcard ../userland/*.c)
+USERLAND_FILES=$(USERLAND_SRCS:../userland/%.c=%.o)
+
+KERNEL_SRCS=$(wildcard *.c)
+KERNEL_FILES=$(KERNEL_SRCS:.c=.o)
 
 all: main.elf
 
 %.s: %.c
-	$(CC) -S -c $(CFLAGS) $(KERNEL_INCLUDES) $(INCLUDES) $< -o $@
+	$(CC) -S -c $(CFLAGS) $(KERNEL_INCLUDES) $(USER_INCLUDES) $(INCLUDES) $< -o $@
 
 %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
@@ -41,9 +47,8 @@ all: main.elf
 %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
 
-
-%.elf: %.o
-	$(LD) $(LDFLAGS) -o $@ $< $(LIBRARIES)
+%.elf: $(KERNEL_FILES) $(USERLAND_FILES)
+	$(LD) $(LDFLAGS) $^ -o $@ $(LIBRARIES)
 
 clean:
 	-rm -f *.elf *.s *.o *.map
