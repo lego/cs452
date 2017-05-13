@@ -5,13 +5,13 @@ BIN_DIR="/u/wbcowan/gnuarm-4.0.2/arm-elf/bin"
 
 _armcheck() {
   for COMMAND in $COMMANDS; do
-    if [[ `which $COMMAND` != "$BIN_DIR/$COMMAND" ]]; then
+    if [[ "`which $COMMAND`" != "$BIN_DIR/$COMMAND" ]]; then
       echo ""
-      echo "#################################"
-      echo "#                               #"
-      echo "#  WARN: ARM compiler not set.  #"
-      echo "#                               #"
-      echo "#################################"
+      echo "###################################################################################"
+      echo "#                                                                                 #"
+      echo "#  WARN: ARM compiler not set. Run 'source armcc' at the root of this repository  #"
+      echo "#                                                                                 #"
+      echo "###################################################################################"
       echo ""
       return 1
     fi

@@ -1,6 +1,3 @@
-# Make setting the right compiler PHONY so it's always run
-.PHONY: armcc
-
 #
 # Makefile for busy-wait IO library
 #
@@ -22,16 +19,13 @@ ARFLAGS = rcs
 
 all: install
 
-armcc:
-	../../armcc
-
-bwio.s: bwio.c armcc
+bwio.s: bwio.c
 	../../armcheck; $(XCC) -S $(CFLAGS) bwio.c
 
-bwio.o: bwio.s armcc
+bwio.o: bwio.s
 	../../armcheck; $(AS) $(ASFLAGS) -o bwio.o bwio.s
 
-bwio.a: bwio.o armcc
+bwio.a: bwio.o
 	../../armcheck; $(AR) $(ARFLAGS) $@ bwio.o
 
 install: bwio.a

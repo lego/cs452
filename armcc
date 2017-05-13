@@ -1,4 +1,27 @@
 #!/bin/bash
 
-export PATH="/u/wbcowan/gnuarm-4.0.2/libexec/gcc/arm-elf/4.0.2:$PATH"
-export PATH="/u/wbcowan/gnuarm-4.0.2/arm-elf/bin:$PATH"
+sourced=false
+
+if [[ -n $BASH_VERSION ]]; then
+  if [[ "${BASH_SOURCE}" != "$0" ]]; then
+    sourced=true
+  fi
+elif [[ -n $ZSH_VERSION ]]; then
+  if [[ "${(%):-%x} != "$0"" ]]; then
+    sourced=true
+  fi
+fi
+
+if [[ $sourced == true ]]; then
+  echo "Updating PATH to point to ARM compiler."
+  export PATH="/u/wbcowan/gnuarm-4.0.2/libexec/gcc/arm-elf/4.0.2:$PATH"
+  export PATH="/u/wbcowan/gnuarm-4.0.2/arm-elf/bin:$PATH"
+else
+  echo ""
+  echo "#############################################################################"
+  echo "#                                                                           #"
+  echo "#  ERROR: This file must be sourced to update the path. Try 'source armcc'  #"
+  echo "#                                                                           #"
+  echo "#############################################################################"
+  echo ""
+fi
