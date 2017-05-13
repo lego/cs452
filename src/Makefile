@@ -1,3 +1,6 @@
+# Make setting the right compiler PHONY so it's always run
+.PHONY: armcc
+
 #
 # Makefile for busy-wait IO tests
 #
@@ -18,14 +21,17 @@ LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/
 
 all:  main.s main.elf
 
-main.s: main.c
-	$(XCC) -S $(CFLAGS) main.c
+armcc:
+	../armcc
 
-main.o: main.s
-	$(AS) $(ASFLAGS) -o main.o main.s
+main.s: main.c armcc
+	../armcheck; $(XCC) -S $(CFLAGS) main.c
 
-main.elf: main.o
-	$(LD) $(LDFLAGS) -o $@ main.o -lbwio -lgcc
+main.o: main.s armcc
+	../armcheck; $(AS) $(ASFLAGS) -o main.o main.s
+
+main.elf: main.o armcc
+	../armcheck; $(LD) $(LDFLAGS) -o $@ main.o -lbwio -lgcc
 
 clean:
 	-rm -f main.elf *.s *.o main.map

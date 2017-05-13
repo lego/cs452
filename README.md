@@ -10,20 +10,18 @@ Building
 
 _TODO: keep this up to date so when one of the above branches is pulled, these instructions are up to date_
 
-1. Make sure you have the arm compiler on your path, and it's overriding your default gcc
-```bash
-export PATH="/u/wbcowan/gnuarm-4.0.2/libexec/gcc/arm-elf/4.0.2:$PATH"
-export PATH="/u/wbcowan/gnuarm-4.0.2/arm-elf/bin:$PATH"
-```
+### Building:
 
-2. build bwio:
+Runinng `make` at the top level _should_ just work. But if it doesn't each sub-project can be built seperately:
+
+1. build bwio:
 ```bash
 cd bwoi/src
 make
 cd ..
 ```
 
-3. build the project:
+2. build the main project:
 ```bash
 cd src
 make
