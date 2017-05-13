@@ -1,0 +1,13 @@
+# General compilation output
+*.o
+*.s
+*.a
+*.elf
+*.map
+
+# Windows compilation output
+*.exe
+*.exe.stackdump
+
+# Vim swap viles
+*.swp
