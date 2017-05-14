@@ -3,7 +3,7 @@
  */
 
 // Provides variadic parameters
-#include <stddef.h>
+#include <variadic.h>
 
 #define COM1  0
 #define COM2  1

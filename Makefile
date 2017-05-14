@@ -20,7 +20,7 @@ CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L.
 else
 ARCH=x86
 CC     = gcc
