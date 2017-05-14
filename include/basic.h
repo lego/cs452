@@ -1,25 +1,14 @@
 #ifndef __BASIC_H__
 #define __BASIC_H__
 
-/*
- * Types
- */
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdarg.h>
 
 #if DEBUG_MODE
   #include <assert.h>
   #include <ncurses.h>
-#else
-// These are provided by ncurses
-
-// Bool
-typedef char bool;
-  #define true (bool) 1
-  #define false (bool) 0
-
-// Null
-  #define NULL ( (void *) 0)
 #endif
-
 
 /*
  * Util functions
@@ -49,14 +38,17 @@ unsigned int jatoui( char *str, int *status );
  */
 
 #if DEBUG_MODE
-  #include <stdio.h>
-void debugger();
-  #define log_debug(format, ...) fprintf(stderr, format, __VA_ARGS__)
-#else
-  #define NOOP do {} while(0)
-  #define debugger() NOOP
-  #define log_debug(format, ...) NOOP
-#endif
 
+#include <stdio.h>
+void debugger();
+#define log_debug(format, ...) fprintf(stderr, format, __VA_ARGS__)
+
+#else
+
+#define NOOP do {} while(0)
+#define debugger() NOOP
+#define log_debug(format, ...) NOOP
+
+#endif
 
 #endif

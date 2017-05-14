@@ -7,11 +7,7 @@
 #include <io_util.h>
 #include <basic_task.h>
 #include <kernel.h>
-
-typedef struct {
-  int tid;
-  void (*entrypoint)();
-} TaskDescriptor;
+#include <kern/task_descriptor.h>
 
 typedef struct {
   int tid;

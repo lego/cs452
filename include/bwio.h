@@ -2,7 +2,8 @@
  * bwio.h
  */
 
-#include <variadic.h>
+// Provides variadic parameters
+#include <stddef.h>
 
 #define COM1  0
 #define COM2  1
