@@ -1,6 +1,6 @@
 #include <alloc.h>
 
-static char memory[10000];
+static char memory[1000000];
 static unsigned int current_location;
 
 void *alloc(unsigned int size) {

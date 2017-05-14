@@ -3,10 +3,13 @@
  *
  */
 
+#include <bwio.h>
 #include <io_util.h>
 #include <ts7200.h>
 
 void ts7200_init() {
+  bwsetfifo(COM2, OFF);
+  bwsetspeed(COM2, 115200);
 }
 
 void ts7200_train_controller_init() {
