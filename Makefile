@@ -38,7 +38,7 @@ ARFLAGS = rcs
 # Libraries for linker
 # WARNING: Fucking scary as hell. if you put -lgcc before anything, nothing works
 # so be careful with how or when you add them in the list
-LIBRARIES= -larray -lbwio -lbasic -lio_util -lalloc -lgcc
+LIBRARIES= -lcbuffer -larray -lbwio -lbasic -lio_util -lalloc -lgcc
 
 # List of includes for headers that will be linked up in the end
 INCLUDES = -I./include
