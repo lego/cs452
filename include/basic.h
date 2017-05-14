@@ -6,10 +6,18 @@
   #include <ncurses.h>
 #endif
 
+#include <cdefs.h>
 #include <stdbool.h>
-#include <nulldef.h>
+#include <null.h>
 #include <variadic.h>
 #include <debug.h>
+
+/*
+ * Built-in functions
+ */
+
+void * memcpy(void *destination, const void *source, size_t num);
+void * memmove(void *destination, const void *source, size_t num);
 
 /*
  * Util functions

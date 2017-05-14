@@ -4,6 +4,6 @@
 typedef struct {
   int tid;
   void (*entrypoint)();
-} TaskDescriptor;
+} task_descriptor;
 
 #endif

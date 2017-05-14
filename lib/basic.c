@@ -12,6 +12,33 @@ void debugger() {
 }
 #endif
 
+
+void * memcpy(void *destination, const void *source, size_t num) {
+  char *csrc = (char *)source;
+  char *cdest = (char *)destination;
+  int i;
+
+  for (i = 0; i < num; i++)
+    cdest[i] = csrc[i];
+  return destination;
+}
+
+void * memmove(void *destination, const void *source, size_t num) {
+  char *csrc = (char *)source;
+  char *cdest = (char *)destination;
+  char temp[num];
+  int i;
+
+  for (i = 0; i < num; i++)
+    temp[i] = csrc[i];
+
+  for (i = 0; i < num; i++)
+    cdest[i] = temp[i];
+
+  return destination;
+}
+
+
 int a2d( char ch ) {
   if( ch >= '0' && ch <= '9' ) return ch - '0';
   if( ch >= 'a' && ch <= 'f' ) return ch - 'a' + 10;

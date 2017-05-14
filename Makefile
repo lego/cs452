@@ -38,7 +38,7 @@ ARFLAGS = rcs
 # Libraries for linker
 # WARNING: Fucking scary as hell. if you put -lgcc before anything, nothing works
 # so be careful with how or when you add them in the list
-LIBRARIES= -lbwio -lbasic -lio_util -lalloc -lgcc
+LIBRARIES= -larray -lbwio -lbasic -lio_util -lalloc -lgcc
 
 # List of includes for headers that will be linked up in the end
 INCLUDES = -I./include
@@ -91,8 +91,8 @@ main.a: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 %.s: userland/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
 
-%.s: test/%.c
-	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
+%.a: test/%.c $(LIB_BINS)
+	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_BINS) -o $@
 
 %.s: lib/$(ARCH)/%.c
 	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
@@ -100,7 +100,7 @@ main.a: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
 
-%.a: %.s
+%.a: %_test.s
 	$(CC) $(CFLAGS) $< -o $@
 
 lib%.a: %.o
