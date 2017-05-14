@@ -4,6 +4,8 @@
 #if DEBUG_MODE
   #include <assert.h>
   #include <ncurses.h>
+#else
+typedef unsigned size_t;              /* Size of a memory region */
 #endif
 
 #include <cdefs.h>
