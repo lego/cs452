@@ -4,8 +4,8 @@
 /*
  * C Program to Implement Priority Queue to Add and Delete Elements
  */
-#include <stdio.h>
-#include <stdlib.h>
+// #include <stdio.h>
+// #include <stdlib.h>
 
 #define MAX 5
 
