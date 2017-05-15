@@ -4,47 +4,21 @@
  */
 
 #include <bwio.h>
-#include <io_util.h>
+#include <io.h>
 #include <ts7200.h>
 
-void ts7200_init() {
+void io_init() {
   bwsetfifo(COM2, OFF);
   bwsetspeed(COM2, 115200);
-}
 
-void ts7200_train_controller_init() {
   int *uart1_flags = (int *)(UART1_BASE + UART_LCRH_OFFSET);
   *uart1_flags |= STP2_MASK;
 }
-
-void ts7200_timer3_init() {
-  // set timer3 to start at maximum value
-  int *timer3_load = (int *)(TIMER3_BASE + LDR_OFFSET);
-  *timer3_load = 0xFFFFFFFF;
-
-  // set timer3 frequency to 508khz and enable it
-  int *timer3_flags = (int *)(TIMER3_BASE + CRTL_OFFSET);
-  *timer3_flags = *timer3_flags | CLKSEL_MASK | ENABLE_MASK;
-}
-
-time_tt ts7200_timer3_get_value() {
-  int *data = (int *)(TIMER3_BASE + VAL_OFFSET);
-  // Taking the compliment helps achieve current - prev
-  return 0xFFFFFFFF - *data;
-}
-
-unsigned int ts7200_timer_ms_difference(time_tt current, time_tt prev) {
-  if (prev > current) prev = 0xFFFFFFFF - prev + current;
-  return (current - prev) / 508;
-}
-
 
 bool ts7200_uart1_get_cts() {
   int *uart1_flags = (int *)(UART1_BASE + UART_FLAG_OFFSET);
   return (*uart1_flags & CTS_MASK) ? true : false;
 }
-
-
 
 // Returns status:
 // 0 => OK

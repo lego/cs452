@@ -1,11 +1,5 @@
-/*
- * basic.c - basic helper functions
- *
- * Basic functions
- *
- */
-
 #include <basic.h>
+#include <assert.h>
 
 #ifdef DEBUG_MODE
 void debugger() {
@@ -13,7 +7,7 @@ void debugger() {
 #endif
 
 
-void * memcpy(void *destination, const void *source, size_t num) {
+void *jmemcpy(void *destination, const void *source, size_t num) {
   char *csrc = (char *)source;
   char *cdest = (char *)destination;
   int i;
@@ -23,7 +17,7 @@ void * memcpy(void *destination, const void *source, size_t num) {
   return destination;
 }
 
-void * memmove(void *destination, const void *source, size_t num) {
+void *jmemmove(void *destination, const void *source, size_t num) {
   char *csrc = (char *)source;
   char *cdest = (char *)destination;
   char temp[num];
@@ -39,7 +33,7 @@ void * memmove(void *destination, const void *source, size_t num) {
 }
 
 
-int a2d( char ch ) {
+int c2d( char ch ) {
   if( ch >= '0' && ch <= '9' ) return ch - '0';
   if( ch >= 'a' && ch <= 'f' ) return ch - 'a' + 10;
   if( ch >= 'A' && ch <= 'F' ) return ch - 'A' + 10;
@@ -51,7 +45,7 @@ char a2i( char ch, char **src, int base, int *nump ) {
   char *p;
 
   p = *src; num = 0;
-  while( ( digit = a2d( ch ) ) >= 0 ) {
+  while( ( digit = c2d( ch ) ) >= 0 ) {
     if ( digit > base ) break;
     num = num*base + digit;
     ch = *p++;
@@ -105,28 +99,4 @@ bool is_alpha( char ch ) {
 
 bool is_alphanumeric( char ch ) {
   return is_alpha(ch) || is_digit(ch);
-}
-
-unsigned int jatoui(char *str, int *status) {
-  unsigned int res = 0;    // Initialize result
-  unsigned int i = 0;    // Initialize index of first digit
-
-  while (!is_digit(str[i]) && str[i] != '\0') i++;
-  if (str[i] == '\0') {
-    if (status != NULL) *status = -1;
-    return 0;
-  }
-
-  // Iterate through all digits and update the result
-  for (; is_digit(str[i]); ++i) {
-    res = res * 10 + (str[i] - '0');
-  }
-
-  // Check if there are only spaces at the end
-  while (str[i] == ' ') i++;
-  // Status denoting we fully consumed only the number, excluding padding
-  if (str[i] == '\0' && status != NULL) *status = 0;
-  // Status denoting there were more non-number characters
-  else if (status != NULL) *status = 1;
-  return res;
 }

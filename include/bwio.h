@@ -1,12 +1,8 @@
-/*
- * bwio.h
- */
+#ifndef __BWIO_H__
+#define __BWIO_H__
 
-// Provides variadic parameters
 #include <variadic.h>
-
-#define COM1  0
-#define COM2  1
+#include <ts7200.h>
 
 #define ON  1
 #define OFF 0
@@ -28,3 +24,5 @@ int bwputr( int channel, unsigned int reg );
 void bwputw( int channel, int n, char fc, char *bf );
 
 void bwprintf( int channel, char *format, ... );
+
+#endif

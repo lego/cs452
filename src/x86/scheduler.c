@@ -38,8 +38,8 @@ void scheduler_reschedule_the_world() {
   log_debug("SC  t%d cv woke\n\r", tid);
 }
 
-void *scheduler_start_task(void *arg) {
-  task_descriptor *task = (task_descriptor *) arg;
+void *scheduler_start_task(void *td) {
+  task_descriptor_t *task = (task_descriptor_t *) td;
   log_debug("SC  t%d acquire mutex\n\r", task->tid);
   pthread_mutex_lock(&active_mutex);
   task->entrypoint();
@@ -52,7 +52,7 @@ void *scheduler_start_task(void *arg) {
   return NULL;
 }
 
-void scheduler_activate_task(task_descriptor *task) {
+void scheduler_activate_task(task_descriptor_t *task) {
   active_task = task;
   if (!task_started[task->tid]) {
     log_debug("SC  k create thread tid=%d\n\r", task->tid);

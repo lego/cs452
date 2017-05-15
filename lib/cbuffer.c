@@ -4,14 +4,14 @@
 
 #include <cbuffer.h>
 
-cbuffer cbuffer_create(void **buffer, int size) {
+cbuffer_t cbuffer_create(void **buffer, int size) {
   #ifdef DEBUG_MODE
   for (int i = 0; i < size; i++) {
     buffer[i] = 0;
   }
   #endif
 
-  return (cbuffer) {
+  return (cbuffer_t) {
            .buffer = buffer,
            .max_size = size,
            .start = 0,
@@ -19,7 +19,7 @@ cbuffer cbuffer_create(void **buffer, int size) {
   };
 }
 
-int cbuffer_add(cbuffer *cbuffer, void *item) {
+int cbuffer_add(cbuffer_t *cbuffer, void *item) {
   if (cbuffer->size >= cbuffer->max_size) {
     return -1;
   }
@@ -35,7 +35,7 @@ int cbuffer_add(cbuffer *cbuffer, void *item) {
   return 0;
 }
 
-void *cbuffer_pop(cbuffer *cbuffer, int *status) {
+void *cbuffer_pop(cbuffer_t *cbuffer, int *status) {
   if (cbuffer->size == 0) {
     if (status != NULL) *status = -1;
     return 0;
@@ -57,7 +57,7 @@ void *cbuffer_pop(cbuffer *cbuffer, int *status) {
   return item;
 }
 
-int cbuffer_unpop(cbuffer *cbuffer, void *item) {
+int cbuffer_unpop(cbuffer_t *cbuffer, void *item) {
   if (cbuffer->size >= cbuffer->max_size) {
     return -1;
   }
@@ -74,14 +74,14 @@ int cbuffer_unpop(cbuffer *cbuffer, void *item) {
   return 0;
 }
 
-bool cbuffer_full(cbuffer *cbuffer) {
+bool cbuffer_full(cbuffer_t *cbuffer) {
   return cbuffer->size == cbuffer->max_size;
 }
 
-bool cbuffer_empty(cbuffer *cbuffer) {
+bool cbuffer_empty(cbuffer_t *cbuffer) {
   return cbuffer->size == 0;
 }
 
-int cbuffer_size(cbuffer *cbuffer) {
+int cbuffer_size(cbuffer_t *cbuffer) {
   return cbuffer->size;
 }

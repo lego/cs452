@@ -1,6 +1,11 @@
 #if !defined(__VARIADIC__H) && !DEBUG_MODE
 #define __VARIADIC__H
 
+/*
+ * NOTE: this was yoink'd and resembles GNU's stdarg.h but it's a bit different
+ * so we're using it in ARM world
+ */
+
 typedef char *va_list;
 
 #define __va_argsiz(t)  \

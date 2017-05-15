@@ -3,42 +3,30 @@
  *
  */
 
+#include <basic.h>
 #include <ncurses.h>
 #include <ts7200.h>
-#include <io_util.h>
+#include <io.h>
 #include <time.h>
 
-#define CLOCKS_PER_MILLISECOND (CLOCKS_PER_SEC / 1000)
-
-void ts7200_init() {
-  // Allow buffering stdin
+void io_init() {
+  // initialize ncurses
   initscr();
+  // ??
   cbreak();
+  // don't echo back typed characters, we do this
   noecho();
+  // don't delay drawing to the screen
   nodelay(stdscr, TRUE);
+  // ???
   endwin();
+  // remove the buffer to prevent delaying writes
   setbuf(stdout, NULL);
   setbuf(stderr, NULL);
 }
 
-void ts7200_train_controller_init() {
-
-}
-
-void ts7200_timer3_init() {
-
-}
-
 bool ts7200_uart1_get_cts() {
   return true;
-}
-
-time_tt ts7200_timer3_get_value() {
-  return clock();
-}
-
-unsigned int ts7200_timer_ms_difference(time_tt current, time_tt prev) {
-  return (current - prev) / CLOCKS_PER_MILLISECOND;
 }
 
 int can_put(int channel) {

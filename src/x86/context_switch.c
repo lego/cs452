@@ -23,7 +23,7 @@ int context_switch(syscall_t call_no, int arg1, void *arg2) {
   case SYSCALL_CREATE:
     log_debug("syscall=Create\n\r");
     unsigned int tid = ctx->used_descriptors++;
-    ctx->descriptors[tid] = (task_descriptor) {
+    ctx->descriptors[tid] = (task_descriptor_t) {
       .priority = arg1,
       .tid = tid,
       .parent_tid = active_task->tid,

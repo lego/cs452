@@ -1,4 +1,8 @@
 /*
+ * NOTE: this was yoink'd from GNU's cdefs.h as the compiler used is outdated
+ */
+
+/*
  * Copyright (c) 2003, 2006, 2008, 2009
  *	The President and Fellows of Harvard College.
  *

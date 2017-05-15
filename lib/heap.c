@@ -1,7 +1,7 @@
 #include <basic.h>
 #include <heap.h>
 
-heap_t heap_create(node_t *nodes, int size) {
+heap_t heap_create(heapnode_t *nodes, int size) {
   return (heap_t) {
            .nodes = nodes,
            .size = size,

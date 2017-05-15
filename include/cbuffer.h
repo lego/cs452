@@ -2,7 +2,7 @@
 #define __CBUFFER_H__
 
 /*
- * cbuffer.h
+ * Circular buffer, using a pre-allocated buffer
  */
 
 #include <basic.h>
@@ -12,28 +12,55 @@ typedef struct {
   int max_size;
   int start;
   int size;
-} cbuffer;
+} cbuffer_t;
 
-cbuffer cbuffer_create( void **buffer, int size );
+/**
+ * Initializes a circular buffer
+ * @param  buffer memory to use
+ * @param  size   of the buffer
+ */
+cbuffer_t cbuffer_create( void **buffer, int size );
 
-// Returns status:
-// 0 => OK
-// -1 => ERROR: buffer full
-int cbuffer_add(cbuffer *cbuffer, void *item);
+/**
+ * Adds an item to the circular buffer
+ * @return         status
+ *                 0 => OK
+ *                 -1 => ERROR: buffer full
+ */
+int cbuffer_add(cbuffer_t *cbuffer, void *item);
 
-// Returns status (ptr):
-// 0 => OK
-// -1 => ERROR: buffer empty
-void *cbuffer_pop(cbuffer *cbuffer, int *status);
+/**
+ * Pops an item from the circular buffer
+ * @return         status
+ *                 0 => OK
+ *                 -1 => ERROR: buffer empty
+ */
+void *cbuffer_pop(cbuffer_t *cbuffer, int *status);
 
 
-// Returns status (ptr):
-// 0 => OK
-// -1 => ERROR: buffer empty
-int cbuffer_unpop(cbuffer *cbuffer, void *item);
+/**
+ * Unpops an item into the circular buffer
+ * this adds the item back to the front of the buffer, providing peeking
+ * @return         status
+ *                 0 => OK
+ *                 -1 => ERROR: buffer full
+ */
+int cbuffer_unpop(cbuffer_t *cbuffer, void *item);
 
-bool cbuffer_full(cbuffer *cbuffer);
-bool cbuffer_empty(cbuffer *cbuffer);
-int cbuffer_size(cbuffer *cbuffer);
+// TODO: if possible these should be inline
+/**
+ * Checks if the buffer is full
+ */
+bool cbuffer_full(cbuffer_t *cbuffer);
+
+/**
+ * Checks if the buffer is empty
+ */
+bool cbuffer_empty(cbuffer_t *cbuffer);
+
+/**
+ * Gets the buffers size
+ */
+int cbuffer_size(cbuffer_t *cbuffer);
 
 #endif
