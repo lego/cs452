@@ -2,9 +2,9 @@
  * iotest.c
  */
 
-#include <stdio.h>
 #include <assert.h>
 #include <cbuffer.h>
+#include <stdio.h>
 
 int main() {
   // void **c_buf[80];

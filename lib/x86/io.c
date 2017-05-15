@@ -4,10 +4,10 @@
  */
 
 #include <basic.h>
-#include <ncurses.h>
-#include <ts7200.h>
 #include <io.h>
+#include <ncurses.h>
 #include <time.h>
+#include <ts7200.h>
 
 void io_init() {
   // initialize ncurses

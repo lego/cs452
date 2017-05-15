@@ -1,5 +1,5 @@
-#include <ts7200.h>
 #include <clock.h>
+#include <ts7200.h>
 
 void clock_init() {
   // set timer3 to start at maximum value

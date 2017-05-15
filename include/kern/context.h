@@ -5,8 +5,8 @@
  * A global struct for kernel state
  */
 
-#include <kern/task_descriptor.h>
 #include <heap.h>
+#include <kern/task_descriptor.h>
 
 // Hardcoded maximum used in a number of places
 #define MAX_TASKS 100

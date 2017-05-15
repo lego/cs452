@@ -6,10 +6,10 @@
  */
 
 #include <basic.h>
-#include <ts7200.h>
 #include <bwio.h>
-#include <stdio.h>
 #include <ncurses.h>
+#include <stdio.h>
+#include <ts7200.h>
 
 /*
  * The UARTs are initialized by RedBoot to the following state

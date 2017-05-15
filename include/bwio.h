@@ -1,8 +1,8 @@
 #ifndef __BWIO_H__
 #define __BWIO_H__
 
-#include <variadic.h>
 #include <ts7200.h>
+#include <variadic.h>
 
 #define ON  1
 #define OFF 0

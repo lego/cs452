@@ -1,10 +1,10 @@
 #include <basic.h>
 #include <bwio.h>
-#include <kern/context_switch.h>
-#include <kern/context.h>
-#include <kern/task_descriptor.h>
-#include <kern/scheduler.h>
 #include <heap.h>
+#include <kern/context.h>
+#include <kern/context_switch.h>
+#include <kern/scheduler.h>
+#include <kern/task_descriptor.h>
 
 int context_switch(syscall_t call_no, int arg1, void *arg2) {
   int ret_val = 0;

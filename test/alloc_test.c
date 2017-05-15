@@ -1,6 +1,6 @@
-#include <stdio.h>
-#include <assert.h>
 #include <alloc.h>
+#include <assert.h>
+#include <stdio.h>
 
 
 int main() {

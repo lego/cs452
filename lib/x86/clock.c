@@ -1,5 +1,5 @@
-#include <ts7200.h>
 #include <clock.h>
+#include <ts7200.h>
 
 #define CLOCKS_PER_MILLISECOND (CLOCKS_PER_SEC / 1000)
 

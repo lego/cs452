@@ -1,7 +1,7 @@
-#include <kernel.h>
-#include <ts7200.h>
 #include <bwio.h>
 #include <entry_task.h>
+#include <kernel.h>
+#include <ts7200.h>
 
 void child_task();
 

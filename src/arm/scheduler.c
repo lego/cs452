@@ -1,7 +1,7 @@
 #include <basic.h>
+#include <kern/context.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
-#include <kern/context.h>
 
 void scheduler_init() {
 }

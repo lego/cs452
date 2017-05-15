@@ -4,18 +4,18 @@
 
 #define TASKDESCRIPTORINLINE
 
+#include <alloc.h>
 #include <basic.h>
-#include <kern/context.h>
-#include <heap.h>
 #include <bwio.h>
 #include <cbuffer.h>
-#include <io.h>
 #include <entry_task.h>
-#include <kernel.h>
-#include <alloc.h>
-#include <kern/task_descriptor.h>
+#include <heap.h>
+#include <io.h>
+#include <kern/context.h>
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
+#include <kern/task_descriptor.h>
+#include <kernel.h>
 
 task_descriptor_t *active_task = NULL;
 heap_t *schedule_heap = NULL;

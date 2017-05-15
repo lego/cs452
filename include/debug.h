@@ -14,8 +14,8 @@
  */
 void debugger();
 
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdio.h>
 /**
  * Prints with a formatted string to STDERR for debugging output
  */
