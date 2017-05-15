@@ -5,7 +5,6 @@
  *
  */
 
-#include <assert.h>
 #include <basic.h>
 #include <ts7200.h>
 #include <bwio.h>

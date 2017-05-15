@@ -21,6 +21,8 @@ void debugger();
  */
 #define log_debug(format, ...) fprintf(stderr, format, ## __VA_ARGS__)
 
+#include <assert.h>
+
 #else
 
 /*
@@ -29,6 +31,8 @@ void debugger();
 #define NOP do {} while(0)
 #define debugger() NOP
 #define log_debug(format, ...) NOP
+#define assert(x) NOP
+
 #endif
 
 #endif

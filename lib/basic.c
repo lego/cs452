@@ -1,5 +1,4 @@
 #include <basic.h>
-#include <assert.h>
 
 #ifdef DEBUG_MODE
 void debugger() {
@@ -82,9 +81,7 @@ void i2a( int num, char *bf ) {
 }
 
 char c2x( char ch ) {
-  #ifdef DEBUG_MODE
   assert(ch < 16);
-  #endif
   if ( (ch <= 9) ) return '0' + ch;
   return 'a' + ch - 10;
 }
