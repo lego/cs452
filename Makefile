@@ -77,7 +77,7 @@ main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 
 # Local simulator
 main.a: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) $^ -lncurses -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) $^ -lncurses -lpthread -o $@
 
 %.s: src/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@

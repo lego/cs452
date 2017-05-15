@@ -5,50 +5,29 @@
 #define TASKDESCRIPTORINLINE
 
 #include <basic.h>
+#include <kern/context.h>
+#include <heap.h>
 #include <bwio.h>
 #include <cbuffer.h>
 #include <io_util.h>
-#include <basic_task.h>
+#include <entry_task.h>
 #include <kernel.h>
 #include <alloc.h>
 #include <kern/task_descriptor.h>
 #include <kern/kernel_request.h>
+#include <kern/scheduler.h>
 
-static cbuffer tasks_arr;
-
-void initialize() {
-
-  // initialize kernel logic
-  // create first user task
-  bwputstr(COM2, "Before first alloc\n\r");
-  task_descriptor *task2 = alloc(sizeof(task_descriptor));
-  bwputstr(COM2, "After first alloc\n\r");
-  task2->tid = 1;
-  task2->entrypoint = &basic_task;
-  bwputstr(COM2, "We set some things\n\r");
-  bwprintf(COM2, "init: %x\n\r", task2);
-  cbuffer_add(&tasks_arr, task2);
-}
-
-int Create(int priority, void (*code)()) {
-  task_descriptor *task2 = alloc(sizeof(task_descriptor));
-  task2->tid = 1;
-  task2->entrypoint = code;
-  cbuffer_add(&tasks_arr, task2);
-  bwprintf(COM2, "Create: %x\n\r", task2);
-  return 0;
-}
+task_descriptor *active_task = NULL;
+heap_t *schedule_heap = NULL;
+context *ctx = NULL;
 
 task_descriptor *schedule() {
-  int status;
-  task_descriptor *next_task = cbuffer_pop(&tasks_arr, &status);
-  // debugger();
-  bwprintf(COM2, "schedule: %x status=%d\n\r", next_task, status);
+  task_descriptor *next_task = heap_pop(schedule_heap);
   return next_task;
 }
 
 KernelRequest *activate(task_descriptor *task) {
-  task->entrypoint();
+  scheduler_activate_task(task);
   KernelRequest *kr = NULL;
   return kr;
 }
@@ -58,14 +37,32 @@ void handle(KernelRequest *request) {
 }
 
 int main() {
+  // initialize kernel logic
   ts7200_init();
-  bwputstr(COM2, "Hello world\n\r");
-  void *tasks_buf[100];
-  tasks_arr = cbuffer_create(tasks_buf, 100);
-  bwputstr(COM2, "Past cbuf create\n\r");
-  initialize();
-  while (!cbuffer_empty(&tasks_arr)) {
+  scheduler_init();
+  context stack_context = (context) {
+    .used_descriptors = 0
+  };
+  ctx = &stack_context;
+  void *heap_buf[MAX_TASKS];
+  heap_t stack_heap = heap_create((node_t *)heap_buf, MAX_TASKS);
+  schedule_heap = &stack_heap;
+
+  // create first user task
+  int tid = ctx->used_descriptors++;
+  int user_task_priority = 1;
+  ctx->descriptors[tid] = (task_descriptor) {
+    .priority = user_task_priority,
+    .tid = tid,
+    .parent_tid = -1,
+    .entrypoint = entry_task
+  };
+  heap_push(schedule_heap, user_task_priority, &ctx->descriptors[tid]);
+
+  // start executing user tasks
+  while (heap_size(schedule_heap) != 0) {
     task_descriptor *next_task = schedule();
+    log_debug("M   next task tid=%d\n\r", next_task->tid);
     KernelRequest *request = activate(next_task);
     handle(request);
   }
