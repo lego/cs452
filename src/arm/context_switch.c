@@ -30,6 +30,7 @@ asm (
   ".global __asm_switch_to_task\n"
 
   "__asm_switch_to_task:\n\t"
+  "stmfd sp!, {r4-r12, lr}\n\t"
   // save kernel sp
   "ldr r4, .__asm_swi_handler_data+0\n\t"
   "str sp, [sl, r4]\n\t"
@@ -39,8 +40,12 @@ asm (
 
   // recover registers
   "ldmfd sp!, {r0, r4-r12, lr}\n\t"
+
+
   // begin execution
   "movs pc, lr\n\t"
+  // continue
+  "mov pc, lr\n\t"
 
   "__asm_swi_handler:\n\t"
   "stmfd sp!, {r4-r12, lr}\n\t"
