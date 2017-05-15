@@ -5,7 +5,6 @@
  * A global struct for kernel state
  */
 
-#include <heap.h>
 #include <kern/task_descriptor.h>
 
 // Hardcoded maximum used in a number of places
@@ -41,14 +40,5 @@ extern task_descriptor_t *active_task;
  * - main.c for creating the initial task descriptor, and init kernel state (only tasks)
  */
 extern context_t *ctx;
-/*
- * schedule_heap is the task schedule
- * used by:
- * - context_switch.c for adding the task back onto the scheduler
- *      and for adding new tasks to the scheduler
- * - main.c for getting the next task from the schedule
- */
-extern heap_t *schedule_heap;
-
 
 #endif

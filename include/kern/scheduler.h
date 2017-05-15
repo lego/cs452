@@ -15,6 +15,7 @@
  * - currently global variables for x86 :(
  */
 void scheduler_init();
+void scheduler_arch_init();
 
 /**
  * Exits and finishes execution of a task
@@ -61,7 +62,11 @@ bool scheduler_any_task();
  */
 task_descriptor_t *scheduler_next_task();
 
-
+/**
+ * Gets the count of tasks currently on the ready queue
+ * NOTE: should only be used for debugging
+ */
+int scheduler_ready_queue_size();
 
 
 #endif

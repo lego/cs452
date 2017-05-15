@@ -1,6 +1,5 @@
 #include <basic.h>
 #include <bwio.h>
-#include <heap.h>
 #include <kern/context.h>
 #include <kern/context_switch.h>
 #include <kern/scheduler.h>

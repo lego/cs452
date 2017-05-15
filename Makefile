@@ -83,8 +83,10 @@ main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
 
 # Local simulation binary
-main.a: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
-	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) $^ -lncurses -lpthread -o $@
+# NOTE: it just explicitly lists a bunch of folders, this is because the
+# process of .c => .s => .o drops debugging symbols :(
+main.a:
+	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) src/*.c src/x86/*.c lib/*.c lib/x86/*.c userland/*.c -lncurses -lpthread -o $@
 
 # ASM files from various locations
 %.s: src/%.c
@@ -124,7 +126,8 @@ clean:
 	rm -rf *.o *.s *.elf *.a *.a.dSYM/ *.map
 
 # always run clean (it doesn't produce files)
-.PHONY: clean
+# also always run main.a because it implicitly depends on all C files
+.PHONY: clean main.a
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful

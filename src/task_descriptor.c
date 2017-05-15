@@ -10,6 +10,7 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, task_priority_t pri
   ctx->descriptors[tid].parent_tid = parent_tid;
   ctx->descriptors[tid].entrypoint = entrypoint;
   ctx->descriptors[tid].state = STATE_READY;
+  ctx->descriptors[tid].next_ready_task = NULL;
   ctx->descriptors[tid].stack_pointer = TASK_STACK_START + (TASK_STACK_SIZE * tid);
   return &ctx->descriptors[tid];
 }

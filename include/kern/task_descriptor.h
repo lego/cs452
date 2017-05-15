@@ -38,6 +38,8 @@ typedef int task_state_t;
 #define TASK_STACK_START (char *) 0x00260000
 #define TASK_STACK_SIZE  0x00010000
 
+// NOTE: priorities can be found in kernel.h
+
 struct TaskDescriptor {
   int tid;
   int parent_tid;

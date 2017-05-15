@@ -10,7 +10,7 @@ pthread_t tasks[MAX_TASKS];
 pthread_cond_t kernel_cv;
 pthread_mutex_t active_mutex;
 
-void scheduler_init() {
+void scheduler_arch_init() {
   int i;
   for (i = 0; i < MAX_TASKS; i++) {
     pthread_cond_init(&task_cvs[i], NULL);

@@ -3,7 +3,7 @@
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
-void scheduler_init() {
+void scheduler_arch_init() {
   log_debug("SC  would initalize scheduler\n\r");
 }
 
