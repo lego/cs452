@@ -4,7 +4,7 @@
 XCC     = gcc
 AS	= as
 LD      = ld
-CFLAGS  = -c -fPIC -Wall -I. -I../bwio/include -mcpu=arm920t -msoft-float
+CFLAGS  = -O0 -c -fPIC -Wall -I. -I../bwio/include -mcpu=arm920t -msoft-float
 # -g: include hooks for gdb
 # -c: only compile
 # -mcpu=arm920t: generate code for the 920t architecture
