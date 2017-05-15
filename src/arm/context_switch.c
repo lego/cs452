@@ -51,10 +51,10 @@ asm (
   "stmfd sp!, {r4-r12, lr}\n\t"
 
   // set up args for syscall
-  "mov r3, r3\n\t"
-  "mov r2, r2\n\t"
-  "mov r0, sp\n\t"
+  "mov r3, r2\n\t"
+  "mov r2, r1\n\t"
   "ldr r1, [lr, #-4]\n\t"
+  "mov r0, sp\n\t"
 
   // switch to kernel stack
   "ldr r4, .__asm_swi_handler_data+0\n\t"
