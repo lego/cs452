@@ -20,11 +20,6 @@ task_descriptor_t *active_task = NULL;
 heap_t *schedule_heap = NULL;
 context_t *ctx = NULL;
 
-task_descriptor_t *schedule() {
-  task_descriptor_t *next_task = heap_pop(schedule_heap);
-  return next_task;
-}
-
 kernel_request_t *activate(task_descriptor_t *task) {
   scheduler_activate_task(task);
   kernel_request_t *kr = NULL;
@@ -51,14 +46,8 @@ int main() {
   schedule_heap = &stack_heap;
 
   /* create first user task */
-  // int tid = ctx->used_descriptors++;
-  // int user_task_priority = 1;
-  // ctx->descriptors[tid].priority = user_task_priority;
-  // ctx->descriptors[tid].tid = tid;
-  // ctx->descriptors[tid].parent_tid = -1;
-  // ctx->descriptors[tid].entrypoint = entry_task;
   task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_MEDIUM, entry_task);
-  heap_push(schedule_heap, first_user_task->priority, first_user_task);
+  scheduler_requeue_task(first_user_task);
 
   log_debug("M   starting heap size=%d\n\r", heap_size(schedule_heap));
 
@@ -85,9 +74,9 @@ int main() {
   // log_debug("M   done writing to task stacks\n\r");
 
   // start executing user tasks
-  while (heap_size(schedule_heap) != 0) {
+  while (scheduler_any_task()) {
     log_debug("M   heap size=%d\n\r", heap_size(schedule_heap));
-    task_descriptor_t *next_task = schedule();
+    task_descriptor_t *next_task = scheduler_next_task();
     log_debug("M   next task tid=%d\n\r", next_task->tid);
     kernel_request_t *request = activate(next_task);
     // TODO: i'm not sure what the best way to create the request abstraction is

@@ -8,6 +8,8 @@
  * part of scheduling
  */
 
+// NOTE: the below constructs refer to task switching
+
 /**
  * Initializes scheduler state
  * - currently global variables for x86 :(
@@ -40,5 +42,26 @@ void *scheduler_start_task(void *td);
  * @param task to start executing
  */
 void scheduler_activate_task(task_descriptor_t *task);
+
+
+// NOTE: these functions are for actual scheduling things
+
+/**
+ * Puts a task back onto the ready queue
+ */
+void scheduler_requeue_task(task_descriptor_t *task);
+
+/**
+ * Checks if there are any other tasks to schedule
+ */
+bool scheduler_any_task();
+
+/**
+ * Puts a task back onto the ready queue
+ */
+task_descriptor_t *scheduler_next_task();
+
+
+
 
 #endif
