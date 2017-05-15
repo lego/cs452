@@ -43,6 +43,7 @@ typedef int task_state_t;
 struct TaskDescriptor {
   int tid;
   int parent_tid;
+  bool has_started;
   task_priority_t priority;
   struct TaskDescriptor *next_ready_task;
   struct TaskDescriptor *next_send_task;

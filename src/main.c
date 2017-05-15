@@ -10,6 +10,7 @@
 #include <entry_task.h>
 #include <io.h>
 #include <kern/context.h>
+#include <kern/context_switch.h>
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
@@ -17,6 +18,8 @@
 
 task_descriptor_t *active_task = NULL;
 context_t *ctx = NULL;
+void *kernel_stack_pointer = 0;
+
 
 kernel_request_t *activate(task_descriptor_t *task) {
   scheduler_activate_task(task);
@@ -30,6 +33,7 @@ void handle(kernel_request_t *request) {
 
 int main() {
   /* initialize various kernel components */
+  context_switch_init();
   io_init();
   scheduler_init();
 
@@ -44,6 +48,7 @@ int main() {
   scheduler_requeue_task(first_user_task);
 
   log_debug("M   ready_queue_size=%d\n\r", scheduler_ready_queue_size());
+
 
   // start executing user tasks
   while (scheduler_any_task()) {

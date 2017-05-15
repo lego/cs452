@@ -26,8 +26,17 @@ void scheduler_activate_task(task_descriptor_t *task) {
   // put an assert here to make sure the task stack pointer does not
   // extend into other task stacks
   // NOTE: casted to char * so we get the byte size count
-  if ((TASK_STACK_START - (char *) task->stack_pointer) > TASK_STACK_SIZE) {
-    bwprintf(COM2, "WARNING: TASK STACK OVERFLOWED.");
+  // if ((TASK_STACK_START - (char *) task->stack_pointer) > TASK_STACK_SIZE) {
+  //   bwprintf(COM2, "WARNING: TASK STACK OVERFLOWED.");
+  // }
+  log_debug("SC  activating task tid=%d\n\r", task->tid);
+  active_task = task;
+  if (!task->has_started) {
+    task->has_started = true;
+    __asm_start_task(task->stack_pointer, task->entrypoint);
+  } else {
+    __asm_switch_to_task(task->stack_pointer);
   }
-  log_debug("SC  would schedule task tid=%d\n\r", task->tid);
+  log_debug("SC  returned from task tid=%d\n\r", task->tid);
+  active_task = NULL;
 }

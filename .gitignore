@@ -7,6 +7,8 @@
 *.log
 *.dSYM/
 
+!src/arm/swi_handler.s
+
 # Windows compilation output
 *.exe
 *.exe.stackdump

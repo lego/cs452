@@ -23,4 +23,10 @@ typedef int syscall_t;
  */
 int context_switch(syscall_t call_no, int arg1, void *arg2);
 
+void context_switch_init();
+
+void __asm_swi_handler();
+void __asm_start_task(void* task_sp, void* task_pc);
+void __asm_switch_to_task(void* task_sp);
+
 #endif

@@ -110,6 +110,12 @@ $(ARCH)%.s: lib/$(ARCH)/%.c
 %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
 
+# ifndef LOCAL
+# # can't forget our custom ASM as part of the handlers
+# %.o: src/arm/%.s
+# 	$(AS) $(ASFLAGS) $< -o $@
+# endif
+
 # create binaries for each test file, depending on all lib code
 %.a: test/%.c $(LIB_BINS)
 	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_BINS) -o $@
@@ -131,5 +137,5 @@ clean:
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful
-.PRECIOUS: %.s %.map
+.PRECIOUS: %.s arm%.s %.map
 endif

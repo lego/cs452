@@ -5,6 +5,9 @@
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
+void context_switch_init() {
+}
+
 int context_switch(syscall_t call_no, int arg1, void *arg2) {
   int ret_val = 0;
 

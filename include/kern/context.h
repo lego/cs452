@@ -41,4 +41,12 @@ extern task_descriptor_t *active_task;
  */
 extern context_t *ctx;
 
+/*
+ * kernel_stack_pointer is the latest stack_pointer of the kernel
+ * this is saved as part of context switching for the kernel state
+ * used by:
+ * - swi_handler.s for context switching
+ */
+extern void *kernel_stack_pointer;
+
 #endif

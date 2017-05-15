@@ -7,6 +7,7 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, task_priority_t pri
   int tid = ctx->used_descriptors++;
   ctx->descriptors[tid].priority = priority;
   ctx->descriptors[tid].tid = tid;
+  ctx->descriptors[tid].has_started = false;
   ctx->descriptors[tid].parent_tid = parent_tid;
   ctx->descriptors[tid].entrypoint = entrypoint;
   ctx->descriptors[tid].state = STATE_READY;
