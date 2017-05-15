@@ -16,14 +16,18 @@ void entry_task() {
   bwprintf(COM2, "T0  Hello, world!\n\r");
   int x;
 
+  bwprintf(COM2, "T0  calling pass!\n\r");
   Pass();
 
+  bwprintf(COM2, "T0  calling MyTid!\n\r");
   x = MyTid();
   bwprintf(COM2, "T0  syscall ret=%d!\n\r", x);
 
+  bwprintf(COM2, "T0  calling MyParentTid!\n\r");
   x = MyParentTid();
   bwprintf(COM2, "T0  syscall ret=%d!\n\r", x);
 
+  bwprintf(COM2, "T0  calling Create!\n\r");
   x = Create(PRIORITY_HIGHEST, &child_task);
   bwprintf(COM2, "T0  syscall ret=%d!\n\r", x);
 }
