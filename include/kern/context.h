@@ -11,10 +11,15 @@
 // Hardcoded maximum used in a number of places
 #define MAX_TASKS 100
 
-typedef struct {
+struct Context {
   task_descriptor_t descriptors[MAX_TASKS];
   char used_descriptors;
-} context_t;
+};
+
+#ifndef __DEFINED_CONTEXT_T
+#define __DEFINED_CONTEXT_T
+typedef struct Context context_t;
+#endif
 
 /*
  * Global state accessed in a few places

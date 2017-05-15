@@ -57,17 +57,3 @@ void *heap_pop (heap_t *h) {
   h->nodes[i] = h->nodes[h->len + 1];
   return data;
 }
-
-// int main () {
-//   heap_t *h = (heap_t *)calloc(1, sizeof (heap_t));
-//   push(h, 3, "Clear drains");
-//   push(h, 4, "Feed cat");
-//   push(h, 5, "Make tea");
-//   push(h, 1, "Solve RC tasks");
-//   push(h, 2, "Tax return");
-//   int i;
-//   for (i = 0; i < 5; i++) {
-//     printf("%s\n", pop(h));
-//   }
-//   return 0;
-// }

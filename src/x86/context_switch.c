@@ -22,17 +22,11 @@ int context_switch(syscall_t call_no, int arg1, void *arg2) {
     break;
   case SYSCALL_CREATE:
     log_debug("syscall=Create\n\r");
-    unsigned int tid = ctx->used_descriptors++;
-    ctx->descriptors[tid] = (task_descriptor_t) {
-      .priority = arg1,
-      .tid = tid,
-      .parent_tid = active_task->tid,
-      .entrypoint = arg2
-    };
-    log_debug("new task priority=%d tid=%d\n\r", arg1, tid);
-    heap_push(schedule_heap, arg1, &ctx->descriptors[tid]);
+    task_descriptor_t *new_task = td_create(ctx, active_task->tid, arg1, arg2);
+    log_debug("new task priority=%d tid=%d\n\r", arg1, new_task->tid);
+    heap_push(schedule_heap, new_task->priority, new_task);
     heap_push(schedule_heap, active_task->priority, active_task);
-    ret_val = tid;
+    ret_val = new_task->tid;
     break;
   case SYSCALL_PASS:
     log_debug("syscall=Pass\n\r");

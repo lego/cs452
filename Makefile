@@ -27,7 +27,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu89 -Wno-comment -DDEBUG_MODE -g -Wno-varargs
+CFLAGS = -Wall -msoft-float --std=gnu89 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu89: use GNU89, default for the school ARM GCC

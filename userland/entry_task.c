@@ -7,13 +7,13 @@ void child_task();
 
 void entry_task() {
   int new_task_id;
-  new_task_id = Create(-1, &child_task);
+  new_task_id = Create(PRIORITY_HIGHEST, &child_task);
   bwprintf(COM2, "Created: %d\n\r", new_task_id);
-  new_task_id = Create(-1, &child_task);
+  new_task_id = Create(PRIORITY_HIGHEST, &child_task);
   bwprintf(COM2, "Created: %d\n\r", new_task_id);
-  new_task_id = Create(2, &child_task);
+  new_task_id = Create(PRIORITY_LOW, &child_task);
   bwprintf(COM2, "Created: %d\n\r", new_task_id);
-  new_task_id = Create(2, &child_task);
+  new_task_id = Create(PRIORITY_LOW, &child_task);
   bwprintf(COM2, "Created: %d\n\r", new_task_id);
   bwprintf(COM2, "FirstUserTask: exiting\n\r");
   Exit();
@@ -27,5 +27,4 @@ void child_task() {
   Pass();
   bwprintf(COM2, "MyTid=%d MyParentTid=%d\n\r", my_tid, my_parent_tid);
   Exit();
-  return;
 }

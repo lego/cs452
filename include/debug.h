@@ -25,12 +25,15 @@ void debugger();
 
 #else
 
+
 /*
  * If we're compiling to ARM, we turn all debugging functionality to NOPs
  */
 #define NOP do {} while(0)
 #define debugger() NOP
-#define log_debug(format, ...) NOP
+#include <bwio.h>
+#define log_debug(format, ...) bwprintf(COM2, format, ## __VA_ARGS__)
+// #define log_debug(format, ...) NOP
 #define assert(x) NOP
 
 #endif

@@ -19,7 +19,7 @@ _DataEnd = . ;
 .bss : /* Uninitialized data. */
 {
 _BssStart = . ;
-*(bss)
+*(.bss)
 _BssEnd = . ;
 } >ram
 
