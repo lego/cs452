@@ -10,10 +10,10 @@
 // TODO: if possible these should be inline
 
 typedef int task_priority_t;
-#define PRIORITY_HIGHEST (task_priority_t) 0
-#define PRIORITY_MEDIUM (task_priority_t) 1
-#define PRIORITY_LOW (task_priority_t) 2
-#define PRIORITY_LOWEST (task_priority_t) 3
+#define PRIORITY_HIGHEST (task_priority_t) 1
+#define PRIORITY_MEDIUM (task_priority_t) 2
+#define PRIORITY_LOW (task_priority_t) 3
+#define PRIORITY_LOWEST (task_priority_t) 4
 
 /**
  * Creates a task
