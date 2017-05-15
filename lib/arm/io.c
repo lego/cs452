@@ -3,6 +3,7 @@
  *
  */
 
+#include <basic.h>
 #include <bwio.h>
 #include <io.h>
 #include <ts7200.h>

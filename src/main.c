@@ -40,9 +40,8 @@ int main() {
   // initialize kernel logic
   io_init();
   scheduler_init();
-  context_t stack_context = (context_t) {
-    .used_descriptors = 0
-  };
+  context_t stack_context;
+  stack_context.used_descriptors = 0;
   ctx = &stack_context;
   void *heap_buf[MAX_TASKS];
   heap_t stack_heap = heap_create((heapnode_t *)heap_buf, MAX_TASKS);
@@ -51,12 +50,10 @@ int main() {
   // create first user task
   int tid = ctx->used_descriptors++;
   int user_task_priority = 1;
-  ctx->descriptors[tid] = (task_descriptor_t) {
-    .priority = user_task_priority,
-    .tid = tid,
-    .parent_tid = -1,
-    .entrypoint = entry_task
-  };
+  ctx->descriptors[tid].priority = user_task_priority;
+  ctx->descriptors[tid].tid = tid;
+  ctx->descriptors[tid].parent_tid = -1;
+  ctx->descriptors[tid].entrypoint = entry_task;
   heap_push(schedule_heap, user_task_priority, &ctx->descriptors[tid]);
 
   // start executing user tasks

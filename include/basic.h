@@ -39,12 +39,26 @@ typedef unsigned size_t;
 #include <debug.h>
 
 /*
- * Built-in C functions. These have different names due to compiler collision
- * in local execution
+ * Built-in C functions. These are required because GCC auto-injects them
+ * when compiling to ARM, but doesn't include them as per
+ * - http://cs107e.github.io/guides/gcc/
+ * - https://gcc.gnu.org/onlinedocs/gcc/Standards.html (search memcpy)
+ *
+ * For now, let's avoid using them incase of bugs, but they're here if direly needed
+ * typically you can restructure code to prevent using it, e.g.
+ *
+ * context_t stack_context = (context_t) {
+ *  .used_descriptors = 0
+ * };
+ *
+ * can instead be
+ *
+ * context_t stack_context;
+ * stack_context.used_descriptors = 0;
  */
 
-void *jmemcpy(void *destination, const void *source, size_t num);
-void *jmemmove(void *destination, const void *source, size_t num);
+// void *memcpy(void *destination, const void *source, size_t num);
+// void *memmove(void *destination, const void *source, size_t num);
 
 /*
  * Utilty functions

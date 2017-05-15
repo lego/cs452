@@ -6,30 +6,31 @@ void debugger() {
 #endif
 
 
-void *jmemcpy(void *destination, const void *source, size_t num) {
-  char *csrc = (char *)source;
-  char *cdest = (char *)destination;
-  int i;
-
-  for (i = 0; i < num; i++)
-    cdest[i] = csrc[i];
-  return destination;
-}
-
-void *jmemmove(void *destination, const void *source, size_t num) {
-  char *csrc = (char *)source;
-  char *cdest = (char *)destination;
-  char temp[num];
-  int i;
-
-  for (i = 0; i < num; i++)
-    temp[i] = csrc[i];
-
-  for (i = 0; i < num; i++)
-    cdest[i] = temp[i];
-
-  return destination;
-}
+// See basic.h for why these are commented out
+// void *memcpy(void *destination, const void *source, size_t num) {
+//   char *csrc = (char *)source;
+//   char *cdest = (char *)destination;
+//   int i;
+//
+//   for (i = 0; i < num; i++)
+//     cdest[i] = csrc[i];
+//   return destination;
+// }
+//
+// void *memmove(void *destination, const void *source, size_t num) {
+//   char *csrc = (char *)source;
+//   char *cdest = (char *)destination;
+//   char temp[num];
+//   int i;
+//
+//   for (i = 0; i < num; i++)
+//     temp[i] = csrc[i];
+//
+//   for (i = 0; i < num; i++)
+//     cdest[i] = temp[i];
+//
+//   return destination;
+// }
 
 
 int c2d( char ch ) {
