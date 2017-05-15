@@ -31,9 +31,9 @@ void debugger();
  */
 #define NOP do {} while(0)
 #define debugger() NOP
-// #include <bwio.h>
-// #define log_debug(format, ...) bwprintf(COM2, format, ## __VA_ARGS__)
-#define log_debug(format, ...) NOP
+#include <bwio.h>
+#define log_debug(format, ...) bwprintf(COM2, format, ## __VA_ARGS__)
+// #define log_debug(format, ...) NOP
 #define assert(x) NOP
 
 #endif
