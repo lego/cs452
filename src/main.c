@@ -21,13 +21,13 @@ asm(
 "\n__asm_swi_handler:\n\t"
   "stmfd sp!, {r4-r12, lr}\n\t"
   "ldr r0, [lr, #-4]\n\t"
-  // Save stack point of active task
+  // Save stack pointer of active task
   "bl swi_handler(PLT)\n\t"
   "stmfd sp!, {r0}\n\t"
   "mov r0, sp\n\t"
   "bl schedule(PLT)\n\t"
   "mov sp, r0\n\t"
-  // Set stack point to active task
+  // Set stack pointer to active task
   "ldmfd sp!, {r0, r4-r12, lr}\n\t"
   "movs pc, lr\n\t"
 );
