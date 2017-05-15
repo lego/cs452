@@ -27,6 +27,21 @@ asm (
   "\n"
   // export of the function
   ".global __asm_start_task\n"
+  ".global __asm_switch_to_task\n"
+
+  "__asm_switch_to_task:\n\t"
+  // save kernel sp
+  "ldr r4, .__asm_swi_handler_data+0\n\t"
+  "str sp, [sl, r4]\n\t"
+
+  // switch to argument stack pointer
+  "mov sp, r0\n\t"
+
+  // recover registers
+  "ldmfd sp!, {r0, r4-r12, lr}\n\t"
+  // begin execution
+  "movs pc, lr\n\t"
+
   "__asm_swi_handler:\n\t"
   "stmfd sp!, {r4-r12, lr}\n\t"
 
@@ -113,12 +128,11 @@ void* __syscall(void* stack, int syscall, int arg1, void *arg2) {
     );
   stack -= 4;
 
-
   // determine which task to run next
   // task_descriptor_t *next_task = scheduler_next_task();
   // // save stack pointer
   // // we need to know how to get the current task
-  next_task->stack_pointer = stack;
+  active_task->stack_pointer = stack;
   // void* taskToRunStack = next_task->stack_pointer; // For now just run the same task
 
   // if (taskRunning) {
