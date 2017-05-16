@@ -2,6 +2,7 @@
 #include <entry_task.h>
 #include <kernel.h>
 #include <ts7200.h>
+#include <debug.h>
 
 void child_task();
 // void child_task() {
@@ -36,6 +37,7 @@ void child_task();
 
 void entry_task() {
   int new_task_id;
+  log_debug("Task started");
   new_task_id = Create(PRIORITY_HIGHEST, &child_task);
   bwprintf(COM2, "Created: %d\n\r", new_task_id);
   new_task_id = Create(PRIORITY_HIGHEST, &child_task);
@@ -55,7 +57,7 @@ void child_task() {
   bwprintf(COM2, "MyTid=%d MyParentTid=%d\n\r", my_tid, my_parent_tid);
   Pass();
 
-  __asm__("mrs r0, spsr\n\r");
+  __asm__("msr spsr_c, #0\n\r");
 
   bwprintf(COM2, "MyTid=%d MyParentTid=%d\n\r", my_tid, my_parent_tid);
   // Exit();

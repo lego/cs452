@@ -40,9 +40,17 @@ asm (
 
   // recover task registers
   "ldmfd sp!, {r0, r1, r4-r12, lr}\n\t"
+
+  "mov r2, r0\n\t"
+  "mov r0, #1\n\t"
+  "mrs r1, cpsr\n\t"
+  "bl bwputr\n\t"
+
   "msr spsr, r1\n\t"
 
-  // FIXME: recover task spsr
+  "mov r0, #1\n\t"
+  "bl bwputr\n\t"
+  "mov r0, r2\n\t"
 
   // begin execution of task
   "movs pc, lr\n\t"
@@ -52,7 +60,6 @@ asm (
   // store task state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
 
-  // FIXME: save task spsr
   "mrs r4, spsr\n\t"
   "stmfd sp!, {r4}\n\t"
 
@@ -94,11 +101,19 @@ asm (
   "ldr r4, .__asm_swi_handler_data+4\n\t"
   "ldr lr, [sl, r4]\n\t"
 
-  // FIXME: set task spsr to user mode
+  "mrs r0, spsr\n\t" // load in spsr
+  "bic r0, r0, #31\n\t" // mask out mode
+  "orr r0, r0, #16\n\t" // set user mode
+  "msr spsr_c, r0\n\t" // set spsr
 
-  "msr cpsr_c, #16\n\t"
+  "mov r0, #1\n\t"
+  "mrs r1, cpsr\n\t"
+  "bl bwputr\n\t"
 
-  "mov pc, r1\n\t"
+  // "mrs r1, spsr\n\t"
+  // "bl bwputr\n\t"
+
+  "movs pc, r1\n\t"
 
 "\n"
 ".__asm_swi_handler_data:\n\t"
