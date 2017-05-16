@@ -32,6 +32,10 @@ void handle(kernel_request_t *request) {
 }
 
 int main() {
+  // save redboots spsr
+  __asm__("mrs r0, spsr")
+  __asm__("stmfd sp!, {r0}")
+
   /* initialize various kernel components */
   context_switch_init();
   io_init();
@@ -58,5 +62,10 @@ int main() {
     // currently all request handling logic lives in context_switch.c
     handle(request);
   }
+
+
+  // recover redboots spsr
+  __asm__("ldmfd sp!, {r0}")
+  __asm__("msr spsr, 0")
   return 0;
 }
