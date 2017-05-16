@@ -96,9 +96,9 @@ asm (
 
   // FIXME: set task spsr to user mode
 
-  "msr spsr_c, #208\n\t"
+  "msr cpsr_c, #16\n\t"
 
-  "movs pc, r1\n\t"
+  "mov pc, r1\n\t"
 
 "\n"
 ".__asm_swi_handler_data:\n\t"
