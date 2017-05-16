@@ -55,5 +55,5 @@ void child_task() {
   bwprintf(COM2, "MyTid=%d MyParentTid=%d\n\r", my_tid, my_parent_tid);
   Pass();
   bwprintf(COM2, "MyTid=%d MyParentTid=%d\n\r", my_tid, my_parent_tid);
-  Exit();
+  // Exit();
 }

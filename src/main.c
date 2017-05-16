@@ -49,7 +49,6 @@ int main() {
 
   log_debug("M   ready_queue_size=%d\n\r", scheduler_ready_queue_size());
 
-
   // start executing user tasks
   while (scheduler_any_task()) {
     task_descriptor_t *next_task = scheduler_next_task();

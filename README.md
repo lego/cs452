@@ -5,6 +5,15 @@ The codebase for all our CS452 group assignments and the final project.
 
 Relevant branches will be listed here for the final version of our code for each assignment / the project.
 
+### Current todo
+- backing up and recovering the CPSR / SPSR
+- a request mechanism for providing arguments and returning results
+  - this should ideally create a 'request' on the task stack
+  - the kernel then copies the memory of this request from the task memory space into it's own
+  - it then handles the 'request'
+  - this could be in the form that messages will be in the future
+  - => removes multiple args in syscalls, makes it only 1 pointer arg
+
 Building
 --------
 

@@ -6,10 +6,7 @@
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
-void* kernelFinished = 0;
 void* kernelSp = 0;
-void* taskSp = 0;
-int taskRunning = 1;
 
 typedef int (*interrupt_handler)(int);
 
@@ -30,31 +27,36 @@ asm (
   ".global __asm_switch_to_task\n"
 
   "__asm_switch_to_task:\n\t"
+
+  // save kernel state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
+
   // save kernel sp
   "ldr r4, .__asm_swi_handler_data+0\n\t"
   "str sp, [sl, r4]\n\t"
 
   // switch to argument stack pointer
-  "mov sp, r0\n\t"
+  "movs sp, r0\n\t"
 
-  // recover registers
+  // recover task registers
   "ldmfd sp!, {r0, r4-r12, lr}\n\t"
 
+  // FIXME: recover task spsr
 
-  // begin execution
+  // begin execution of task
   "movs pc, lr\n\t"
-  // continue
-  "mov pc, lr\n\t"
 
   "__asm_swi_handler:\n\t"
+  // store task state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
 
+  // FIXME: save task spsr
+
   // set up args for syscall
-  "mov r3, r2\n\t"
-  "mov r2, r1\n\t"
-  "ldr r1, [lr, #-4]\n\t"
-  "mov r0, sp\n\t"
+  "mov r3, r2\n\t" // sycall arg2
+  "mov r2, r1\n\t" // sycall arg1
+  "mov r1, r0\n\t" // syscall number
+  "mov r0, sp\n\t" // task stack pointer
 
   // switch to kernel stack
   "ldr r4, .__asm_swi_handler_data+0\n\t"
@@ -63,35 +65,18 @@ asm (
   // handle syscall
   "bl __syscall(PLT)\n\t"
 
-  // go to __asm_finished_tasks if not given a stack pointer
-  "cmp r0, #0\n\t"
-  "beq __asm_finished_tasks\n\t"
-
-  // save kernel sp
-  "ldr r4, .__asm_swi_handler_data+0\n\t"
-  "str sp, [sl, r4]\n\t"
-
-  // switch to returned stack pointer
-  "mov sp, r0\n\t"
-
-  // restore registers, including an extra r0 return value added by __syscall
-  "ldmfd sp!, {r0, r4-r12, lr}\n\t"
-  "movs pc, lr\n\t"
-
-  "\n"
-  "__asm_finished_tasks:\n\t"
   // switch to kernel stack before the syscall
   "ldr r4, .__asm_swi_handler_data+0\n\t"
   "ldr sp, [sl, r4]\n\t"
 
   // load kernel state before tasks were finished
   "ldmfd sp!, {r4-r12, lr}\n\t"
-  // continue
+  // return from scheduler_activate_task in kernel
   "mov pc, lr\n\t"
 
   "\n"
   "__asm_start_task:\n\t"
-  // save kernel lr
+  // save kernel state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
 
   // save kernel sp
@@ -105,6 +90,10 @@ asm (
   "ldr r4, .__asm_swi_handler_data+4\n\t"
   "ldr lr, [sl, r4]\n\t"
 
+  // FIXME: set task spsr to user mode
+
+  // "msr spsr_c, #&00110000\n\t"
+
   "movs pc, r1\n\t"
 
   "\n"
@@ -113,15 +102,10 @@ asm (
   ".word Exit(GOT)\n\t"
   );
 
-void* __syscall(void* stack, int syscall, int arg1, void *arg2) {
-  syscall = syscall & 0x0000FFFF;
-
-  if (syscall == 0) {
-    taskRunning = 0;
-  }
+void* __syscall(void* stack, syscall_t syscall_no, int arg1, void *arg2) {
 
   // do the syscall
-  int syscall_return = context_switch_in(syscall, arg1, arg2);
+  int syscall_return = context_switch_in(syscall_no, arg1, arg2);
   log_debug("CS  syscall ret=%d\n\r", syscall_return);
 
   // Put the syscall return value on the passed in stack
@@ -140,31 +124,12 @@ void* __syscall(void* stack, int syscall, int arg1, void *arg2) {
   active_task->stack_pointer = stack;
   // void* taskToRunStack = next_task->stack_pointer; // For now just run the same task
 
-  // if (taskRunning) {
-  //   return taskToRunStack;
-  // } else {
   return 0;
-  // }
 }
 
 int context_switch(syscall_t call_no, int arg1, void *arg2) {
-  switch (call_no) {
-  case SYSCALL_MY_TID:
-    asm ("swi #1\n\t");
-    break;
-  case SYSCALL_MY_PARENT_TID:
-    asm ("swi #2\n\t");
-    break;
-  case SYSCALL_CREATE:
-    asm ("swi #3\n\t");
-    break;
-  case SYSCALL_PASS:
-    asm ("swi #4\n\t");
-    break;
-  case SYSCALL_EXIT:
-    asm ("swi #5\n\t");
-    break;
-  }
+  // NOTE: we pass the syscall number via. r0 as it's the first argument
+  asm ("swi #0\n\t");
 }
 
 int context_switch_in(syscall_t call_no, int arg1, void *arg2) {
