@@ -27,78 +27,77 @@ asm (
 ".global __asm_switch_to_task\n"
 
 "__asm_switch_to_task:\n\t"
-
-  // save kernel state and lr
+  // save the return-to-kernel lr + registers
   "stmfd sp!, {r4-r12, lr}\n\t"
 
-  // save kernel sp
-  "ldr r4, .__asm_swi_handler_data+0\n\t"
-  "str sp, [sl, r4]\n\t"
+  // in system mode
+  "msr cpsr_c, #223\n\t"
+    // switch to argument stack pointer
+    "mov sp, r0\n\t"
 
-  // switch to argument stack pointer
-  "movs sp, r0\n\t"
+    // recover task registers
+    "ldmfd sp!, {r0, r1, r2, r4-r12, lr}\n\t"
+    "msr spsr_c, r1\n\t"
+  "msr cpsr_c, #211\n\t"
 
-  // recover task registers
-  "ldmfd sp!, {r0, r1, r4-r12, lr}\n\t"
-  "msr spsr, r1\n\t"
-
-  // FIXME: recover task spsr
+  "mov lr, r2\n\t"
 
   // begin execution of task
   "movs pc, lr\n\t"
 
 "\n"
 "__asm_swi_handler:\n\t"
-  // store task state and lr
-  "stmfd sp!, {r4-r12, lr}\n\t"
+  // in system mode
+  "msr cpsr_c, #223\n\t"
+    // store task state and lr
+    "stmfd sp!, {r4-r12, lr}\n\t"
+  "msr cpsr_c, #211\n\t"
 
-  // FIXME: save task spsr
   "mrs r4, spsr\n\t"
-  "stmfd sp!, {r4}\n\t"
+  // save return-to-user lr to r5 so it's not overwritten by r0-r3
+  "mov r5, lr\n\t"
+
+  // in system mode
+  "msr cpsr_c, #223\n\t"
+    "stmfd sp!, {r4, r5}\n\t"
+    "mov r4, sp\n\t"
+  "msr cpsr_c, #211\n\t"
 
   // set up args for syscall
   "mov r3, r2\n\t" // sycall arg2
   "mov r2, r1\n\t" // sycall arg1
   "mov r1, r0\n\t" // syscall number
-  "mov r0, sp\n\t" // task stack pointer
-
-  // switch to kernel stack
-  "ldr r4, .__asm_swi_handler_data+0\n\t"
-  "ldr sp, [sl, r4]\n\t"
+  "mov r0, r4\n\t" // task stack pointer
 
   // handle syscall
   "bl __syscall(PLT)\n\t"
 
-  // switch to kernel stack before the syscall
-  "ldr r4, .__asm_swi_handler_data+0\n\t"
-  "ldr sp, [sl, r4]\n\t"
-
-  // load kernel state before tasks were finished
+  // load the return-to-kernel lr + registers
   "ldmfd sp!, {r4-r12, lr}\n\t"
+
   // return from scheduler_activate_task in kernel
   "mov pc, lr\n\t"
 
 "\n"
 "__asm_start_task:\n\t"
-  // save kernel state and lr
+  // store return-to-kernel lr + registers
   "stmfd sp!, {r4-r12, lr}\n\t"
 
-  // save kernel sp
-  "ldr r4, .__asm_swi_handler_data+0\n\t"
-  "str sp, [sl, r4]\n\t"
+  // in system mode
+  "msr cpsr_c, #223\n\t"
+    // switch to new stack
+    "mov sp, r0\n\t"
 
-  // switch to new stack
-  "mov sp, r0\n\t"
-
-  // Store Exit function as the return place
-  "ldr r4, .__asm_swi_handler_data+4\n\t"
-  "ldr lr, [sl, r4]\n\t"
+    // Store Exit function as the return place
+    "ldr r4, .__asm_swi_handler_data+4\n\t"
+    "ldr lr, [sl, r4]\n\t"
+  "msr cpsr_c, #211\n\t"
 
   // FIXME: set task spsr to user mode
+  "msr spsr_c, #16\n\t"
 
-  // "msr spsr_c, #&00110000\n\t"
-
-  "movs pc, r1\n\t"
+  "mov lr, r1\n\t"
+  "movs pc, lr\n\t"
 
 "\n"
 ".__asm_swi_handler_data:\n\t"

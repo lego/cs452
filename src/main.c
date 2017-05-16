@@ -32,6 +32,10 @@ void handle(kernel_request_t *request) {
 }
 
 int main() {
+  active_task = NULL;
+  ctx = NULL;
+  kernel_stack_pointer = 0;
+
   /* initialize various kernel components */
   context_switch_init();
   io_init();
