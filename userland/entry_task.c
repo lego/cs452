@@ -54,6 +54,9 @@ void child_task() {
   int my_parent_tid = MyParentTid();
   bwprintf(COM2, "MyTid=%d MyParentTid=%d\n\r", my_tid, my_parent_tid);
   Pass();
+
+  __asm__("mrs r0, spsr\n\r");
+
   bwprintf(COM2, "MyTid=%d MyParentTid=%d\n\r", my_tid, my_parent_tid);
   // Exit();
 }
