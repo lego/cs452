@@ -96,7 +96,7 @@ asm (
 
   // FIXME: set task spsr to user mode
 
-  "msr spsr_c, #208\n\t"
+  "msr spsr_c, #16\n\t"
 
   "movs pc, r1\n\t"
 
