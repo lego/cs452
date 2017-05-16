@@ -21,12 +21,12 @@ void __asm_switch_to_task(void* task_sp);
 void __asm_start_task(void* task_sp, void* task_pc);
 
 asm (
-  "\n"
-  // export of the function
-  ".global __asm_start_task\n"
-  ".global __asm_switch_to_task\n"
+"\n"
+// export of the function
+".global __asm_start_task\n"
+".global __asm_switch_to_task\n"
 
-  "__asm_switch_to_task:\n\t"
+"__asm_switch_to_task:\n\t"
 
   // save kernel state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
@@ -39,18 +39,22 @@ asm (
   "movs sp, r0\n\t"
 
   // recover task registers
-  "ldmfd sp!, {r0, r4-r12, lr}\n\t"
+  "ldmfd sp!, {r0, r1, r4-r12, lr}\n\t"
+  "msr spsr, r1\n\t"
 
   // FIXME: recover task spsr
 
   // begin execution of task
   "movs pc, lr\n\t"
 
-  "__asm_swi_handler:\n\t"
+"\n"
+"__asm_swi_handler:\n\t"
   // store task state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
 
   // FIXME: save task spsr
+  "mrs r4, spsr\n\t"
+  "stmfd sp!, {r4}\n\t"
 
   // set up args for syscall
   "mov r3, r2\n\t" // sycall arg2
@@ -74,8 +78,8 @@ asm (
   // return from scheduler_activate_task in kernel
   "mov pc, lr\n\t"
 
-  "\n"
-  "__asm_start_task:\n\t"
+"\n"
+"__asm_start_task:\n\t"
   // save kernel state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
 
@@ -96,8 +100,8 @@ asm (
 
   "movs pc, r1\n\t"
 
-  "\n"
-  ".__asm_swi_handler_data:\n\t"
+"\n"
+".__asm_swi_handler_data:\n\t"
   ".word kernelSp(GOT)\n\t"
   ".word Exit(GOT)\n\t"
   );
