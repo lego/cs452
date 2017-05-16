@@ -1,5 +1,6 @@
 #include <basic.h>
 #include <kern/context.h>
+#include <kern/context_switch.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
