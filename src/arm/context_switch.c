@@ -6,6 +6,9 @@
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
+void child_task();
+
+
 void* kernelSp = 0;
 
 typedef int (*interrupt_handler)(int);
@@ -38,10 +41,14 @@ asm (
   // switch to argument stack pointer
   "movs sp, r0\n\t"
 
-  // recover task registers
+  // recover task registers, including return argument we added
   "ldmfd sp!, {r0, r4-r12, lr}\n\t"
 
   // FIXME: recover task spsr
+
+
+  "msr spsr_c, #208\n\t"
+  "mrs r0, spsr\n\t" // store cpsr for debugging
 
   // begin execution of task
   "movs pc, lr\n\t"
@@ -57,6 +64,8 @@ asm (
   "mov r2, r1\n\t" // sycall arg1
   "mov r1, r0\n\t" // syscall number
   "mov r0, sp\n\t" // task stack pointer
+
+  "mrs r3, cpsr\n\t" // store cpsr for debugging
 
   // switch to kernel stack
   "ldr r4, .__asm_swi_handler_data+0\n\t"
@@ -91,8 +100,7 @@ asm (
   "ldr lr, [sl, r4]\n\t"
 
   // FIXME: set task spsr to user mode
-
-  // "msr spsr_c, #&00110000\n\t"
+  "msr spsr_c, #208\n\t"
 
   "movs pc, r1\n\t"
 
@@ -103,6 +111,9 @@ asm (
   );
 
 void* __syscall(void* stack, syscall_t syscall_no, int arg1, void *arg2) {
+
+  log_debug("CS  cpsr[4:0]=%d\n\r", (long long) arg2 & 255);
+  arg2 = &child_task;
 
   // do the syscall
   int syscall_return = context_switch_in(syscall_no, arg1, arg2);
@@ -127,7 +138,7 @@ void* __syscall(void* stack, syscall_t syscall_no, int arg1, void *arg2) {
   return 0;
 }
 
-int context_switch(syscall_t call_no, int arg1, void *arg2) {
+void *context_switch(syscall_t call_no, int arg1, void *arg2) {
   // NOTE: we pass the syscall number via. r0 as it's the first argument
   asm ("swi #0\n\t");
 }

@@ -3,7 +3,6 @@
 #include <kernel.h>
 #include <ts7200.h>
 
-void child_task();
 // void child_task() {
 //   int my_tid = MyTid();
 //   int my_parent_tid = MyParentTid();

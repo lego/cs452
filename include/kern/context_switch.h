@@ -21,7 +21,7 @@ typedef int syscall_t;
  * All of those values will get handled by whatever assembly is backing the
  * actual context switch
  */
-int context_switch(syscall_t call_no, int arg1, void *arg2);
+void *context_switch(syscall_t call_no, int arg1, void *arg2);
 
 void context_switch_init();
 
