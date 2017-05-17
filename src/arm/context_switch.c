@@ -48,7 +48,7 @@ asm (
   // store task state and lr
   "stmfd sp!, {r4-r12, lr}\n\t"
 
-  "mrs r4, spsr\n\t"
+  // "mrs r4, spsr\n\t"
   "stmfd sp!, {r4}\n\t"
 
   // set up args for syscall
@@ -89,14 +89,14 @@ asm (
   "ldr r4, .__asm_swi_handler_data+4\n\t"
   "ldr lr, [sl, r4]\n\t"
 
-  "mrs r0, spsr\n\t" // load in spsr
-  "bic r0, r0, #31\n\t" // mask out mode
-  "orr r0, r0, #16\n\t" // set user mode
-  "msr spsr_c, r0\n\t" // set spsr
-
-  "mov r0, #1\n\t"
-  "mrs r1, cpsr\n\t"
-  "bl bwputr\n\t"
+  // "mrs r0, spsr\n\t" // load in spsr
+  // "bic r0, r0, #31\n\t" // mask out mode
+  // "orr r0, r0, #16\n\t" // set user mode
+  // "msr spsr_c, r0\n\t" // set spsr
+  //
+  // "mov r0, #1\n\t"
+  // "mrs r1, cpsr\n\t"
+  // "bl bwputr\n\t"
 
   // "mrs r1, spsr\n\t"
   // "bl bwputr\n\t"
