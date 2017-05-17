@@ -68,6 +68,7 @@ int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
   request.syscall = SYSCALL_SEND;
 
   syscall_message_t arg;
+  arg.tid = tid;
   arg.msglen = msglen;
   arg.msg = msg;
 
@@ -82,13 +83,15 @@ int Receive( int *tid, void *msg, int msglen ) {
   request.tid = active_task->tid;
   request.syscall = SYSCALL_RECEIVE;
 
-  syscall_message_t arg;
-  arg.msglen = msglen;
-  arg.msg = msg;
+  syscall_message_t ret_val;
+  ret_val.msglen = msglen;
+  ret_val.msg = msg;
 
-  request.arguments = &arg;
+  request.ret_val = &ret_val;
 
   context_switch(&request);
+
+  *tid = ret_val.tid;
   return 0;
 }
 

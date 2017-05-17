@@ -68,22 +68,56 @@ void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
 
 void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   log_debug("syscall=Exit\n\r");
-  task->state = STATE_ZOMBIE;
   scheduler_exit_task();
+}
+
+void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
+  syscall_message_t *src_msg = src_task->current_request.arguments;
+  syscall_message_t *dest_msg = dest_task->current_request.ret_val;
+
+  jmemcpy((void *) dest_msg->msg, (void *) src_msg->msg, src_msg->msglen);
+  dest_msg->tid = src_task->tid;
+
+  // FIXME: do size checks, and status setting
 }
 
 void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   log_debug("syscall=Send\n\r");
-  // syscall_message_t *msg = arg->arguments;
-  // task->state
-  // // don't reschedule task, it's blocked
-  // ((syscall_pid_ret_t *) arg->ret_val)->tid = new_task->tid;
+  task->state = STATE_RECEIVE_BLOCKED;
+  syscall_message_t *msg = arg->arguments;
+  task_descriptor_t *target_task = &ctx->descriptors[msg->tid];
+
+  // if receiver is not blocked, add to their send queue
+  if (target_task->state == STATE_SEND_BLOCKED) {
+    copy_msg(task, target_task);
+
+    target_task->state = STATE_READY;
+    scheduler_requeue_task(target_task);
+    // FIXME: reply block task
+    task->state = STATE_READY;
+    scheduler_requeue_task(task);
+  } else {
+    int status = cbuffer_add(&target_task->send_queue, task);
+    // FIXME: handle bad status of cbuffer
+  }
 }
 
 void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
   log_debug("syscall=Receive\n\r");
-  // syscall_message_t *msg = arg->arguments;
-  // task->state
-  // // don't reschedule task, it's blocked
-  // ((syscall_pid_ret_t *) arg->ret_val)->tid = new_task->tid;
+  task->state = STATE_SEND_BLOCKED;
+  syscall_message_t *msg = arg->ret_val;
+
+  // if senders are blocked, get the message and continue
+  if (!cbuffer_empty(&task->send_queue)) {
+    int status;
+    task_descriptor_t *sending_task = (task_descriptor_t *) cbuffer_pop(&task->send_queue, &status);
+    // FIXME: handle bad status of cbuffer
+    copy_msg(sending_task, task);
+
+    task->state = STATE_READY;
+    scheduler_requeue_task(task);
+    // FIXME: reply block sending_task
+    sending_task->state = STATE_READY;
+    scheduler_requeue_task(sending_task);
+  }
 }

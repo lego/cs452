@@ -14,6 +14,15 @@ typedef struct {
   int size;
 } cbuffer_t;
 
+
+/**
+ * Initializes a circular buffer
+ * @param  buffer memory to use
+ * @param  size   of the buffer
+ */
+void cbuffer_init(cbuffer_t *cbuf, void **buffer, int size );
+
+
 /**
  * Initializes a circular buffer
  * @param  buffer memory to use

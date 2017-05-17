@@ -23,9 +23,6 @@ typedef int syscall_t;
  * A global struct for kernel state
  */
 
-// Hardcoded maximum used in a number of places
-#define MAX_TASKS 100
-
 struct Context {
   task_descriptor_t descriptors[MAX_TASKS];
   char used_descriptors;

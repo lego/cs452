@@ -2,6 +2,7 @@ ENTRY (main)
 
 MEMORY
 {
+/* TODO: can we maybe put a memory limit that matches where we put tasks to assert no collision */
 ram : ORIGIN = 0x00218000, LENGTH = 32M
 rom : ORIGIN = 0x60000000, LENGTH = 8M
 }

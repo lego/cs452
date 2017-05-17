@@ -60,6 +60,10 @@ typedef unsigned size_t;
 // void *memcpy(void *destination, const void *source, size_t num);
 // void *memmove(void *destination, const void *source, size_t num);
 
+// these memory copies are explicitly called, we use them for message passing
+void *jmemcpy(void *destination, const void *source, size_t num);
+void *jmemmove(void *destination, const void *source, size_t num);
+
 /*
  * Utilty functions
  */

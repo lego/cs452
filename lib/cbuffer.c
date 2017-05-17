@@ -4,6 +4,21 @@
 
 #include <cbuffer.h>
 
+
+void cbuffer_init(cbuffer_t *cbuf, void **buffer, int size ) {
+  #ifdef DEBUG_MODE
+  for (int i = 0; i < size; i++) {
+    buffer[i] = 0;
+  }
+  #endif
+
+  cbuf->buffer = buffer;
+  cbuf->max_size = size;
+  cbuf->start = 0;
+  cbuf->size = 0;
+}
+
+
 cbuffer_t cbuffer_create(void **buffer, int size) {
   #ifdef DEBUG_MODE
   for (int i = 0; i < size; i++) {

@@ -1,17 +1,22 @@
 #include <basic.h>
+#include <cbuffer.h>
 #include <kern/context.h>
 #include <kern/task_descriptor.h>
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, task_priority_t priority, void (*entrypoint)()) {
   // TODO: Assert task priority is valid, i.e. in [1,5]
   int tid = ctx->used_descriptors++;
-  ctx->descriptors[tid].priority = priority;
-  ctx->descriptors[tid].tid = tid;
-  ctx->descriptors[tid].has_started = false;
-  ctx->descriptors[tid].parent_tid = parent_tid;
-  ctx->descriptors[tid].entrypoint = entrypoint;
-  ctx->descriptors[tid].state = STATE_READY;
-  ctx->descriptors[tid].next_ready_task = NULL;
-  ctx->descriptors[tid].stack_pointer = TASK_STACK_START + (TASK_STACK_SIZE * tid);
-  return &ctx->descriptors[tid];
+  task_descriptor_t *task = &ctx->descriptors[tid];
+  task->priority = priority;
+  task->tid = tid;
+  task->has_started = false;
+  task->parent_tid = parent_tid;
+  task->entrypoint = entrypoint;
+  task->state = STATE_READY;
+  task->next_ready_task = NULL;
+  task->stack_pointer = TASK_STACK_START + (TASK_STACK_SIZE * tid);
+
+  cbuffer_init(&task->send_queue, task->send_queue_buf, 100);
+
+  return task;
 }

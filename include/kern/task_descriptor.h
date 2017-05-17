@@ -1,8 +1,12 @@
 #ifndef __TASK_DESCRIPTOR_H__
 #define __TASK_DESCRIPTOR_H__
 
+#include <cbuffer.h>
 #include <kern/kernel_request.h>
 #include <kernel.h>
+
+// Hardcoded maximum used in a number of places
+#define MAX_TASKS 100
 
 // Forward declared struct, because this is circular
 struct Context;
@@ -25,7 +29,7 @@ typedef int task_state_t;
 #define STATE_READY (task_state_t) 2
 #define STATE_ZOMBIE (task_state_t) 3
 #define STATE_SEND_BLOCKED (task_state_t) 4
-#define STATE_RECEIVE_BLOCK (task_state_t) 5
+#define STATE_RECEIVE_BLOCKED (task_state_t) 5
 
 #define KERNEL_TID -1
 
@@ -50,7 +54,8 @@ struct TaskDescriptor {
   task_priority_t priority;
   kernel_request_t current_request;
   struct TaskDescriptor *next_ready_task;
-  struct TaskDescriptor *next_send_task;
+  cbuffer_t send_queue;
+  void *send_queue_buf[MAX_TASKS];
   volatile task_state_t state;
   void *stack_pointer;
   void (*entrypoint)();
