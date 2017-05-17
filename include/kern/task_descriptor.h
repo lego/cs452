@@ -1,6 +1,7 @@
 #ifndef __TASK_DESCRIPTOR_H__
 #define __TASK_DESCRIPTOR_H__
 
+#include <kern/kernel_request.h>
 #include <kernel.h>
 
 // Forward declared struct, because this is circular
@@ -45,6 +46,7 @@ struct TaskDescriptor {
   int parent_tid;
   bool has_started;
   task_priority_t priority;
+  kernel_request_t current_request;
   struct TaskDescriptor *next_ready_task;
   struct TaskDescriptor *next_send_task;
   task_state_t state;

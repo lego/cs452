@@ -18,7 +18,6 @@
 
 task_descriptor_t *active_task = NULL;
 context_t *ctx = NULL;
-void *kernel_stack_pointer = 0;
 
 
 kernel_request_t *activate(task_descriptor_t *task) {
@@ -33,8 +32,10 @@ void handle(kernel_request_t *request) {
 
 int main() {
   // save redboots spsr
+  #ifndef DEBUG_MODE
   asm("mrs r0, spsr");
   asm("stmfd sp!, {r0}");
+  #endif
 
   /* initialize various kernel components */
   context_switch_init();
@@ -65,7 +66,9 @@ int main() {
 
 
   // recover redboots spsr
+  #ifndef DEBUG_MODE
   asm("ldmfd sp!, {r0}");
   asm("msr spsr, r0");
+  #endif
   return 0;
 }
