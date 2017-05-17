@@ -21,9 +21,11 @@ typedef struct Context context_t;
  */
 
 typedef int task_state_t;
-#define STATE_ACTIVE (task_state_t) 1;
-#define STATE_READY (task_state_t) 2;
-#define STATE_ZOMBIE (task_state_t) 3;
+#define STATE_ACTIVE (task_state_t) 1
+#define STATE_READY (task_state_t) 2
+#define STATE_ZOMBIE (task_state_t) 3
+#define STATE_SEND_BLOCKED (task_state_t) 4
+#define STATE_RECEIVE_BLOCK (task_state_t) 5
 
 #define KERNEL_TID -1
 
@@ -49,7 +51,7 @@ struct TaskDescriptor {
   kernel_request_t current_request;
   struct TaskDescriptor *next_ready_task;
   struct TaskDescriptor *next_send_task;
-  task_state_t state;
+  volatile task_state_t state;
   void *stack_pointer;
   void (*entrypoint)();
 };

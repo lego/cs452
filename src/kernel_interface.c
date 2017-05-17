@@ -14,8 +14,7 @@ int Create(int priority, void (*entrypoint)()) {
 
   request.arguments = &arg;
 
-  // NOTE: this is kinda weird, the return value is set in userspace
-  // by the kernel
+  // NOTE: this is kinda weird, the return value is set in userspace by the kernel
   syscall_pid_ret_t ret_val;
   request.ret_val = &ret_val;
   context_switch(&request);
@@ -27,8 +26,7 @@ int MyTid( ) {
   request.tid = active_task->tid;
   request.syscall = SYSCALL_MY_TID;
 
-  // NOTE: this is kinda weird, the return value is set in userspace
-  // by the kernel
+  // NOTE: this is kinda weird, the return value is set in userspace by the kernel
   syscall_pid_ret_t ret_val;
   request.ret_val = &ret_val;
   context_switch(&request);
@@ -60,4 +58,40 @@ void Exit( ) {
   request.tid = active_task->tid;
   request.syscall = SYSCALL_EXIT;
   context_switch(&request);
+}
+
+
+
+int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_SEND;
+
+  syscall_message_t arg;
+  arg.msglen = msglen;
+  arg.msg = msg;
+
+  request.arguments = &arg;
+
+  context_switch(&request);
+  return 0;
+}
+
+int Receive( int *tid, void *msg, int msglen ) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_RECEIVE;
+
+  syscall_message_t arg;
+  arg.msglen = msglen;
+  arg.msg = msg;
+
+  request.arguments = &arg;
+
+  context_switch(&request);
+  return 0;
+}
+
+int Reply( int tid, void *reply, int replylen ) {
+  return 0;
 }

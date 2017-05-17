@@ -20,6 +20,12 @@ typedef struct {
 
 
 typedef struct {
+  volatile int msglen;
+  volatile char *msg;
+} syscall_message_t;
+
+
+typedef struct {
   int tid;
   int syscall;
   void *arguments;

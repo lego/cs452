@@ -22,49 +22,50 @@ void scheduler_arch_init() {
 }
 
 void scheduler_exit_task() {
+  int tid = active_task->tid;
   active_task = NULL;
+  task_descriptor_t *task = &ctx->descriptors[tid];
+  task->state = STATE_ZOMBIE;
+  log_debug("ST  t%d signal kernel (exit)\n\r", task->tid);
   pthread_cond_signal(&kernel_cv);
+  log_debug("ST  t%d release mutex (exit)\n\r", task->tid);
   pthread_mutex_unlock(&active_mutex);
+  log_debug("ST  t%d thread kill\n\r", task->tid);
   pthread_exit(NULL);
 }
 
 void scheduler_reschedule_the_world() {
   int tid = active_task->tid;
-  log_debug("SC  t%d signal kernel\n\r", tid);
+  task_descriptor_t *task = &ctx->descriptors[tid];
+  log_debug("ST  t%d signal kernel\n\r", tid);
   pthread_cond_signal(&kernel_cv);
   active_task = NULL;
-  log_debug("SC  t%d cv wait\n\r", tid);
-  while (active_task == NULL || active_task->tid != tid) pthread_cond_wait(&task_cvs[tid], &active_mutex);
-  log_debug("SC  t%d cv woke\n\r", tid);
+  if (task->state == STATE_ACTIVE) task->state = STATE_READY;
+  log_debug("ST  t%d cv wait\n\r", tid);
+  while (task->state != STATE_ACTIVE) pthread_cond_wait(&task_cvs[tid], &active_mutex);
+  log_debug("ST  t%d cv woke\n\r", tid);
 }
 
 void *scheduler_start_task(void *td) {
   task_descriptor_t *task = (task_descriptor_t *) td;
-  log_debug("SC  t%d acquire mutex\n\r", task->tid);
+  log_debug("ST  t%d acquire mutex\n\r", task->tid);
   pthread_mutex_lock(&active_mutex);
   task->entrypoint();
-  log_debug("SC  t%d signal kernel\n\r", task->tid);
-  pthread_cond_signal(&kernel_cv);
-  active_task = NULL;
-  log_debug("SC  t%d release mutex\n\r", task->tid);
-  pthread_mutex_unlock(&active_mutex);
-
+  scheduler_exit_task();
   return NULL;
 }
 
 void scheduler_activate_task(task_descriptor_t *task) {
   active_task = task;
   if (!task_started[task->tid]) {
-    log_debug("SC  k create thread tid=%d\n\r", task->tid);
+    log_debug("SK  k create thread tid=%d\n\r", task->tid);
     pthread_create(&tasks[task->tid], NULL, &scheduler_start_task, task);
-    log_debug("SC  k cv wait for tid=%d\n\r", task->tid);
-    while (active_task != NULL) pthread_cond_wait(&kernel_cv, &active_mutex);
-    log_debug("SC  k cv awake after tid=%d\n\r", task->tid);
     task_started[task->tid] = true;
   } else {
-    log_debug("SC  k cv wait for tid=%d\n\r", task->tid);
     pthread_cond_signal(&task_cvs[task->tid]);
-    while (active_task != NULL) pthread_cond_wait(&kernel_cv, &active_mutex);
-    log_debug("SC  k cv awake after tid=%d\n\r", task->tid);
   }
+  log_debug("SK  k cv wait for tid=%d\n\r", task->tid);
+  task->state = STATE_ACTIVE;
+  while (task->state == STATE_ACTIVE) pthread_cond_wait(&kernel_cv, &active_mutex);
+  log_debug("SK  k cv awake after tid=%d\n\r", task->tid);
 }

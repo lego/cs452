@@ -15,6 +15,9 @@ typedef int syscall_t;
 #define SYSCALL_CREATE (syscall_t) 3
 #define SYSCALL_PASS (syscall_t) 4
 #define SYSCALL_EXIT (syscall_t) 5
+#define SYSCALL_SEND (syscall_t) 6
+#define SYSCALL_RECEIVE (syscall_t) 7
+#define SYSCALL_REPLY (syscall_t) 8
 
 /*
  * A global struct for kernel state

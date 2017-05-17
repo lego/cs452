@@ -6,6 +6,8 @@
 void syscall_handle(kernel_request_t *arg) {
   task_descriptor_t *task = &ctx->descriptors[arg->tid];
 
+  task->state = STATE_READY;
+
   switch (arg->syscall) {
   case SYSCALL_MY_TID:
     syscall_my_tid(task, arg);
@@ -22,7 +24,14 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_EXIT:
     syscall_exit(task, arg);
     break;
+  case SYSCALL_SEND:
+    syscall_send(task, arg);
+    break;
+  case SYSCALL_RECEIVE:
+    syscall_receive(task, arg);
+    break;
   default:
+    log_debug("WARNING: syscall not handled. syscall_no=%d\n\r", arg->syscall);
     break;
   }
 }
@@ -59,5 +68,22 @@ void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
 
 void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   log_debug("syscall=Exit\n\r");
+  task->state = STATE_ZOMBIE;
   scheduler_exit_task();
+}
+
+void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
+  log_debug("syscall=Send\n\r");
+  // syscall_message_t *msg = arg->arguments;
+  // task->state
+  // // don't reschedule task, it's blocked
+  // ((syscall_pid_ret_t *) arg->ret_val)->tid = new_task->tid;
+}
+
+void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
+  log_debug("syscall=Receive\n\r");
+  // syscall_message_t *msg = arg->arguments;
+  // task->state
+  // // don't reschedule task, it's blocked
+  // ((syscall_pid_ret_t *) arg->ret_val)->tid = new_task->tid;
 }
