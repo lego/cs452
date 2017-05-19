@@ -40,8 +40,10 @@ ARFLAGS = rcs
 
 # Libraries for linker
 # WARNING: Fucking scary as hell. if you put -lgcc before anything, nothing works
-# so be careful with how or when you add them in the list
-# NOTE: If you add a ARM specific file, it will be -larm<filename>
+# so be careful with the order when you add things
+#
+# When you add a file it will be in the form of -l<filename>
+# NOTE: If you add an ARM specific file, you also need to add -larm<filename>
 LIBRARIES= -lcbuffer -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lgcc
 
 # List of includes for headers that will be linked up in the end
