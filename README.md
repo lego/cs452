@@ -6,13 +6,14 @@ Relevant branches will be listed here for the final version of our code for each
 TODO: Make branch for completed K1.
 
 ### TODO
--
-- a request mechanism for providing arguments and returning results
-  - this should ideally create a 'request' on the task stack
-  - the kernel then copies the memory of this request from the task memory space into it's own
-  - it then handles the 'request'
-  - this could be in the form that messages will be in the future
-  - => removes multiple args in syscalls, makes it only 1 pointer arg
+
+#### A `kernel_request` mechanism
+This should be used for providing arguments and returning results in syscalls`
+- this should ideally create a 'request' on the task stack
+- the kernel then copies the memory of this request from the task memory space into it's own
+- it then handles the 'request'
+- this could be in the form that messages will be in the future
+- NOTE: removes multiple args in syscalls, makes it only 1 pointer arg
 
 
 Code structure
@@ -45,13 +46,13 @@ Code structure
 
 If you add a new C file to `lib/` you'll need to also add it to the `LIBRARIES` variable in `Makefile` for it to be included[0].
 
-
-[0]: This is because they are linked in a special way on ARM. I still don't know if it's necessary, but eh.
-
 ### Architecture specific code
 The way `arm/` and `x86/` work is that any code specific to a platform should be placed in there. For example `io.c` where in ARM puts characters into a particular memory address, while in x86 outputs to stdout.
 
 In addition there may exist another `io.c` that is platform agnostic and has IO related functions. Together the architecture specific and agnostic C files will implement all functions in `io.h`.
+
+
+[0]: This is because they are linked in a special way on ARM. I still don't know if it's necessary, but eh.
 
 Building
 --------
@@ -68,6 +69,7 @@ You will also need `ncurses` installed to build locally.
 You can create an ARM build simply by not passing `LOCAL=true`[0].
 
 This will compile all code, using `arm/` C files, and produce `main.elf`. The default behaviour of `make` is to also copy `main.elf` onto the TFTP if successful[1].
+
 
 
 [0]: In `Makefile` we use `ifdef LOCAL` to have divergent make logic, creating this behaviour.
