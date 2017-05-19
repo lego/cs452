@@ -4,20 +4,20 @@
 #include <kern/task_descriptor.h>
 
 void scheduler_arch_init() {
-  log_debug("SC  would initalize scheduler\n\r");
+  log_scheduler("would initalize schedule");
 }
 
 void scheduler_exit_task() {
-  log_debug("SC  would exit task\n\r");
+  log_scheduler("would exit task");
 }
 
 void scheduler_reschedule_the_world() {
-  log_debug("SC  would go back to kernel\n\r");
+  log_scheduler("would go back to kernel");
 }
 
 void *scheduler_start_task(void *td) {
   task_descriptor_t *task = (task_descriptor_t *) td;
-  log_debug("SC  would start task tid=%d\n\r", task->tid);
+  log_scheduler("would start task tid=%d", task->tid);
   return NULL;
 }
 
@@ -28,7 +28,7 @@ void scheduler_activate_task(task_descriptor_t *task) {
   if ((TASK_STACK_START - (char *) task->stack_pointer) > TASK_STACK_SIZE) {
     bwprintf(COM2, "WARNING: TASK STACK OVERFLOWED. tid=%d", task->tid);
   }
-  log_debug("SC  activating task tid=%d\n\r", task->tid);
+  log_scheduler("activating task tid=%d", task->tid);
   active_task = task;
   if (!task->has_started) {
     task->has_started = true;
@@ -36,6 +36,6 @@ void scheduler_activate_task(task_descriptor_t *task) {
   } else {
     __asm_switch_to_task(task->stack_pointer);
   }
-  log_debug("SC  returned from task tid=%d\n\r", task->tid);
+  log_scheduler("returned from task tid=%d", task->tid);
   active_task = NULL;
 }
