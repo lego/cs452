@@ -13,11 +13,12 @@ CC     = ./armcheck; gcc
 AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
 # -msoft-float: use software for floating point
+# --std=gnu99: use C99, woo! (default is gnu89)
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
@@ -27,10 +28,10 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu89 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
-# --std=gnu89: use GNU89, default for the school ARM GCC
+# --std=gnu99: use C99, same as possible on the school ARM GCC
 # -Wno-comment: disable one line comment warnings, they weren't a thing in GNU89
 # -DDEBUG_MODE: define DEBUG_MODE for debug purposes
 # -g: add symbol information for using GDB
@@ -40,8 +41,10 @@ ARFLAGS = rcs
 
 # Libraries for linker
 # WARNING: Fucking scary as hell. if you put -lgcc before anything, nothing works
-# so be careful with how or when you add them in the list
-# NOTE: If you add a ARM specific file, it will be -larm<filename>
+# so be careful with the order when you add things
+#
+# When you add a file it will be in the form of -l<filename>
+# NOTE: If you add an ARM specific file, you also need to add -larm<filename>
 LIBRARIES= -lcbuffer -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lgcc
 
 # List of includes for headers that will be linked up in the end

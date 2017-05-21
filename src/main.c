@@ -16,8 +16,8 @@
 #include <kern/task_descriptor.h>
 #include <kernel.h>
 
-task_descriptor_t *active_task = NULL;
-context_t *ctx = NULL;
+task_descriptor_t *active_task;
+context_t *ctx;
 
 
 kernel_request_t *activate(task_descriptor_t *task) {
@@ -37,6 +37,9 @@ int main() {
   asm("stmfd sp!, {r0}");
   #endif
 
+  active_task = NULL;
+  ctx = NULL;
+
   /* initialize various kernel components */
   context_switch_init();
   io_init();
@@ -52,12 +55,12 @@ int main() {
   task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_MEDIUM, entry_task);
   scheduler_requeue_task(first_user_task);
 
-  log_debug("M   ready_queue_size=%d\n\r", scheduler_ready_queue_size());
+  log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
 
   // start executing user tasks
   while (scheduler_any_task()) {
     task_descriptor_t *next_task = scheduler_next_task();
-    log_debug("M   next task tid=%d\n\r", next_task->tid);
+    log_kmain("next task tid=%d", next_task->tid);
     kernel_request_t *request = activate(next_task);
     // TODO: i'm not sure what the best way to create the request abstraction is
     // currently all request handling logic lives in context_switch.c
