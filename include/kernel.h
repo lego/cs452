@@ -1,6 +1,9 @@
 #ifndef __KERNEL_H__
 #define __KERNEL_H__
 
+// Hardcoded maximum used in a number of places
+#define MAX_TASKS 100
+
 /*
  * Kernel system calls
  * All of these functions are part of the kernels interface
@@ -51,5 +54,9 @@ int Send( int tid, void *msg, int msglen, void *reply, int replylen);
 int Receive( int *tid, void *msg, int msglen );
 
 int Reply( int tid, void *reply, int replylen );
+
+/* Nameserver calls */
+int RegisterAs( char *name );
+int WhoIs( char *name );
 
 #endif

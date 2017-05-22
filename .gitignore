@@ -13,5 +13,7 @@
 *.exe
 *.exe.stackdump
 
+.DS_Store
+
 # Vim swap viles
 *.swp

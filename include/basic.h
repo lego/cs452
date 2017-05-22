@@ -117,4 +117,12 @@ bool is_alpha( char ch );
  */
 bool is_alphanumeric( char ch );
 
+
+/**
+ * String hashing function
+ * Implementation is djb2, see http://www.cse.yorku.ca/~oz/hash.html
+ * ~fast hashing function
+ */
+unsigned long hash(unsigned char *str);
+
 #endif

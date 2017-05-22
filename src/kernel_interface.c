@@ -2,6 +2,10 @@
 #include <kern/context_switch.h>
 #include <kern/kernel_request.h>
 #include <kernel.h>
+#include <nameserver.h>
+#include <jstring.h>
+
+int nameserver_tid = -1;
 
 int Create(int priority, void (*entrypoint)()) {
   kernel_request_t request;
@@ -22,28 +26,15 @@ int Create(int priority, void (*entrypoint)()) {
 }
 
 int MyTid( ) {
-  kernel_request_t request;
-  request.tid = active_task->tid;
-  request.syscall = SYSCALL_MY_TID;
-
-  // NOTE: this is kinda weird, the return value is set in userspace by the kernel
-  syscall_pid_ret_t ret_val;
-  request.ret_val = &ret_val;
-  context_switch(&request);
-  return ret_val.tid;
+  // Don't make data syscall, but still reschedule
+  Pass();
+  return active_task->tid;
 }
 
 int MyParentTid( ) {
-  kernel_request_t request;
-  request.tid = active_task->tid;
-  request.syscall = SYSCALL_MY_PARENT_TID;
-
-  // NOTE: this is kinda weird, the return value is set in userspace
-  // by the kernel
-  syscall_pid_ret_t ret_val;
-  request.ret_val = &ret_val;
-  context_switch(&request);
-  return ret_val.tid;
+  // Don't make data syscall, but still reschedule
+  Pass();
+  return active_task->parent_tid;
 }
 
 void Pass( ) {
@@ -59,8 +50,6 @@ void Exit( ) {
   request.syscall = SYSCALL_EXIT;
   context_switch(&request);
 }
-
-
 
 int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
   kernel_request_t request;
@@ -97,4 +86,49 @@ int Receive( int *tid, void *msg, int msglen ) {
 
 int Reply( int tid, void *reply, int replylen ) {
   return 0;
+}
+
+int RegisterAs( char *name ) {
+  if (jstrcmp(name, "nameserver")) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    nameserver_tid = active_task->tid;
+    return 0;
+  }
+  if (nameserver_tid == -1){
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
+  nameserver_request_t req;
+  req.call_type = REGISTER_CALL;
+  req.name = name;
+
+  int status = Send(nameserver_tid, &req, sizeof(nameserver_request_t), NULL, 0);
+  // FIXME: proper status check
+  return 0;
+}
+
+int WhoIs( char *name ) {
+  if (nameserver_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+  if (jstrcmp(name, "nameserver")) {
+    // Don't make data syscalll for data, but still reschedule
+    Pass();
+    return nameserver_tid;
+  }
+
+  nameserver_request_t req;
+  req.call_type = WHOIS_CALL;
+  req.name = name;
+
+  int recv_tid;
+  int bytes_recv = Send(nameserver_tid, &req, sizeof(nameserver_request_t), &recv_tid, sizeof(recv_tid));
+  // FIXME: status check on bytes_recv
+
+  return recv_tid;
 }

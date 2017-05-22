@@ -1,5 +1,6 @@
 #include <bwio.h>
 #include <entry_task.h>
+#include <nameserver.h>
 #include <kernel.h>
 #include <ts7200.h>
 #include <debug.h>
@@ -48,3 +49,7 @@ void entry_task() {
   bwprintf(COM2, "T0 Entry task exiting\n\r");
   Exit();
 }
+
+// void entry_task() {
+//   Create(PRIORITY_HIGHEST, &nameserver);
+// }

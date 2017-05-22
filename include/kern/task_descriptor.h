@@ -5,9 +5,6 @@
 #include <kern/kernel_request.h>
 #include <kernel.h>
 
-// Hardcoded maximum used in a number of places
-#define MAX_TASKS 100
-
 // Forward declared struct, because this is circular
 struct Context;
 // this is done to not typedef declare twice, as this isn't supported by the
