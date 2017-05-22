@@ -13,12 +13,13 @@ CC     = ./armcheck; gcc
 AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, woo! (default is gnu89)
+# -O2: lots of optimizing
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
@@ -28,7 +29,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -O2
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, same as possible on the school ARM GCC
@@ -36,6 +37,7 @@ CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-vararg
 # -DDEBUG_MODE: define DEBUG_MODE for debug purposes
 # -g: add symbol information for using GDB
 # -Wno-varargs: disable a varargs warning of casting an int to char, no big deal
+# -O2: lots of optimizing
 endif
 ARFLAGS = rcs
 

@@ -115,5 +115,5 @@ void __syscall(void* stack, kernel_request_t *arg) {
 
 void context_switch(kernel_request_t *arg) {
   // NOTE: we pass the syscall number via. arg->syscall, and arg is r0
-  asm ("swi #0\n\t");
+  asm volatile ("swi #0\n\t");
 }

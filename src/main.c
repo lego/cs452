@@ -33,8 +33,8 @@ void handle(kernel_request_t *request) {
 int main() {
   // save redboots spsr
   #ifndef DEBUG_MODE
-  asm("mrs r0, spsr");
-  asm("stmfd sp!, {r0}");
+  asm volatile ("mrs r0, spsr");
+  asm volatile ("stmfd sp!, {r0}");
   #endif
 
   active_task = NULL;
@@ -70,8 +70,8 @@ int main() {
 
   // recover redboots spsr
   #ifndef DEBUG_MODE
-  asm("ldmfd sp!, {r0}");
-  asm("msr spsr, r0");
+  asm volatile ("ldmfd sp!, {r0}");
+  asm volatile ("msr spsr, r0");
   #endif
   return 0;
 }
