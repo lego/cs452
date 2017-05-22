@@ -1,9 +1,9 @@
+#include <basic.h>
 #include <bwio.h>
 #include <entry_task.h>
 #include <nameserver.h>
 #include <kernel.h>
 #include <ts7200.h>
-#include <debug.h>
 
 void child_task() {
   int from_tid;

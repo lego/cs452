@@ -19,7 +19,11 @@ typedef unsigned size_t;
  * A set of standard C defitions
  * - COMPILE_ASSERT and INLINE
  */
-#include <sys/cdefs.h>
+#include <cdefs.h>
+/*
+ * Built-in C null type
+ */
+#include <null.h>
 /*
  * Built-in C boolean types
  */
@@ -27,7 +31,7 @@ typedef unsigned size_t;
 /*
  * Built-in C variadic defitions for variadic functions such as bwprintf
  */
-#include <stdarg.h>
+#include <variadic.h>
 /*
  * Helpful debugging macros and functions
  * - only applicable to local development

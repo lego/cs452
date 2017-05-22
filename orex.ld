@@ -1,41 +1,46 @@
 ENTRY (main)
 
-program_start := 0x00218000
-
 MEMORY
 {
-/* TODO: can we maybe put a memory limit that matches where we put tasks to assert no collision */
-ram : ORIGIN = program_start, LENGTH = 32M - program_start
-rom : ORIGIN = 0x60000000, LENGTH = 8M
+  ram : ORIGIN = 0x00218000, LENGTH = 32M - 0x00218000
+  rom : ORIGIN = 0x60000000, LENGTH = 8M
 }
 
 SECTIONS
 {
-.data : /* Initialized data. */
-{
-_DataStart = . ;
-*(.data)
-*(.data.rel.ro)
-_DataEnd = . ;
-} >ram
+  .data : /* Initialized data. */
+  {
+    _DataStart = . ;
+    *(.data)
+    *(.data.rel.ro)
+    _DataEnd = . ;
+  } >ram
 
-.bss : /* Uninitialized data. */
-{
-_BssStart = . ;
-*(.bss)
-_BssEnd = . ;
-} >ram
+  .bss : /* Uninitialized data. */
+  {
+    _BssStart = . ;
+    *(.bss)
+    _BssEnd = . ;
+  } >ram
 
 
-text : /* The actual instructions. */
-{
-*(.text)
-*(.got)
-*(.got.plt)
-*(.rodata)
-*(.glue_7)
-*(.glue_7t)
-} >ram
+  text : /* The actual instructions. */
+  {
+    *(.text)
+    *(.got)
+    *(.got.plt)
+    *(.rodata)
+    *(.glue_7)
+    *(.glue_7t)
+  } >ram
 
-rodata : { *(.rodata.str1.4) } >ram
+  rodata : {
+    *(.rodata.str1.4)
+  } >ram
+
+  /* Begin the task stack */
+  _TaskStackStart = ALIGN(0x1000) ;
+  _TaskStackSize = 0x10000 ;
+  /* Ensure there is enough space for 100 tasks */
+  . += _TaskStackSize * 100 ;
 }

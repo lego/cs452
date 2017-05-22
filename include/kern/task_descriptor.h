@@ -30,18 +30,6 @@ typedef int task_state_t;
 
 #define KERNEL_TID -1
 
-/*
- * This defines where our task stack is
- * Empiracally (see main.map), the code is loaded into RAM starting
- * at 0x00218000 and isn't that long, so a guestimate was we will never
- * pass 0x00250000 and that allocating space will not bump into anything else
- * NOTE: stacks grown down, so the lower bound is lower than the define
- *
- * FIXME: put asserts where we use the stack, to do sanity checks
- */
-#define TASK_STACK_START (char *) 0x00260000
-#define TASK_STACK_SIZE  0x00010000
-
 // NOTE: priorities can be found in kernel.h
 
 struct TaskDescriptor {

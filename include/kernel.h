@@ -2,6 +2,8 @@
 #define __KERNEL_H__
 
 // Hardcoded maximum used in a number of places
+// WARNING: this is also defined in orex.ld
+// if this in increased, you should also increase that one
 #define MAX_TASKS 100
 
 /*
