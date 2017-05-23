@@ -23,7 +23,7 @@ void *scheduler_start_task(void *td) {
   return NULL;
 }
 
-void scheduler_activate_task(task_descriptor_t *task) {
+kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
   // assert here to make sure the task stack pointer does not
   // extend into other task stacks
   // NOTE: casted to char * so we get the byte size count
@@ -40,4 +40,5 @@ void scheduler_activate_task(task_descriptor_t *task) {
   }
   log_scheduler_kern("returned from task tid=%d", task->tid);
   active_task = NULL;
+  return &task->current_request;
 }

@@ -14,6 +14,7 @@
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
+#include <kern/syscall.h>
 #include <kernel.h>
 
 task_descriptor_t *active_task;
@@ -21,13 +22,11 @@ context_t *ctx;
 
 
 kernel_request_t *activate(task_descriptor_t *task) {
-  scheduler_activate_task(task);
-  kernel_request_t *kr = NULL;
-  return kr;
+  return scheduler_activate_task(task);
 }
 
 void handle(kernel_request_t *request) {
-  return;
+  syscall_handle(request);
 }
 
 int main() {

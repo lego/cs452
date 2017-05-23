@@ -12,8 +12,6 @@ void context_switch_init() {
 void context_switch(kernel_request_t *arg) {
   ctx->descriptors[arg->tid].current_request = *arg;
 
-  syscall_handle(&(ctx->descriptors[arg->tid].current_request));
-
   // Reschedule the world
   scheduler_reschedule_the_world();
 }

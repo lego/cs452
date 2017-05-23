@@ -55,7 +55,7 @@ void *scheduler_start_task(void *td) {
   return NULL;
 }
 
-void scheduler_activate_task(task_descriptor_t *task) {
+kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
   active_task = task;
   if (!task_started[task->tid]) {
     log_scheduler_kern("create thread tid=%d", task->tid);
@@ -68,4 +68,5 @@ void scheduler_activate_task(task_descriptor_t *task) {
   task->state = STATE_ACTIVE;
   while (task->state == STATE_ACTIVE) pthread_cond_wait(&kernel_cv, &active_mutex);
   log_scheduler_kern("cv awake after tid=%d", task->tid);
+  return &task->current_request;
 }

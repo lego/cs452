@@ -104,8 +104,6 @@ void __syscall(void* stack, kernel_request_t *arg) {
   // copy over request
   ctx->descriptors[arg->tid].current_request = *arg;
 
-  syscall_handle(&(ctx->descriptors[arg->tid].current_request));
-
   // rescheduling of the world occurs in the returned assembly
 
   // save stack pointer

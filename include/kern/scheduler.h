@@ -2,6 +2,7 @@
 #define __SCHEDULER_H__
 
 #include <kern/task_descriptor.h>
+#include <kern/kernel_request.h>
 
 /*
  * functionality for scheduling and swapping the active task as
@@ -42,7 +43,7 @@ void *scheduler_start_task(void *td);
  *
  * @param task to start executing
  */
-void scheduler_activate_task(task_descriptor_t *task);
+kernel_request_t *scheduler_activate_task(task_descriptor_t *task);
 
 
 // NOTE: these functions are for actual scheduling things
