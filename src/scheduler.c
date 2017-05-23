@@ -5,7 +5,10 @@
 task_descriptor_t *ready_queues[4];
 task_descriptor_t *ready_queues_end[4];
 
+unsigned long int priotities_ready;
+
 void scheduler_init() {
+  priotities_ready = 0;
   scheduler_arch_init();
   int i;
   for (i = 0; i < 4; i++) {
@@ -18,6 +21,7 @@ void scheduler_requeue_task(task_descriptor_t *task) {
   if (ready_queues[task->priority] == NULL) {
     ready_queues[task->priority] = task;
     ready_queues_end[task->priority] = task;
+    priotities_ready |= 1 << task->priority;
   } else {
     ready_queues_end[task->priority]->next_ready_task = task;
     ready_queues_end[task->priority] = task;
@@ -25,10 +29,7 @@ void scheduler_requeue_task(task_descriptor_t *task) {
 }
 
 bool scheduler_any_task() {
-  return ready_queues[0] != NULL ||
-         ready_queues[1] != NULL ||
-         ready_queues[2] != NULL ||
-         ready_queues[3] != NULL;
+  return priotities_ready;
 }
 
 int scheduler_ready_queue_size() {
@@ -47,16 +48,9 @@ int scheduler_ready_queue_size() {
 }
 
 task_descriptor_t *scheduler_next_task() {
-  // get the first queue with a task
-  task_descriptor_t *next_task = NULL;
-  if (ready_queues[0] != NULL)
-    next_task = ready_queues[0];
-  else if (ready_queues[1] != NULL)
-    next_task = ready_queues[1];
-  else if (ready_queues[2] != NULL)
-    next_task = ready_queues[2];
-  else if (ready_queues[3] != NULL)
-    next_task = ready_queues[3];
+  // get the lowest priority with a task
+  int next_priority = __builtin_ctz(priotities_ready);
+  task_descriptor_t *next_task = ready_queues[next_priority];
 
   // If this is null, we're screwed, other logic should
   // check scheduler_any_task first
@@ -67,6 +61,7 @@ task_descriptor_t *scheduler_next_task() {
   // if this is the last task on that queue, replace the end
   if (ready_queues_end[next_task->priority] == next_task) {
     ready_queues_end[next_task->priority] = NULL;
+    priotities_ready &= ~(0x1 << next_task->priority);
   }
   // set this tasks next task to NULL, as it's now dequeued
   next_task->next_ready_task = NULL;
