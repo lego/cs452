@@ -7,7 +7,6 @@
 #include <basic.h>
 #include <bwio.h>
 #include <cbuffer.h>
-#include <entry_task.h>
 #include <io.h>
 #include <kern/context.h>
 #include <kern/context_switch.h>
@@ -16,6 +15,8 @@
 #include <kern/task_descriptor.h>
 #include <kern/syscall.h>
 #include <kernel.h>
+
+#include <k2_entry_task.h>
 
 task_descriptor_t *active_task;
 context_t *ctx;
@@ -45,7 +46,7 @@ int main() {
   ctx = &stack_context;
 
   /* create first user task */
-  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_MEDIUM, entry_task);
+  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_MEDIUM, k2_entry_task);
   scheduler_requeue_task(first_user_task);
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());

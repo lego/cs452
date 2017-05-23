@@ -13,7 +13,7 @@ void child_task() {
   Exit();
 }
 
-void entry_task() {
+void k1_entry_task() {
   int new_task_id;
   new_task_id = Create(PRIORITY_LOW, &child_task);
   bwprintf(COM2, "Created: %d\n\r", new_task_id);
