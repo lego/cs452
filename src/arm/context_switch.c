@@ -34,7 +34,7 @@ asm (
     "mov sp, r0\n\t"
 
     // recover task registers
-    "ldmfd sp!, {r0, r1, r2, r4-r12, lr}\n\t"
+    "ldmfd sp!, {r1, r2, r4-r12, lr}\n\t"
     "msr spsr_c, r1\n\t"
   "msr cpsr_c, #211\n\t"
 
