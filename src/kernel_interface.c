@@ -8,6 +8,8 @@
 int nameserver_tid = -1;
 
 int Create(int priority, void (*entrypoint)()) {
+  assert(0 <= priority && priority < 32);
+
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_CREATE;

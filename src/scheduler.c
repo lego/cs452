@@ -2,8 +2,11 @@
 #include <kern/context.h>
 #include <kern/scheduler.h>
 
-task_descriptor_t *ready_queues[4];
-task_descriptor_t *ready_queues_end[4];
+#define MIN_PRIORITY 0
+#define MAX_PRIORITY 31
+
+task_descriptor_t *ready_queues[MAX_PRIORITY + 1];
+task_descriptor_t *ready_queues_end[MAX_PRIORITY + 1];
 
 unsigned long int priotities_ready;
 
@@ -11,7 +14,7 @@ void scheduler_init() {
   priotities_ready = 0;
   scheduler_arch_init();
   int i;
-  for (i = 0; i < 4; i++) {
+  for (i = 0; i < MAX_PRIORITY + 1; i++) {
     ready_queues[i] = NULL;
     ready_queues_end[i] = NULL;
   }
@@ -37,7 +40,7 @@ int scheduler_ready_queue_size() {
   int i;
   task_descriptor_t *current;
 
-  for (i = 0; i < 4; i++) {
+  for (i = 0; i < MAX_PRIORITY + 1; i++) {
     current = ready_queues[i];
     while (current != NULL) {
       count++;

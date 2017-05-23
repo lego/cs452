@@ -36,7 +36,7 @@ struct TaskDescriptor {
   int tid;
   int parent_tid;
   bool has_started;
-  task_priority_t priority;
+  int priority;
   kernel_request_t current_request;
   struct TaskDescriptor *next_ready_task;
   cbuffer_t send_queue;
@@ -48,6 +48,6 @@ struct TaskDescriptor {
 
 typedef struct TaskDescriptor task_descriptor_t;
 
-task_descriptor_t *td_create(context_t *ctx, int parent_tid, task_priority_t priority, void (*entrypoint)());
+task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)());
 
 #endif

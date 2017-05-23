@@ -7,7 +7,7 @@
 #include <kern/arm/linker.h>
 #endif
 
-task_descriptor_t *td_create(context_t *ctx, int parent_tid, task_priority_t priority, void (*entrypoint)()) {
+task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)()) {
   // TODO: Assert task priority is valid, i.e. in [1,5]
   int tid = ctx->used_descriptors++;
   task_descriptor_t *task = &ctx->descriptors[tid];

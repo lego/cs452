@@ -10,7 +10,7 @@
 
 
 typedef struct {
-  task_priority_t priority;
+  int priority;
   void (*entrypoint)();
 } syscall_create_arg_t;
 
