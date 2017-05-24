@@ -70,8 +70,7 @@ int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
   request.ret_val = &ret_val;
 
   context_switch(&request);
-  // FIXME: return length written
-  return 0;
+  return ret_val.status;
 }
 
 int Receive( int *tid, void *msg, int msglen ) {
@@ -85,10 +84,8 @@ int Receive( int *tid, void *msg, int msglen ) {
   request.ret_val = &ret_val;
 
   context_switch(&request);
-
   *tid = ret_val.tid;
-  // FIXME: return length written
-  return 0;
+  return ret_val.status;
 }
 
 int Reply( int tid, void *reply, int replylen ) {
@@ -103,8 +100,7 @@ int Reply( int tid, void *reply, int replylen ) {
   request.arguments = &arg;
 
   context_switch(&request);
-  // FIXME: return length written
-  return 0;
+  return arg.status;
 }
 
 int RegisterAs( char *name ) {

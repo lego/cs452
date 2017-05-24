@@ -81,20 +81,48 @@ void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
   syscall_message_t *src_msg = src_task->current_request.arguments;
   syscall_message_t *dest_msg = dest_task->current_request.ret_val;
 
-  jmemcpy((void *) dest_msg->msg, (void *) src_msg->msg, src_msg->msglen);
+  // short circuit conditions
+  if (src_msg->msglen == 0) {
+    dest_msg->status = 0;
+    return;
+  } else if (dest_msg->msglen == 0) {
+    dest_msg->status = -1;
+    return;
+  }
+
+  int min_msglen = src_msg->msglen < dest_msg->msglen ? src_msg->msglen : dest_msg->msglen;
+
+  jmemcpy((void *) dest_msg->msg, (void *) src_msg->msg, min_msglen);
   dest_msg->tid = src_task->tid;
 
-  // FIXME: do size checks, and status setting
+  if (src_msg->msglen > min_msglen) {
+    dest_msg->status = -1;
+  } else {
+    dest_msg->status = min_msglen;
+  }
+}
+
+
+bool is_valid_task(int tid) {
+  return ctx->used_descriptors > tid && ctx->descriptors[tid].state != STATE_ZOMBIE;
 }
 
 void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Send", task->tid);
   task->state = STATE_RECEIVE_BLOCKED;
   syscall_message_t *msg = arg->arguments;
+
+  // check if the target task is valid
+  if (!is_valid_task(msg->tid)) {
+    msg->status = -2;
+    scheduler_requeue_task(task);
+    return;
+  }
+
   task_descriptor_t *target_task = &ctx->descriptors[msg->tid];
 
-  // if receiver is not blocked, add to their send queue
   if (target_task->state == STATE_SEND_BLOCKED) {
+    // if receiver is blocked, copy the message to them and queue them
     copy_msg(task, target_task);
 
     // start the receiving task
@@ -104,8 +132,9 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
     // set this task to reply blocked
     task->state = STATE_REPLY_BLOCKED;
   } else {
+    // if receiver is not blocked, add to their send queue
     int status = cbuffer_add(&target_task->send_queue, task);
-    // FIXME: handle bad status of cbuffer
+    // FIXME: handle bad status of cbuffer, likely panic
   }
 }
 
@@ -118,7 +147,7 @@ void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
   if (!cbuffer_empty(&task->send_queue)) {
     int status;
     task_descriptor_t *sending_task = (task_descriptor_t *) cbuffer_pop(&task->send_queue, &status);
-    // FIXME: handle bad status of cbuffer
+    // FIXME: handle bad status of cbuffer, likely panic
     copy_msg(sending_task, task);
 
     task->state = STATE_READY;
@@ -133,20 +162,30 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Reply", task->tid);
   syscall_message_t *msg = arg->arguments;
 
-  // FIXME: check if TID exists, else return -2
+  // check if the target task is valid
+  if (!is_valid_task(msg->tid)) {
+    msg->status = -2;
+    scheduler_requeue_task(task);
+    return;
+  }
 
   task_descriptor_t *sending_task = (task_descriptor_t *) &ctx->descriptors[msg->tid];
   if (sending_task->state == STATE_REPLY_BLOCKED) {
-    // FIXME: handle bad status of cbuffer
-    copy_msg(task, sending_task);
 
+    copy_msg(task, sending_task);
     task->state = STATE_READY;
     sending_task->state = STATE_READY;
+
+    // copy destination status over
+    syscall_message_t *reply_msg = sending_task->current_request.ret_val;
+    msg->status = reply_msg->status;
+
     scheduler_requeue_task(sending_task);
     scheduler_requeue_task(task);
-
-    // FIXME: handle len return
   } else {
-    // FIXME: return value -3
+    // if the target task isn't reply blocked, return -3
+    msg->status = -3;
+    scheduler_requeue_task(task);
+    return;
   }
 }
