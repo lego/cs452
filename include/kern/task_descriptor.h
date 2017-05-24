@@ -27,6 +27,7 @@ typedef int task_state_t;
 #define STATE_ZOMBIE (task_state_t) 3
 #define STATE_SEND_BLOCKED (task_state_t) 4
 #define STATE_RECEIVE_BLOCKED (task_state_t) 5
+#define STATE_REPLY_BLOCKED (task_state_t) 6
 
 #define KERNEL_TID -1
 

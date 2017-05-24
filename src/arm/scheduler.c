@@ -9,7 +9,7 @@ void scheduler_arch_init() {
   log_scheduler_kern("would initalize schedule");
 }
 
-void scheduler_exit_task() {
+void scheduler_exit_task(task_descriptor_t *task) {
   log_scheduler_task("would exit task");
 }
 

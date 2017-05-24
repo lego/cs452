@@ -62,10 +62,15 @@ int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
   arg.tid = tid;
   arg.msglen = msglen;
   arg.msg = msg;
-
   request.arguments = &arg;
 
+  syscall_message_t ret_val;
+  ret_val.msglen = replylen;
+  ret_val.msg = reply;
+  request.ret_val = &ret_val;
+
   context_switch(&request);
+  // FIXME: return length written
   return 0;
 }
 
@@ -77,16 +82,28 @@ int Receive( int *tid, void *msg, int msglen ) {
   syscall_message_t ret_val;
   ret_val.msglen = msglen;
   ret_val.msg = msg;
-
   request.ret_val = &ret_val;
 
   context_switch(&request);
 
   *tid = ret_val.tid;
+  // FIXME: return length written
   return 0;
 }
 
 int Reply( int tid, void *reply, int replylen ) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_REPLY;
+
+  syscall_message_t arg;
+  arg.tid = tid;
+  arg.msglen = replylen;
+  arg.msg = reply;
+  request.arguments = &arg;
+
+  context_switch(&request);
+  // FIXME: return length written
   return 0;
 }
 

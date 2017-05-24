@@ -76,7 +76,7 @@ void debugger();
 #endif
 
 #if DEBUG_SYSCALL
-#define log_syscall(format, ...) log_debug("SY  " format, ## __VA_ARGS__)
+#define log_syscall(format, tid, ...) log_debug("SY%d " format, tid, ## __VA_ARGS__)
 #else
 #define log_syscall(format, ...) NOP
 #endif

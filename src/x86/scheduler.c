@@ -21,17 +21,10 @@ void scheduler_arch_init() {
   pthread_mutex_lock(&active_mutex);
 }
 
-void scheduler_exit_task() {
-  int tid = active_task->tid;
-  active_task = NULL;
-  task_descriptor_t *task = &ctx->descriptors[tid];
-  task->state = STATE_ZOMBIE;
-  log_scheduler_task("t%d signal kernel (exit)", task->tid);
-  pthread_cond_signal(&kernel_cv);
-  log_scheduler_task("t%d release mutex (exit)", task->tid);
-  pthread_mutex_unlock(&active_mutex);
-  log_scheduler_task("t%d thread kill", task->tid);
-  pthread_exit(NULL);
+void scheduler_exit_task(task_descriptor_t *task) {
+  // cause the task thread to end
+  // WARNING: this was taken out due to it causing failure when killing a thread
+  // so for now the threads also stay alive
 }
 
 void scheduler_reschedule_the_world() {
@@ -51,7 +44,15 @@ void *scheduler_start_task(void *td) {
   log_scheduler_task("t%d acquire mutex", task->tid);
   pthread_mutex_lock(&active_mutex);
   task->entrypoint();
-  scheduler_exit_task();
+
+  active_task = NULL;
+  log_scheduler_task("t%d signal kernel (exit)", task->tid);
+  pthread_cond_signal(&kernel_cv);
+  log_scheduler_task("t%d release mutex (exit)", task->tid);
+  pthread_mutex_unlock(&active_mutex);
+  log_scheduler_task("t%d thread KILL", task->tid);
+  pthread_exit(NULL);
+
   return NULL;
 }
 
@@ -62,6 +63,7 @@ kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
     pthread_create(&tasks[task->tid], NULL, &scheduler_start_task, task);
     task_started[task->tid] = true;
   } else {
+    log_scheduler_kern("cv signal tid=%d", task->tid);
     pthread_cond_signal(&task_cvs[task->tid]);
   }
   log_scheduler_kern("cv wait for tid=%d", task->tid);

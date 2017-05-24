@@ -22,7 +22,7 @@ void scheduler_arch_init();
  * Exits and finishes execution of a task
  * also releases control to the kernel
  */
-void scheduler_exit_task();
+void scheduler_exit_task(task_descriptor_t *task);
 
 /**
  * Yields execution of the current task, releasing control to the kernel
