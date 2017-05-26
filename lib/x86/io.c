@@ -25,8 +25,19 @@ void io_init() {
   setbuf(stderr, NULL);
 }
 
-bool ts7200_uart1_get_cts() {
-  return true;
+#define CLOCKS_PER_MILLISECOND (CLOCKS_PER_SEC / 1000)
+#define CLOCKS_PER_MICROSECOND (CLOCKS_PER_MILLISECOND / 1000)
+
+io_time_t io_get_time() {
+  return clock();
+}
+
+unsigned int io_time_difference_ms(io_time_t current, io_time_t prev) {
+  return (current - prev) / CLOCKS_PER_MILLISECOND;
+}
+
+unsigned int io_time_difference_us(io_time_t current, io_time_t prev) {
+  return (current - prev) / CLOCKS_PER_MICROSECOND;
 }
 
 int can_put(int channel) {

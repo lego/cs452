@@ -4,6 +4,7 @@
 #include <nameserver.h>
 #include <kernel.h>
 #include <ts7200.h>
+#include <io.h>
 
 ////
 // From https://stackoverflow.com/a/11946674
@@ -73,17 +74,17 @@ void k2_child_task() {
   char buf[100];
   int result;
   char *bye = "BYE";
-  bwprintf(COM2, "T1 Child task started.\n\r");
-  bwprintf(COM2, "T1 Receiving message.\n\r");
+  log_debug(COM2, "T1 Child task started.\n\r");
+  log_debug(COM2, "T1 Receiving message.\n\r");
   result = Receive(&from_tid, buf, 100);
-  bwprintf(COM2, "T1 Received message. result=%d source_tid=%d msg=%s\n\r", result, from_tid, buf);
+  log_debug(COM2, "T1 Received message. result=%d source_tid=%d msg=%s\n\r", result, from_tid, buf);
 
   Reply(from_tid, NULL, 0);
-
-  bwprintf(COM2, "T1 Getting parent tid.\n\r");
+  Exit();
+  log_debug(COM2, "T1 Getting parent tid.\n\r");
   int parent_tid = MyParentTid();
 
-  bwprintf(COM2, "T1 Sending message to tid=%d msg=%s\n\r", parent_tid, bye);
+  log_debug(COM2, "T1 Sending message to tid=%d msg=%s\n\r", parent_tid, bye);
   result = Send(parent_tid, bye, 4, NULL, 0);
 
   bwprintf(COM2, "T1 Child task exiting\n\r");
