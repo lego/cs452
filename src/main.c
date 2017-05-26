@@ -16,7 +16,9 @@
 #include <kern/syscall.h>
 #include <kernel.h>
 
-#include <k2_entry_task.h>
+#include <k2_entry.h>
+
+#define ENTRY_TASK_PRIORITY 1
 
 task_descriptor_t *active_task;
 context_t *ctx;

@@ -1,11 +1,11 @@
 #include <basic.h>
 #include <bwio.h>
-#include <entry_task.h>
+#include <k2_entry.h>
 #include <nameserver.h>
 #include <kernel.h>
 #include <ts7200.h>
 
-void child_task() {
+void k2_child_task() {
   int from_tid;
   char buf[100];
   int result;
@@ -35,7 +35,7 @@ void k2_entry_task() {
   char *hello = "HELLO";
 
   bwprintf(COM2, "T0 Task started\n\r");
-  new_task_id = Create(2, &child_task);
+  new_task_id = Create(2, &k2_child_task);
   bwprintf(COM2, "T0 Created tid=%d\n\r", new_task_id);
 
   bwprintf(COM2, "T0 Sending message. tid=%d msg=%s\n\r", new_task_id, hello);
