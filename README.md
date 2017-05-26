@@ -57,6 +57,8 @@ In addition there may exist another `io.c` that is platform agnostic and has IO 
 Building
 --------
 
+You can specify any specific kernel assignment as the entry point via. `PROJECT` into `make`. For example, if you want to compile K1's entry point you'd use `make PROJECT=K1`.
+
 #### Building locally
 To build on a local architecture (non-ARM), include `LOCAL=true` in the command[0]. For example, `make LOCAL=true`. By default a local make will build all test binaries and `main.a`, the full kernel binary. Each C file in `test/` will produce an `.a` file.
 
