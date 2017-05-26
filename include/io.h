@@ -13,6 +13,29 @@
  */
 void io_init();
 
+#ifdef DEBUG_MODE
+  #include <time.h>
+  typedef clock_t io_time_t;
+#else
+  typedef unsigned int io_time_t;
+#endif
+
+/**
+ * Gets the time value. Only use this for relative time and calculating
+ * actual time using io_time_difference
+ */
+io_time_t io_get_time();
+
+/**
+ * Calculates the millisecond difference between two timing values
+ */
+unsigned int io_time_difference_ms(io_time_t current, io_time_t previous);
+
+/**
+ * Calculates the microsecond difference between two timing values
+ */
+unsigned int io_time_difference_us(io_time_t current, io_time_t previous);
+
 /**
  * Checks if the channel is ready to put a char
  * @return         status
