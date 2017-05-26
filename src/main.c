@@ -16,7 +16,13 @@
 #include <kern/syscall.h>
 #include <kernel.h>
 
+#if defined(USE_K1)
+#include <k1_entry.h>
+#elif defined(USE_K2)
 #include <k2_entry.h>
+#else
+#error Bad PROJECT value provided to Makefile. Expected "K1" or "K2"
+#endif
 
 #define ENTRY_TASK_PRIORITY 1
 
@@ -48,7 +54,7 @@ int main() {
   ctx = &stack_context;
 
   /* create first user task */
-  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, k2_entry_task);
+  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, ENTRY_FUNC);
   scheduler_requeue_task(first_user_task);
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
