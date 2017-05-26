@@ -1,19 +1,32 @@
 CS452-Codebase
 ==============
 
-Relevant branches will be listed here for the final version of our code for each assignment / the project.
-
-TODO: Make branch for completed K1.
-
 ### TODO
 
-#### A `kernel_request` mechanism
-This should be used for providing arguments and returning results in syscalls`
-- this should ideally create a 'request' on the task stack
-- the kernel then copies the memory of this request from the task memory space into it's own
-- it then handles the 'request'
-- this could be in the form that messages will be in the future
-- NOTE: removes multiple args in syscalls, makes it only 1 pointer arg
+
+Building
+--------
+
+You can specify any specific kernel assignment as the entry point via. `PROJECT` into `make`. For example, if you want to compile K1's entry point you'd use `make PROJECT=K1`.
+
+#### Building locally
+To build on a local architecture (non-ARM), include `LOCAL=true` in the command[0]. For example, `make LOCAL=true`. By default a local make will build all test binaries and `main.a`, the full kernel binary. Each C file in `test/` will produce an `.a` file.
+
+Also note, building locally defines `DEBUG_MODE`, and uses `x86/` files. This allows you to add code that will not be compiled into the ARM binary. This is helpful for debugging.
+
+You will also need `ncurses` installed to build locally.
+
+
+#### Building for ARM
+You can create an ARM build simply by not passing `LOCAL=true`[0].
+
+This will compile all code, using `arm/` C files, and produce `main.elf`. The default behaviour of `make` is to also copy `main.elf` onto the TFTP if successful[1].
+
+
+
+[0]: In `Makefile` we use `ifdef LOCAL` to have divergent make logic, creating this behaviour.
+
+[1]: This is part of the `all` rule which builds `main.elf` and runs `install` which uploads the binary.
 
 
 Code structure
@@ -53,30 +66,6 @@ In addition there may exist another `io.c` that is platform agnostic and has IO 
 
 
 [0]: This is because they are linked in a special way on ARM. I still don't know if it's necessary, but eh.
-
-Building
---------
-
-You can specify any specific kernel assignment as the entry point via. `PROJECT` into `make`. For example, if you want to compile K1's entry point you'd use `make PROJECT=K1`.
-
-#### Building locally
-To build on a local architecture (non-ARM), include `LOCAL=true` in the command[0]. For example, `make LOCAL=true`. By default a local make will build all test binaries and `main.a`, the full kernel binary. Each C file in `test/` will produce an `.a` file.
-
-Also note, building locally defines `DEBUG_MODE`, and uses `x86/` files. This allows you to add code that will not be compiled into the ARM binary. This is helpful for debugging.
-
-You will also need `ncurses` installed to build locally.
-
-
-#### Building for ARM
-You can create an ARM build simply by not passing `LOCAL=true`[0].
-
-This will compile all code, using `arm/` C files, and produce `main.elf`. The default behaviour of `make` is to also copy `main.elf` onto the TFTP if successful[1].
-
-
-
-[0]: In `Makefile` we use `ifdef LOCAL` to have divergent make logic, creating this behaviour.
-
-[1]: This is part of the `all` rule which builds `main.elf` and runs `install` which uploads the binary.
 
 Gotchas / Phenomenons / Learnings
 -----
