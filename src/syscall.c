@@ -139,7 +139,7 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
     task->state = STATE_REPLY_BLOCKED;
   } else {
     // if receiver is not blocked, add to their send queue
-    int status = cbuffer_add(&target_task->send_queue, task);
+    /* int status = */ cbuffer_add(&target_task->send_queue, task);
     // FIXME: handle bad status of cbuffer, likely panic
   }
 }
@@ -147,7 +147,6 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
 void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Receive", task->tid);
   task->state = STATE_SEND_BLOCKED;
-  syscall_message_t *msg = arg->ret_val;
 
   // if senders are blocked, get the message and continue
   if (!cbuffer_empty(&task->send_queue)) {

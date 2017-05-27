@@ -74,17 +74,17 @@ void k2_child_task() {
   char buf[100];
   int result;
   char *bye = "BYE";
-  log_debug(COM2, "T1 Child task started.\n\r");
-  log_debug(COM2, "T1 Receiving message.\n\r");
+  log_debug("T1 Child task started.");
+  log_debug("T1 Receiving message.");
   result = Receive(&from_tid, buf, 100);
-  log_debug(COM2, "T1 Received message. result=%d source_tid=%d msg=%s\n\r", result, from_tid, buf);
+  log_debug("T1 Received message. result=%d source_tid=%d msg=%s", result, from_tid, buf);
 
   Reply(from_tid, NULL, 0);
   Exit();
-  log_debug(COM2, "T1 Getting parent tid.\n\r");
+  log_debug("T1 Getting parent tid.");
   int parent_tid = MyParentTid();
 
-  log_debug(COM2, "T1 Sending message to tid=%d msg=%s\n\r", parent_tid, bye);
+  log_debug("T1 Sending message to tid=%d msg=%s", parent_tid, bye);
   result = Send(parent_tid, bye, 4, NULL, 0);
 
   bwprintf(COM2, "T1 Child task exiting\n\r");
@@ -98,7 +98,6 @@ void send_receive_test() {
   char *hello = "HELLO";
 
   int my_tid = MyTid();
-
   log_task("Task started", my_tid);
   new_task_id = Create(2, &k2_child_task);
   log_task("Created tid=%d", my_tid, new_task_id);

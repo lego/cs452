@@ -55,7 +55,8 @@ unsigned int io_time_difference_us(io_time_t current, io_time_t prev) {
   // FIXME: This overflow check may not be correct
   if (prev > current) prev = 0xFFFFFFFF - prev + current;
   // This constant was acquired from Wolfram Alpha for (1/0.508), as there are
-  // approximately 5.8us per clock tick
+  // approximately 5.8us per clock tick. if you use the literal (1/0.508)
+  // that value is integer rounded to 0 :(
   return (current - prev) * 1.96850393700787401574803;
 }
 
