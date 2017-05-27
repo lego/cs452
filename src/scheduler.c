@@ -1,9 +1,8 @@
+#define SCHEDULER_INLINE
+
 #include <basic.h>
 #include <kern/context.h>
 #include <kern/scheduler.h>
-
-#define MIN_PRIORITY 0
-#define MAX_PRIORITY 31
 
 task_descriptor_t *ready_queues[MAX_PRIORITY + 1];
 task_descriptor_t *ready_queues_end[MAX_PRIORITY + 1];
@@ -31,10 +30,6 @@ void scheduler_requeue_task(task_descriptor_t *task) {
   }
 }
 
-bool scheduler_any_task() {
-  return priotities_ready;
-}
-
 int scheduler_ready_queue_size() {
   int count = 0;
   int i;
@@ -50,9 +45,18 @@ int scheduler_ready_queue_size() {
   return count;
 }
 
+// Voodoo magic CTZ, source: http://7ooo.mooo.com/text/ComputingTrailingZerosHOWTO.html#debruijn
+const int MultiplyDeBruijnBitPosition[32] =
+{
+  0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+  31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+};
+
+#define ctz(v) MultiplyDeBruijnBitPosition[((v & -v) * 0x077CB531UL) >> 27]
+
 task_descriptor_t *scheduler_next_task() {
   // get the lowest priority with a task
-  int next_priority = __builtin_ctz(priotities_ready);
+  int next_priority = ctz(priotities_ready);
   task_descriptor_t *next_task = ready_queues[next_priority];
 
   // If this is null, we're screwed, other logic should

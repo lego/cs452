@@ -9,24 +9,62 @@ void debugger() {
 // See basic.h for why these are commented out
 // void *memcpy(void *destination, const void *source, size_t num) {
 //   jmemcpy(destination, source, num);
+//   return destination;
 // }
 //
 // void *memmove(void *destination, const void *source, size_t num) {
 //   jmemmove(destination, source, num);
+//   return destination;
 // }
 
 
-void *jmemcpy(void *destination, const void *source, size_t num) {
-  char *csrc = (char *)source;
-  char *cdest = (char *)destination;
+void jmemcpy(void *dest, const void *src, size_t num) {
+  unsigned int *vdest = (unsigned int *) dest;
+  unsigned int *vsrc = (unsigned int *) src;
+  char *cdest = (char *) dest;
+  char *csrc = (char *) src;
   int i;
-
-  for (i = 0; i < num; i++)
+  for (i = 0; i < num / 4; i++) {
+    vdest[i] = vsrc[i];
+  }
+  i *= 4;
+  for (; i < num; i++) {
     cdest[i] = csrc[i];
-  return destination;
+  }
+  return;
+
+  // #ifdef DEBUG_MODE
+  // char *cdest = (char *) dest;
+  // char *csrc = (char *) src;
+  // int i;
+  // for (i = 0; i < num; i++)
+  //   cdest[i] = csrc[i];
+  // #else
+  // // reserved registers for memory transfer
+  // asm volatile("stmfd sp!, {r3-r10}\n\t");
+  // // copy 8 at a time
+  // while (num > 8) {
+  //   asm volatile (
+  //     "ldmia r1!, {r3-r10} \n\t"
+  //     "stmia r0!, {r3-r10} \n\t"
+  //   );
+  //   num -= 8;
+  // }
+  // asm volatile("ldmfd sp!, {r3-r10}\n\t");
+  //
+  // // copy remainder of 8
+  // char *cdest = (char *) dest;
+  // char *csrc = (char *) src;
+  // int i, j;
+  // for (i = 0; i < num / 4; i++)
+  //   dest[i] = src[i];
+  // i *= 4;
+  // for (; i < num / 4; i++)
+  //   cdest[i] = csrc[i];
+  // #endif
 }
 
-void *jmemmove(void *destination, const void *source, size_t num) {
+void jmemmove(void *destination, const void *source, size_t num) {
   char *csrc = (char *)source;
   char *cdest = (char *)destination;
   char temp[num];
@@ -37,8 +75,6 @@ void *jmemmove(void *destination, const void *source, size_t num) {
 
   for (i = 0; i < num; i++)
     cdest[i] = temp[i];
-
-  return destination;
 }
 
 
