@@ -20,21 +20,23 @@
 #include <k1_entry.h>
 #elif defined(USE_K2)
 #include <k2_entry.h>
+#elif defined(USE_BENCHMARK)
+#include <benchmark_entry.h>
 #else
-#error Bad PROJECT value provided to Makefile. Expected "K1" or "K2"
+#error Bad PROJECT value provided to Makefile. Expected "K1", "K2" or "BENCHMARK"
 #endif
 
 #define ENTRY_TASK_PRIORITY 1
 
 task_descriptor_t *active_task;
+
 context_t *ctx;
 
-
-kernel_request_t *activate(task_descriptor_t *task) {
+static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
 }
 
-void handle(kernel_request_t *request) {
+static inline void handle(kernel_request_t *request) {
   syscall_handle(request);
 }
 
