@@ -55,6 +55,9 @@ int main() {
   stack_context.used_descriptors = 0;
   ctx = &stack_context;
 
+  // enable caches here, because these are after initialization
+  io_enable_caches();
+
   /* create first user task */
   task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, ENTRY_FUNC);
   scheduler_requeue_task(first_user_task);
@@ -70,6 +73,8 @@ int main() {
     // currently all request handling logic lives in context_switch.c
     handle(request);
   }
+
+  io_disable_caches();
 
   return 0;
 }

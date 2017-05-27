@@ -35,6 +35,17 @@ void bwputw( int channel, int n, char fc, char *bf ) {
   while( ( ch = *bf++ ) ) bwputc( channel, ch );
 }
 
+
+// put a long int
+void bwputl( int channel, long int n, char fc, char *bf ) {
+  char ch;
+  char *p = bf;
+
+  while( *p++ && n > 0 ) n--;
+  while( n-- > 0 ) bwputc( channel, fc );
+  while( ( ch = *bf++ ) ) bwputc( channel, ch );
+}
+
 void bwformat ( int channel, char *fmt, va_list va ) {
   char bf[12];
   char ch, lz;
@@ -77,6 +88,10 @@ void bwformat ( int channel, char *fmt, va_list va ) {
         break;
       case 'd':
         i2a( va_arg( va, int ), bf );
+        bwputw( channel, w, lz, bf );
+        break;
+      case 'l':
+        l2a( va_arg( va, long int ), bf );
         bwputw( channel, w, lz, bf );
         break;
       case 'x':

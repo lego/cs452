@@ -98,6 +98,12 @@ void ui2a( unsigned int num, unsigned int base, char *bf );
  */
 void i2a( int num, char *bf );
 
+// unsigned long int to array
+void ul2a( unsigned long int num, unsigned int base, char *bf );
+
+// long int to array
+void l2a( long int num, char *bf );
+
 /**
  * Convert a character to heximal
  * NOTE: Only considers the lower 4 bits (less than 16)

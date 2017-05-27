@@ -40,6 +40,8 @@ SECTIONS
 
   /* Begin the task stack */
   _TaskStackStart = ALIGN(0x1000) ;
+  /* Temp this is what is used */
+  . = 0x250000 ;
   _TaskStackSize = 0x10000 ;
   /* Ensure there is enough space for 100 tasks */
   . += _TaskStackSize * 100 ;

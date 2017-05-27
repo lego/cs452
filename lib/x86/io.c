@@ -28,6 +28,14 @@ void io_init() {
 #define CLOCKS_PER_MILLISECOND (CLOCKS_PER_SEC / 1000)
 #define CLOCKS_PER_MICROSECOND (CLOCKS_PER_MILLISECOND / 1000)
 
+void io_enable_caches() {
+
+}
+
+void io_disable_caches() {
+
+}
+
 io_time_t io_get_time() {
   return clock();
 }
