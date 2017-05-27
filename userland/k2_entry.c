@@ -4,7 +4,6 @@
 #include <nameserver.h>
 #include <kernel.h>
 #include <ts7200.h>
-#include <io.h>
 
 ////
 // From https://stackoverflow.com/a/11946674
@@ -74,17 +73,17 @@ void k2_child_task() {
   char buf[100];
   int result;
   char *bye = "BYE";
-  log_debug("T1 Child task started.");
-  log_debug("T1 Receiving message.");
+  bwprintf(COM2, "T1 Child task started.\n\r");
+  bwprintf(COM2, "T1 Receiving message.\n\r");
   result = Receive(&from_tid, buf, 100);
-  log_debug("T1 Received message. result=%d source_tid=%d msg=%s", result, from_tid, buf);
+  bwprintf(COM2, "T1 Received message. result=%d source_tid=%d msg=%s\n\r", result, from_tid, buf);
 
   Reply(from_tid, NULL, 0);
-  Exit();
-  log_debug("T1 Getting parent tid.");
+
+  bwprintf(COM2, "T1 Getting parent tid.\n\r");
   int parent_tid = MyParentTid();
 
-  log_debug("T1 Sending message to tid=%d msg=%s", parent_tid, bye);
+  bwprintf(COM2, "T1 Sending message to tid=%d msg=%s\n\r", parent_tid, bye);
   result = Send(parent_tid, bye, 4, NULL, 0);
 
   bwprintf(COM2, "T1 Child task exiting\n\r");
@@ -154,8 +153,6 @@ typedef struct {
 } rps_message_t;
 
 void rps_client() {
-  int i;
-
   int losses = 0;
 
   int rps_server_tid = WhoIs(RPS_SERVER);
@@ -303,7 +300,8 @@ void rps_server() {
               // Reset the game
               player1_move = -1;
               player2_move = -1;
-              bwgetc(COM2);
+              char c = bwgetc(COM2);
+              if (c == 'q') done();
             }
           } else {
             sendMessage.type = ERR_INVALID_MOVE;

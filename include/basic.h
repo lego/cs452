@@ -98,6 +98,12 @@ void ui2a( unsigned int num, unsigned int base, char *bf );
  */
 void i2a( int num, char *bf );
 
+// unsigned long int to array
+void ul2a( unsigned long int num, unsigned int base, char *bf );
+
+// long int to array
+void l2a( long int num, char *bf );
+
 /**
  * Convert a character to heximal
  * NOTE: Only considers the lower 4 bits (less than 16)
@@ -121,6 +127,18 @@ bool is_alpha( char ch );
  */
 bool is_alphanumeric( char ch );
 
+
+/**
+ * Super fast count trailing zeros
+ * Voodoo magic, source: http://7ooo.mooo.com/text/ComputingTrailingZerosHOWTO.html#debruijn
+ */
+static const int MultiplyDeBruijnBitPosition[32] =
+{
+  0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+  31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+};
+
+#define ctz(v) MultiplyDeBruijnBitPosition[((v & -v) * 0x077CB531UL) >> 27]
 
 /**
  * String hashing function

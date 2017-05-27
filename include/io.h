@@ -20,6 +20,9 @@ void io_init();
   typedef unsigned int io_time_t;
 #endif
 
+void io_enable_caches();
+void io_disable_caches();
+
 /**
  * Gets the time value. Only use this for relative time and calculating
  * actual time using io_time_difference

@@ -1,6 +1,7 @@
 #ifndef __SCHEDULER_H__
 #define __SCHEDULER_H__
 
+#include <basic.h>
 #include <kern/task_descriptor.h>
 #include <kern/kernel_request.h>
 
@@ -19,15 +20,11 @@ extern task_descriptor_t *ready_queues_end[MAX_PRIORITY + 1];
 
 // NOTE: the below constructs refer to task switching
 
-#ifndef SCHEDULER_INLINE
-#define SCHEDULER_INLINE INLINE
-#endif
-
 /**
  * Initializes scheduler state
  * - currently global variables for x86 :(
  */
-SCHEDULER_INLINE void scheduler_init();
+void scheduler_init();
 void scheduler_arch_init();
 
 /**
@@ -68,11 +65,14 @@ void scheduler_requeue_task(task_descriptor_t *task);
 /**
  * Checks if there are any other tasks to schedule
  */
-#define scheduler_any_task() !!priotities_ready
+static inline bool scheduler_any_task() {
+  return !!priotities_ready;
+}
+
 /**
  * Puts a task back onto the ready queue
  */
-SCHEDULER_INLINE task_descriptor_t *scheduler_next_task();
+task_descriptor_t *scheduler_next_task();
 
 /**
  * Gets the count of tasks currently on the ready queue

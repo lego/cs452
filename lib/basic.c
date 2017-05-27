@@ -17,51 +17,84 @@ void debugger() {
 //   return destination;
 // }
 
-
-void jmemcpy(void *dest, const void *src, size_t num) {
-  unsigned int *vdest = (unsigned int *) dest;
-  unsigned int *vsrc = (unsigned int *) src;
+/**
+ * This memcpy will copy over a word at a time, but this has crashing issues due to pre-alignment
+ */
+void jfastmemcpy(void *dest, const void *src, size_t num) {
+  // log_debug("num=%d num/4=%d vsrc=%x vdest=%x", num, num / 4, src, dest);
   char *cdest = (char *) dest;
   char *csrc = (char *) src;
   int i;
+
+  // int z = (unsigned int) csrc % 4;
+  // if (z != 0) {
+  //   for (i = 0; i < z; i++) {
+  //     log_debug("i=%d csrc=%x cdest=%x", i, csrc + i, cdest + i);
+  //     cdest[i] = csrc[i];
+  //   }
+  // }
+  //
+  // cdest += z;
+  // csrc += z;
+  unsigned int *vdest = (unsigned int *) cdest;
+  unsigned int *vsrc = (unsigned int *) csrc;
+
+  // log_debug("num=%d num/4=%d vsrc=%x vdest=%x", num, num / 4, vsrc, vdest);
+
   for (i = 0; i < num / 4; i++) {
+    // log_debug("i=%d vsrc=%x vdest=%x", i, vsrc + i, vdest + i);
     vdest[i] = vsrc[i];
   }
-  i *= 4;
-  for (; i < num; i++) {
+  for (i = i * 4; i < num; i++) {
+    // log_debug("i=%d csrc=%x cdest=%x", i, csrc + i, cdest + i);
     cdest[i] = csrc[i];
   }
   return;
+}
 
-  // #ifdef DEBUG_MODE
-  // char *cdest = (char *) dest;
-  // char *csrc = (char *) src;
-  // int i;
-  // for (i = 0; i < num; i++)
-  //   cdest[i] = csrc[i];
-  // #else
-  // // reserved registers for memory transfer
-  // asm volatile("stmfd sp!, {r3-r10}\n\t");
-  // // copy 8 at a time
-  // while (num > 8) {
-  //   asm volatile (
-  //     "ldmia r1!, {r3-r10} \n\t"
-  //     "stmia r0!, {r3-r10} \n\t"
-  //   );
-  //   num -= 8;
-  // }
-  // asm volatile("ldmfd sp!, {r3-r10}\n\t");
-  //
-  // // copy remainder of 8
-  // char *cdest = (char *) dest;
-  // char *csrc = (char *) src;
-  // int i, j;
-  // for (i = 0; i < num / 4; i++)
-  //   dest[i] = src[i];
-  // i *= 4;
-  // for (; i < num / 4; i++)
-  //   cdest[i] = csrc[i];
-  // #endif
+/**
+ * This memcpy will copy over a multiple words at a time, but also has some issues
+ */
+void jasmmemcpy(unsigned int *dest, const unsigned int *src, size_t num) {
+  #ifdef DEBUG_MODE
+  char *cdest = (char *) dest;
+  char *csrc = (char *) src;
+  int i;
+  for (i = 0; i < num; i++)
+    cdest[i] = csrc[i];
+  #else
+  // reserved registers for memory transfer
+  asm volatile("stmfd sp!, {r3-r10}\n\t");
+  // copy 8 at a time
+  while (num > 8) {
+    asm volatile (
+      "ldmia r1!, {r3-r10} \n\t"
+      "stmia r0!, {r3-r10} \n\t"
+    );
+    num -= 8;
+  }
+  asm volatile("ldmfd sp!, {r3-r10}\n\t");
+
+  // copy remainder of 8
+  char *cdest = (char *) dest;
+  char *csrc = (char *) src;
+  int i;
+  for (i = 0; i < num / 4; i++)
+    dest[i] = src[i];
+  i *= 4;
+  for (; i < num / 4; i++)
+    cdest[i] = csrc[i];
+  #endif
+}
+
+void jmemcpy(void *dest, const void *src, size_t num) {
+  char *cdest = (char *) dest;
+  char *csrc = (char *) src;
+  int i;
+  for (i = 0; i < num; i++) {
+    cdest[i] = csrc[i];
+  }
+  return;
 }
 
 void jmemmove(void *destination, const void *source, size_t num) {
@@ -125,6 +158,34 @@ void i2a( int num, char *bf ) {
   }
   ui2a( num, 10, bf );
 }
+
+void ul2a( unsigned long int num, unsigned int base, char *bf ) {
+  int n = 0;
+  int dgt;
+  unsigned int d = 1;
+
+  while( (num / d) >= base ) d *= base;
+  while( d != 0 ) {
+    dgt = num / d;
+    num %= d;
+    d /= base;
+    if( n || dgt > 0 || d == 0 ) {
+      *bf++ = dgt + ( dgt < 10 ? '0' : 'a' - 10 );
+      ++n;
+    }
+  }
+  *bf = 0;
+}
+
+
+void l2a( long int num, char *bf ) {
+  if( num < 0 ) {
+    num = -num;
+    *bf++ = '-';
+  }
+  ul2a( num, 10, bf );
+}
+
 
 char c2x( char ch ) {
   assert(ch < 16);

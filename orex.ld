@@ -8,24 +8,23 @@ MEMORY
 
 SECTIONS
 {
-  .data : /* Initialized data. */
-  {
+  /* Initialized data. */
+  .data : {
     _DataStart = . ;
     *(.data)
     *(.data.rel.ro)
     _DataEnd = . ;
   } >ram
 
-  .bss : /* Uninitialized data. */
-  {
+  /* Uninitialized data. */
+  .bss : {
     _BssStart = . ;
     *(.bss)
     _BssEnd = . ;
   } >ram
 
-
-  text : /* The actual instructions. */
-  {
+  /* The actual instructions. */
+  text : {
     *(.text)
     *(.got)
     *(.got.plt)
@@ -39,8 +38,10 @@ SECTIONS
   } >ram
 
   /* Begin the task stack */
-  _TaskStackStart = ALIGN(0x1000) ;
   _TaskStackSize = 0x10000 ;
+  _TaskStackStart = ALIGN(0x1000) + _TaskStackSize ;
+  /* Temp this is what is used */
+  . = 0x250000 ;
   /* Ensure there is enough space for 100 tasks */
   . += _TaskStackSize * 100 ;
 }
