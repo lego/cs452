@@ -60,8 +60,7 @@ int main() {
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
 
   // start executing user tasks
-  while (ctx->descriptors[first_user_task->tid].state != STATE_ZOMBIE ||
-         scheduler_any_task()) {
+  while (scheduler_any_task()) {
     if (!scheduler_any_task()) { // If no tasks are ready, busy-wait
       continue;
     }
