@@ -32,7 +32,7 @@ void scheduler_requeue_task(task_descriptor_t *task) {
 }
 
 bool scheduler_any_task() {
-  return priotities_ready;
+  return !!priotities_ready;
 }
 
 int scheduler_ready_queue_size() {
