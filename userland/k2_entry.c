@@ -5,6 +5,57 @@
 #include <kernel.h>
 #include <ts7200.h>
 
+void _done_send() {
+  Send(0, NULL, 0, NULL, 0);
+}
+
+void done() {
+  Create(31, &_done_send);
+}
+
+void waitUntilDone(void* code) {
+  bwprintf(COM2, "---\n\r\n\r\n\r");
+  Create(0, code);
+  int tid; Receive(&tid, NULL, 0); Reply(tid, NULL, 0);
+  bwprintf(COM2, "\n\r\n\r---\n\r");
+}
+
+void producer() {
+  bwprintf(COM2, "P: Registering as PRODUCER_TEST with tid: %d\n\r", MyTid());
+  RegisterAs(PRODUCER_TEST);
+  bwprintf(COM2, "P: Exit RegisterAs\n\r");
+
+  int source_tid = -1;
+
+  while (true) {
+    bwprintf(COM2, "P: Waiting to receive...\n\r");
+    int status = Receive(&source_tid, NULL, 0);
+    bwprintf(COM2, "P: Received request from %d (status: %d)\n\r", source_tid, status);
+    int x = 5;
+    Reply(source_tid, &x, sizeof(int));
+  }
+}
+
+void consumer() {
+  bwprintf(COM2, "C: Requesting PRODUCER_TEST tid\n\r");
+  int producer_tid = WhoIs(PRODUCER_TEST);
+  bwprintf(COM2, "C: Received %d for PRODUCER_TEST\n\r", producer_tid);
+  int i;
+  for (i = 0; i < 3; i++) {
+    int x;
+    bwprintf(COM2, "C: Requesting from producer\n\r");
+    int status = Send(producer_tid, NULL, 0, &x, sizeof(x));
+    bwprintf(COM2, "C: Received %d from producer (status %d)\n\r", x, status);
+  }
+}
+
+void nameserver_test() {
+  Create(3, &consumer);
+  Create(2, &producer);
+
+  done();
+}
+
 void k2_child_task() {
   int from_tid;
   char buf[100];
@@ -24,10 +75,9 @@ void k2_child_task() {
   result = Send(parent_tid, bye, 4, NULL, 0);
 
   bwprintf(COM2, "T1 Child task exiting\n\r");
-  Exit();
 }
 
-void k2_entry_task() {
+void send_receive_test() {
   int new_task_id;
   int from_tid;
   int result;
@@ -48,5 +98,17 @@ void k2_entry_task() {
   Reply(from_tid, NULL, 0);
 
   bwprintf(COM2, "T0 Entry task exiting\n\r");
-  Exit();
+
+  done();
+}
+
+void k2_entry_task() {
+  bwprintf(COM2, "k2_entry\n\r");
+  // First things first, make the nameserver
+  Create(1, &nameserver);
+
+  waitUntilDone(&send_receive_test);
+  waitUntilDone(&nameserver_test);
+
+  //Exit();
 }

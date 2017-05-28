@@ -4,11 +4,22 @@
 #define REGISTER_CALL 0
 #define WHOIS_CALL 1
 
+enum task_name_t {
+  PRODUCER_TEST,
+  NUM_TASK_NAMES
+};
+
+typedef int task_name_t;
+
 typedef struct {
   int call_type;
-  char *name;
+  task_name_t name;
 } nameserver_request_t;
 
 void nameserver();
+
+/* Nameserver calls */
+int RegisterAs( task_name_t name );
+int WhoIs( task_name_t name );
 
 #endif

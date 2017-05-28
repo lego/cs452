@@ -1,20 +1,18 @@
 #include <basic.h>
-#include <map.h>
 #include <kernel.h>
 #include <nameserver.h>
 
+static int nameserver_tid = -1;
+
 void nameserver() {
+  nameserver_tid = MyTid();
+
   int i;
-  map_val_t map_buf[256];
-  map_t map;
-  map_init(&map, map_buf, 256);
   int status;
 
-  // Used as pointer array for the map values
-  // We have no other way to statically allocate this space.
-  int tid_const_arr[MAX_TASKS];
-  for (i = 0; i < MAX_TASKS; i++) {
-    tid_const_arr[i] = i;
+  int mapping[NUM_TASK_NAMES];
+  for (i = 0; i < NUM_TASK_NAMES; i++) {
+    mapping[i] = -1;
   }
 
   // Always serve requests
@@ -31,18 +29,14 @@ void nameserver() {
 
     if (req.call_type == REGISTER_CALL) {
       // If register call, just add to the hashmap
-      status = map_insert(&map, req.name, &tid_const_arr[source_tid]);
+      mapping[req.name] = source_tid;
       // FIXME: handle status
+      status = Reply(source_tid, NULL, 0);
     } else if (req.call_type == WHOIS_CALL) {
       // If whois, get the value
       // Reply -1 if no tid found, else reply tid
-      void *val = map_get(&map, req.name);
-      if (val == NULL) {
-        int tmp = -1;
-        status = Reply(source_tid, &tmp, sizeof(int));
-      } else {
-        status = Reply(source_tid, val, sizeof(int));
-      }
+      int val = mapping[req.name];
+      status = Reply(source_tid, &val, sizeof(int));
 
       // Reply failed, continue ?
       if (status <= 0) {
@@ -52,4 +46,38 @@ void nameserver() {
       // FIXME: shoud not happen
     }
   }
+}
+
+int RegisterAs( task_name_t name ) {
+  if (nameserver_tid == -1){
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
+  nameserver_request_t req;
+  req.call_type = REGISTER_CALL;
+  req.name = name;
+
+  int status = Send(nameserver_tid, &req, sizeof(nameserver_request_t), NULL, 0);
+  // FIXME: proper status check
+  return 0;
+}
+
+int WhoIs( task_name_t name ) {
+  if (nameserver_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
+  nameserver_request_t req;
+  req.call_type = WHOIS_CALL;
+  req.name = name;
+
+  int recv_tid;
+  int bytes_recv = Send(nameserver_tid, &req, sizeof(nameserver_request_t), &recv_tid, sizeof(recv_tid));
+  // FIXME: status check on bytes_recv
+
+  return recv_tid;
 }

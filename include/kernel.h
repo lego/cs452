@@ -51,8 +51,4 @@ int Receive( int *tid, void *msg, int msglen );
 
 int Reply( int tid, void *reply, int replylen );
 
-/* Nameserver calls */
-int RegisterAs( char *name );
-int WhoIs( char *name );
-
 #endif
