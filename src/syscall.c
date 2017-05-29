@@ -2,6 +2,7 @@
 #include <kern/syscall.h>
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
+#include <io.h>
 
 static void syscall_create(task_descriptor_t *task, kernel_request_t *arg);
 static void syscall_my_tid(task_descriptor_t *task, kernel_request_t *arg);
@@ -11,6 +12,7 @@ static void syscall_exit(task_descriptor_t *task, kernel_request_t *arg);
 static void syscall_send(task_descriptor_t *task, kernel_request_t *arg);
 static void syscall_receive(task_descriptor_t *task, kernel_request_t *arg);
 static void syscall_reply(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_toggle_cache(task_descriptor_t *task, kernel_request_t *arg);
 
 static void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task);
 static bool is_valid_task(int tid);
@@ -44,6 +46,9 @@ void syscall_handle(kernel_request_t *arg) {
     break;
   case SYSCALL_REPLY:
     syscall_reply(task, arg);
+    break;
+  case SYSCALL_TOGGLE_CACHE:
+    syscall_toggle_cache(task, arg);
     break;
   default:
     log_syscall("WARNING: syscall not handled. syscall_no=%d", task->tid, arg->syscall);
@@ -205,4 +210,18 @@ static void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
     scheduler_requeue_task(task);
     return;
   }
+}
+
+static void syscall_toggle_cache(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("syscall=ToggleCache", task->tid);
+
+  bool mode;
+  mode = *(bool *) arg->arguments;
+  if (mode) {
+    io_enable_caches();
+  } else {
+    io_disable_caches();
+  }
+
+  scheduler_requeue_task(task);
 }

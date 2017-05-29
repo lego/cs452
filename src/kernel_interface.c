@@ -52,6 +52,15 @@ void Exit( ) {
   context_switch(&request);
 }
 
+
+void ToggleCache( bool mode ) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_TOGGLE_CACHE;
+  request.arguments = &mode;
+  context_switch(&request);
+}
+
 int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
   kernel_request_t request;
   request.tid = active_task->tid;
