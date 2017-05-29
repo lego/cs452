@@ -78,3 +78,9 @@ task_descriptor_t *scheduler_next_task();
  * NOTE: should only be used for debugging
  */
 int scheduler_ready_queue_size();
+
+#ifdef DEBUG_MODE
+#include <pthread.h>
+void scheduler_x86_deactivate_task_for_interrupt();
+pthread_t scheduler_x86_get_thread(int tid);
+#endif

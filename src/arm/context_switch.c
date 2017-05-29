@@ -13,6 +13,10 @@ void __undefined_instruction_handler();
 void __prefetch_abort_handler();
 void __data_abort_handler();
 
+void __asm_swi_handler();
+void __asm_start_task(void* task_sp, void* task_pc);
+void __asm_switch_to_task(void* task_sp);
+
 void context_switch_init() {
   *((debugger_func*)0x24) = &__undefined_instruction_handler;  // undefined instr
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
@@ -26,6 +30,10 @@ char *prefetch_abort_msg = RED_BG "PREFETCH ABORT";
 char *data_abort_msg = RED_BG "DATA ABORT";
 char *kernel_fail = RESET_ATTRIBUTES "  Kernel LR: ";
 char *task_fail = "   Task LR: ";
+
+void __asm_swi_handler();
+void __asm_switch_to_task(void* task_sp);
+void __asm_start_task(void* task_sp, void* task_pc);
 
 asm (
 "\n"
