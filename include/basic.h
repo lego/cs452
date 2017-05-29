@@ -138,7 +138,12 @@ static const int MultiplyDeBruijnBitPosition[32] =
   31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
 };
 
-#define ctz(v) MultiplyDeBruijnBitPosition[((v & -v) * 0x077CB531UL) >> 27]
+static inline int debruijin_ctz(unsigned int v) {
+  return MultiplyDeBruijnBitPosition[((v & -v) * 0x077CB531UL) >> 27];
+}
+
+// FIXME: it seems debruijin_ctz is incorrect, see basic_test.c
+#define ctz __builtin_ctz
 
 /**
  * String hashing function

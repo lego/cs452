@@ -1,5 +1,3 @@
-#define SCHEDULER_INLINE
-
 #include <basic.h>
 #include <kern/context.h>
 #include <kern/scheduler.h>

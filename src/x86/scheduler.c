@@ -25,6 +25,7 @@ void scheduler_exit_task(task_descriptor_t *task) {
   // cause the task thread to end
   // WARNING: this was taken out due to it causing failure when killing a thread
   // so for now the threads also stay alive
+  task->state = STATE_ZOMBIE;
 }
 
 void scheduler_reschedule_the_world() {

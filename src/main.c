@@ -69,9 +69,9 @@ int main() {
     task_descriptor_t *next_task = scheduler_next_task();
     log_kmain("next task tid=%d", next_task->tid);
     kernel_request_t *request = activate(next_task);
-    // TODO: i'm not sure what the best way to create the request abstraction is
-    // currently all request handling logic lives in context_switch.c
-    handle(request);
+    if (next_task->state != STATE_ZOMBIE) {
+      handle(request);
+    }
   }
 
   // io_disable_caches();

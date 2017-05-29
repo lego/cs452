@@ -184,7 +184,7 @@ int get(int channel) {
     return -2;
     break;
   }
-  int status = can_put(channel);
+  int status = can_get(channel);
   if (status != 0) return status;
   c = *data;
   return c;

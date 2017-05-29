@@ -6,6 +6,7 @@
 #include <jstring.h>
 
 int Create(int priority, void (*entrypoint)()) {
+  log_task("Create priority=%d", active_task->tid, priority);
   assert(0 <= priority && priority < 32);
 
   kernel_request_t request;
