@@ -29,7 +29,7 @@ CC     = $(COMPILER_BINARY_LOCATION)gcc
 AS     = $(COMPILER_BINARY_LOCATION)as
 AR     = $(COMPILER_BINARY_LOCATION)ar
 LD     = $(COMPILER_BINARY_LOCATION)ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline -nostdlib -nostartfiles -ffreestanding
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline -nostdlib  -mno-thumb-interwork
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -39,7 +39,7 @@ CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT)
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(COMPILER_LIBRARY_LOCATION) -L.
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(COMPILER_LIBRARY_LOCATION) -L. -nostdlib
 # TODO: Document what these mean... heh
 else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
@@ -105,9 +105,8 @@ main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 
 
 
-small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
-	$(COMPILER_BINARY_LOCATION)gcc $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(COMPILER_LIBRARY_LOCATION) $^ -o $@ -Wl,-lgcc
-
+small.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
+	$(COMPILER_BINARY_LOCATION)gcc $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) -nostdlib -nostartfiles -ffreestanding -mno-thumb-interwork -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(COMPILER_LIBRARY_LOCATION) $^ -o small.elf -Wl,-lgcc && ./upload.sh $@
 
 # Local simulation binary
 # NOTE: it just explicitly lists a bunch of folders, this is because the

@@ -13,7 +13,7 @@ int heap_size (heap_t *h) {
   return h->len;
 }
 
-int heap_push (heap_t *h, int priority, void *data) {
+int heap_push(heap_t *h, int priority, void *data) {
   if (h->len + 1 >= h->size) {
     return -1;
   }
@@ -30,7 +30,7 @@ int heap_push (heap_t *h, int priority, void *data) {
   return 0;
 }
 
-void *heap_pop (heap_t *h) {
+void *heap_pop(heap_t *h) {
   int i, j, k;
   if (!h->len) {
     return NULL;
