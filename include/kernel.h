@@ -44,15 +44,14 @@ void Pass( );
  */
 void Exit( );
 
+#define SendS(tid, arg1, arg2) Send(tid, &arg1, sizeof(arg1), &arg2, sizeof(arg2))
+#define ReceiveS(tid, arg1) Receive(tid, &arg1, sizeof(arg1))
+#define ReplyS(tid, arg1) Reply(tid, &arg1, sizeof(arg1))
 
 int Send( int tid, void *msg, int msglen, void *reply, int replylen);
 
 int Receive( int *tid, void *msg, int msglen );
 
 int Reply( int tid, void *reply, int replylen );
-
-/* Nameserver calls */
-int RegisterAs( char *name );
-int WhoIs( char *name );
 
 #endif

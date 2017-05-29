@@ -81,19 +81,25 @@ void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
   syscall_message_t *src_msg = src_task->current_request.arguments;
   syscall_message_t *dest_msg = dest_task->current_request.ret_val;
 
+  // Always let the dest_msg know the tid of the sender, even if there's a problem
+  dest_msg->tid = src_task->tid;
+
   // short circuit conditions
   if (src_msg->msglen == 0) {
+    // if there's nothing to send, just return
     dest_msg->status = 0;
     return;
   } else if (dest_msg->msglen == 0) {
-    dest_msg->status = -1;
+    // not ok if the src_msg is sending something
+    if (src_msg->msglen != 0) {
+      dest_msg->status = -1;
+    }
     return;
   }
 
   int min_msglen = src_msg->msglen < dest_msg->msglen ? src_msg->msglen : dest_msg->msglen;
 
   jmemcpy((void *) dest_msg->msg, (void *) src_msg->msg, min_msglen);
-  dest_msg->tid = src_task->tid;
 
   if (src_msg->msglen > min_msglen) {
     dest_msg->status = -1;

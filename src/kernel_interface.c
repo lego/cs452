@@ -5,8 +5,6 @@
 #include <nameserver.h>
 #include <jstring.h>
 
-int nameserver_tid = -1;
-
 int Create(int priority, void (*entrypoint)()) {
   assert(0 <= priority && priority < 32);
 
@@ -101,49 +99,4 @@ int Reply( int tid, void *reply, int replylen ) {
 
   context_switch(&request);
   return arg.status;
-}
-
-int RegisterAs( char *name ) {
-  if (jstrcmp(name, "nameserver")) {
-    // Don't make data syscall, but still reschedule
-    Pass();
-    nameserver_tid = active_task->tid;
-    return 0;
-  }
-  if (nameserver_tid == -1){
-    // Don't make data syscall, but still reschedule
-    Pass();
-    return -1;
-  }
-
-  nameserver_request_t req;
-  req.call_type = REGISTER_CALL;
-  req.name = name;
-
-  int status = Send(nameserver_tid, &req, sizeof(nameserver_request_t), NULL, 0);
-  // FIXME: proper status check
-  return 0;
-}
-
-int WhoIs( char *name ) {
-  if (nameserver_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
-    return -1;
-  }
-  if (jstrcmp(name, "nameserver")) {
-    // Don't make data syscalll for data, but still reschedule
-    Pass();
-    return nameserver_tid;
-  }
-
-  nameserver_request_t req;
-  req.call_type = WHOIS_CALL;
-  req.name = name;
-
-  int recv_tid;
-  int bytes_recv = Send(nameserver_tid, &req, sizeof(nameserver_request_t), &recv_tid, sizeof(recv_tid));
-  // FIXME: status check on bytes_recv
-
-  return recv_tid;
 }
