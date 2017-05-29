@@ -27,12 +27,12 @@ heap_t heap_create(heapnode_t *nodes, int size);
  *                  0 => OK
  *                  -1 => ERROR: heap full
  */
-int heap_push (heap_t *h, int priority, void *data);
+int heap_push(heap_t *h, int priority, void *data);
 
 /**
  * Pops the highest priority item off the heap
  */
-void *heap_pop (heap_t *h);
+void *heap_pop(heap_t *h);
 
 /**
  * Gets the current size of the heap

@@ -26,7 +26,7 @@ int main() {
   // assert(result == 0);
   // assert(!cbuffer_empty(&buf));
   //
-  // // pop the item, and test for it
+  // // ldmfd sp!, the item, and test for it
   // c = cbuffer_pop(&buf, &result);
   // assert(result == 0);
   // assert(c == &a);
@@ -52,7 +52,7 @@ int main() {
   //   assert(c == i);
   // }
   //
-  // // check that the next pop fails
+  // // check that the next ldmfd sp!, fails
   // cbuffer_pop(&buf, &result);
   // assert(result == -1);
   //
@@ -90,7 +90,7 @@ int main() {
   // assert(result == 0);
   // assert(c == 1);
   //
-  // // Unpop and add again, this is an edgecase
+  // // Unldmfd sp!, and add again, this is an edgecase
   // // Of not increasing size again
   // c = cbuffer_pop(&buf, &result);
   // assert(result == 0);
