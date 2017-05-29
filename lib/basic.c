@@ -87,7 +87,7 @@ void jasmmemcpy(unsigned int *dest, const unsigned int *src, size_t num) {
   #endif
 }
 
-void jmemcpy(void *dest, const void *src, size_t num) {
+void jslowmemcpy(void *dest, const void *src, size_t num) {
   char *cdest = (char *) dest;
   char *csrc = (char *) src;
   int i;
@@ -95,6 +95,30 @@ void jmemcpy(void *dest, const void *src, size_t num) {
     cdest[i] = csrc[i];
   }
   return;
+}
+
+
+void jmemcpy(void *dest, const void *src, size_t num) {
+  // phase 1: align dest AND src. how do we deal with very offset things?
+  // FIXME: not done, so for now we fall back to jmemcpy
+  bool aligned = !(((unsigned int) src | (unsigned int) dest) & 0xFF);
+  if (aligned) {
+    unsigned int *vdest = (unsigned int *) dest;
+    unsigned int *vsrc = (unsigned int *) src;
+    while (num >= 4) {
+      num -= 4;
+      *vdest++ = *vsrc++;
+    }
+    // FIXME: this could be just jmemcpy, but we're avoiding a function call
+    char *cdest = (char *) vdest;
+    char *csrc = (char *) vsrc;
+    while (num > 0) {
+      *cdest++ = *csrc++;
+      num--;
+    }
+  } else {
+    jslowmemcpy(dest, src, num);
+  }
 }
 
 void jmemmove(void *destination, const void *source, size_t num) {
