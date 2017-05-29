@@ -10,7 +10,10 @@ pthread_t tasks[MAX_TASKS];
 pthread_cond_t kernel_cv;
 pthread_mutex_t active_mutex;
 
+volatile bool interrupt_being_handling;
+
 void scheduler_arch_init() {
+  interrupt_being_handling = false;
   int i;
   for (i = 0; i < MAX_TASKS; i++) {
     pthread_cond_init(&task_cvs[i], NULL);
@@ -73,4 +76,21 @@ kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
   while (task->state == STATE_ACTIVE) pthread_cond_wait(&kernel_cv, &active_mutex);
   log_scheduler_kern("cv awake after tid=%d", task->tid);
   return &task->current_request;
+}
+
+pthread_t scheduler_x86_get_thread(int tid) {
+  return tasks[tid];
+}
+
+void scheduler_x86_deactivate_task_for_interrupt() {
+  int tid = active_task->tid;
+  task_descriptor_t *task = &ctx->descriptors[tid];
+  log_scheduler_task("t%d signal kernel for interrupt", tid);
+  pthread_cond_signal(&kernel_cv);
+  active_task = NULL;
+  if (task->state == STATE_ACTIVE) task->state = STATE_READY;
+  interrupt_being_handling = true;
+  log_scheduler_task("t%d cv wait", tid);
+  while (task->state != STATE_ACTIVE) pthread_cond_wait(&task_cvs[tid], &active_mutex);
+  log_scheduler_task("t%d cv woke", tid);
 }

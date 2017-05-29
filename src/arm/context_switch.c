@@ -9,14 +9,14 @@ void* kernelSp = 0;
 
 typedef int (*interrupt_handler)(int);
 
+void __asm_swi_handler();
+void __asm_start_task(void* task_sp, void* task_pc);
+void __asm_switch_to_task(void* task_sp);
+
 void context_switch_init() {
   kernelSp = 0;
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
 }
-
-void __asm_swi_handler();
-void __asm_switch_to_task(void* task_sp);
-void __asm_start_task(void* task_sp, void* task_pc);
 
 asm (
 "\n"

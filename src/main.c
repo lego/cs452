@@ -56,7 +56,7 @@ int main() {
   ctx = &stack_context;
 
   // enable caches here, because these are after initialization
-  // io_enable_caches();
+  io_enable_caches();
 
   /* create first user task */
   task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, ENTRY_FUNC);
@@ -74,7 +74,7 @@ int main() {
     }
   }
 
-  // io_disable_caches();
+  io_disable_caches();
 
   return 0;
 }
