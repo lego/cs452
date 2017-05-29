@@ -28,6 +28,18 @@ CFLAGS_COMPILE_WARNINGS := -Winline -Werror -Wno-unused-variable -Wno-format-sec
 CFLAGS_OPTIMIZATIONS := -O2 -finline-functions -finline-functions-called-once
 
 ifndef LOCAL
+
+
+# Use a custom compile if CUSTOM is provided
+ifndef CUSTOM
+COMPILER_BINARY_LOCATION=./armcheck;
+COMPILER_LIBRARY_LOCATION=/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2/
+else
+COMPILER_LOCATION=/u3/j5pereira/arm-gcc-6.3.1
+COMPILER_BINARY_LOCATION=$(COMPILER_LOCATION)/bin/arm-none-eabi-
+COMPILER_LIBRARY_LOCATION=$(COMPILER_LOCATION)/lib/gcc/arm-none-eabi/6.3.1/
+endif
+
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
 CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc

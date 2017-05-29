@@ -119,16 +119,8 @@ void debugger();
 #define log_syscall(format, ...) NOP
 #endif
 
-<<<<<<< HEAD
 #if DEBUG_INTERRUPT
 #define log_interrupt(format, ...) log_debug("IN  " format, ## __VA_ARGS__)
-||||||| merged common ancestors
-#if DEBUG_INTERRUPTS
-#define log_interrupt(format, tid, ...) log_debug("INT " format, ## __VA_ARGS__)
-=======
-#if DEBUG_INTERRUPT
-#define log_interrupt(format, ...) log_debug("INT " format, ## __VA_ARGS__)
->>>>>>> Get interrupt_handler working
 #else
 #define log_interrupt(format, ...) NOP
 #endif

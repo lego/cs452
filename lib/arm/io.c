@@ -79,6 +79,7 @@ void io_enable_caches() {
 
 void io_disable_caches() {
   asm volatile (
+    "stmfd sp!, {r0}\n\t"
     // pull value from coprocessor
     "mrc p15, 0, r0, c1, c0, 0\n\t"
     // disable I-cache (bit 12) ep93xx-user-guide section 2.2.3.3.1, page 43

@@ -114,5 +114,11 @@ void benchmark_entry_task() {
   result = Send(new_task_id, hello, 6, NULL, 0);
   log_task("Sent msg", 0);
   bwprintf(COM2, "T0 Sent message. result=%d to_tid=%d\n\r", result, new_task_id);
+<<<<<<< HEAD:userland/entry/benchmark.c
   ExitKernel();
+||||||| merged common ancestors
+  log_task("Exiting", 0);
+  Exit();
+=======
+>>>>>>> Run cache and non-cache everything:userland/benchmark_entry.c
 }
