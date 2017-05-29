@@ -51,6 +51,7 @@ void *scheduler_start_task(void *td) {
   log_scheduler_task("t%d release mutex (exit)", task->tid);
   pthread_mutex_unlock(&active_mutex);
   log_scheduler_task("t%d thread KILL", task->tid);
+  task->state = STATE_ZOMBIE;
   pthread_exit(NULL);
 
   return NULL;

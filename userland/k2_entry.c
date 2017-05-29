@@ -96,20 +96,22 @@ void send_receive_test() {
   char buf[100];
   char *hello = "HELLO";
 
-  bwprintf(COM2, "T0 Task started\n\r");
+  int my_tid = MyTid();
+
+  log_task("Task started", my_tid);
   new_task_id = Create(2, &k2_child_task);
-  bwprintf(COM2, "T0 Created tid=%d\n\r", new_task_id);
+  log_task("Created tid=%d", my_tid, new_task_id);
 
-  bwprintf(COM2, "T0 Sending message. tid=%d msg=%s\n\r", new_task_id, hello);
+  log_task("Sending message. tid=%d msg=%s", my_tid, new_task_id, hello);
   result = Send(new_task_id, hello, 6, NULL, 0);
-  bwprintf(COM2, "T0 Sent message. result=%d to_tid=%d\n\r", result, new_task_id);
+  log_task("Sent message. result=%d to_tid=%d", my_tid, result, new_task_id);
 
-  bwprintf(COM2, "T0 Going to receive message.\n\r");
+  log_task("Going to receive message.", my_tid);
   result = Receive(&from_tid, buf, 100);
-  bwprintf(COM2, "T0 Received message. result=%d source_tid=%d msg=%s\n\r", result, from_tid, buf);
+  log_task("Received message. result=%d source_tid=%d msg=%s", my_tid, result, from_tid, buf);
   Reply(from_tid, NULL, 0);
 
-  bwprintf(COM2, "T0 Entry task exiting\n\r");
+  log_task("Entry task exiting", my_tid);
 
   done();
 }

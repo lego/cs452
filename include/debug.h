@@ -7,7 +7,8 @@
  * Debug tooling
  */
 
-#define DEBUG_LOGGING false
+#define DEBUG_LOGGING_ARM false
+#define DEBUG_LOGGING_X86 true
 // Enable various log_debug statements in the code
   #define DEBUG_SCHEDULER true
   #define DEBUG_CONTEXT_SWITCH true
@@ -25,13 +26,16 @@
  */
 void debugger();
 
+#define RESET_ATTRIBUTES "\x1b" "[0m"
+#define GREY_FG "\x1b" "[37m"
+
 #include <stdarg.h>
 #include <stdio.h>
 /**
  * Prints with a formatted string to STDERR for debugging output
  */
-#if DEBUG_LOGGING
-#define log_debug(format, ...) fprintf(stderr, format "\n\r", ## __VA_ARGS__)
+#if DEBUG_LOGGING_X86
+#define log_debug(format, ...) fprintf(stderr, GREY_FG format RESET_ATTRIBUTES "\n\r", ## __VA_ARGS__)
 #else
 #define log_debug(format, ...) NOP
 #endif
@@ -41,8 +45,8 @@ void debugger();
 
 #define debugger() NOP
 #include <bwio.h>
-#if DEBUG_LOGGING
-#define log_debug(format, ...) bwprintf(COM2, format "\n\r", ## __VA_ARGS__)
+#if DEBUG_LOGGING_ARM
+#define log_debug(format, ...) bwprintf(COM2, GREY_FG format RESET_ATTRIBUTES "\n\r", ## __VA_ARGS__)
 #else
 #define log_debug(format, ...) NOP
 #endif
