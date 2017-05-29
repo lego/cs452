@@ -3,6 +3,18 @@
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
 
+static void syscall_create(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_my_tid(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_pass(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_exit(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_send(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_receive(task_descriptor_t *task, kernel_request_t *arg);
+static void syscall_reply(task_descriptor_t *task, kernel_request_t *arg);
+
+static void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task);
+static bool is_valid_task(int tid);
+
 void syscall_handle(kernel_request_t *arg) {
   task_descriptor_t *task = &ctx->descriptors[arg->tid];
 
@@ -40,7 +52,7 @@ void syscall_handle(kernel_request_t *arg) {
 }
 
 
-void syscall_create(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_create(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Create", task->tid);
   syscall_create_arg_t *create_arg = arg->arguments;
   task_descriptor_t *new_task = td_create(ctx, task->tid, create_arg->priority, create_arg->entrypoint);
@@ -50,26 +62,26 @@ void syscall_create(task_descriptor_t *task, kernel_request_t *arg) {
   ((syscall_pid_ret_t *) arg->ret_val)->tid = new_task->tid;
 }
 
-void syscall_my_tid(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_my_tid(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=MyTid", task->tid);
   scheduler_requeue_task(task);
 
   ((syscall_pid_ret_t *) arg->ret_val)->tid = task->tid;
 }
 
-void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=MyParentTid ret=%d", task->tid, task->parent_tid);
   scheduler_requeue_task(task);
 
   ((syscall_pid_ret_t *) arg->ret_val)->tid = task->parent_tid;
 }
 
-void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Pass", task->tid);
   scheduler_requeue_task(task);
 }
 
-void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Exit", task->tid);
   // don't reschedule task
   task->state = STATE_ZOMBIE;
@@ -77,7 +89,7 @@ void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   scheduler_exit_task(task);
 }
 
-void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
+static void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
   syscall_message_t *src_msg = src_task->current_request.arguments;
   syscall_message_t *dest_msg = dest_task->current_request.ret_val;
 
@@ -109,11 +121,11 @@ void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
 }
 
 
-bool is_valid_task(int tid) {
+static bool is_valid_task(int tid) {
   return ctx->used_descriptors > tid && ctx->descriptors[tid].state != STATE_ZOMBIE;
 }
 
-void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Send", task->tid);
   task->state = STATE_RECEIVE_BLOCKED;
   syscall_message_t *msg = arg->arguments;
@@ -144,7 +156,7 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   }
 }
 
-void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Receive", task->tid);
   task->state = STATE_SEND_BLOCKED;
 
@@ -163,7 +175,7 @@ void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
   }
 }
 
-void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
+static void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Reply", task->tid);
   syscall_message_t *msg = arg->arguments;
 
