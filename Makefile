@@ -123,18 +123,9 @@ $(ARCH)%.s: lib/$(ARCH)/%.c
 %.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
 
-# ifndef LOCAL
-# # can't forget our custom ASM as part of the handlers
-# %.o: src/arm/%.s
-# 	$(AS) $(ASFLAGS) $< -o $@
-# endif
-
 # create binaries for each test file, depending on all lib code
-%.a: test/%.c $(LIB_BINS)
-	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_BINS) -o $@
-
-%.a: %_test.s
-	$(CC) $(CFLAGS) $< -o $@
+%.a: test/%.c $(LIB_SRCS)
+	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_SRCS) -lncurses -lpthread -o $@
 
 # create library binaries from object files, for ARM bundling
 lib%.a: %.o
