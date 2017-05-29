@@ -11,13 +11,25 @@ PROJECT=K2
 endif
 
 ifndef LOCAL
+
+
+# Use a custom compile if CUSTOM is provided
+ifndef CUSTOM
+COMPILER_BINARY_LOCATION=./armcheck;
+COMPILER_LIBRARY_LOCATION=/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2/
+else
+COMPILER_LOCATION=/u3/j5pereira/arm-gcc-6.3.1
+COMPILER_BINARY_LOCATION=$(COMPILER_LOCATION)/bin/arm-none-eabi-
+COMPILER_LIBRARY_LOCATION=$(COMPILER_LOCATION)/lib/gcc/arm-none-eabi/6.3.1/
+endif
+
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
-CC     = ./armcheck; gcc
-AS     = ./armcheck; as
-AR     = ./armcheck; ar
-LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline
+CC     = $(COMPILER_BINARY_LOCATION)gcc
+AS     = $(COMPILER_BINARY_LOCATION)as
+AR     = $(COMPILER_BINARY_LOCATION)ar
+LD     = $(COMPILER_BINARY_LOCATION)ld
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline -nostdlib -nostartfiles -ffreestanding
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -27,7 +39,7 @@ CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT)
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L.
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(COMPILER_LIBRARY_LOCATION) -L.
 # TODO: Document what these mean... heh
 else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
@@ -91,8 +103,10 @@ install: main.elf
 main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
 
+
+
 small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
-	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
+	$(COMPILER_BINARY_LOCATION)gcc $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(COMPILER_LIBRARY_LOCATION) $^ -o $@ -Wl,-lgcc
 
 
 # Local simulation binary

@@ -51,7 +51,7 @@ void syscall_handle(kernel_request_t *arg) {
     syscall_toggle_cache(task, arg);
     break;
   default:
-    log_syscall("WARNING: syscall not handled. syscall_no=%d", task->tid, arg->syscall);
+    bwprintf(COM2, "WARNING: syscall not handled. tid=%d syscall_no=%d\n\r", task->tid, arg->syscall);
     break;
   }
 }
@@ -215,6 +215,16 @@ static void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
 static void syscall_toggle_cache(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=ToggleCache", task->tid);
 
+  log_syscall("task=%x kreq=%x", task->tid, (unsigned long) task, (unsigned long) arg);
+  #ifndef DEBUG_MODE
+  asm volatile(
+    "stmfd sp!, {r0-r1}\n\t"
+    "mov r0, #1\n\t"
+    "mov r1, lr\n\t"
+    "bl bwputr\n\t"
+    "ldmfd sp!, {r0-r1}\n\t"
+  );
+  #endif
   bool mode;
   mode = *(bool *) arg->arguments;
   if (mode) {
@@ -222,6 +232,18 @@ static void syscall_toggle_cache(task_descriptor_t *task, kernel_request_t *arg)
   } else {
     io_disable_caches();
   }
+
+  log_debug("");
+
+  #ifndef DEBUG_MODE
+  asm volatile(
+    "stmfd sp!, {r0-r1}\n\t"
+    "mov r0, #1\n\t"
+    "mov r1, lr\n\t"
+    "bl bwputr\n\t"
+    "ldmfd sp!, {r0-r1}\n\t"
+  );
+  #endif
 
   scheduler_requeue_task(task);
 }
