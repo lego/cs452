@@ -1,8 +1,17 @@
 #ifndef __SCHEDULER_H__
 #define __SCHEDULER_H__
 
+#include <basic.h>
 #include <kern/task_descriptor.h>
 #include <kern/kernel_request.h>
+
+#define MIN_PRIORITY 0
+#define MAX_PRIORITY 31
+
+extern unsigned long int priotities_ready;
+
+extern task_descriptor_t *ready_queues[MAX_PRIORITY + 1];
+extern task_descriptor_t *ready_queues_end[MAX_PRIORITY + 1];
 
 /*
  * functionality for scheduling and swapping the active task as
@@ -56,7 +65,9 @@ void scheduler_requeue_task(task_descriptor_t *task);
 /**
  * Checks if there are any other tasks to schedule
  */
-bool scheduler_any_task();
+static inline bool scheduler_any_task() {
+  return !!priotities_ready;
+}
 
 /**
  * Puts a task back onto the ready queue

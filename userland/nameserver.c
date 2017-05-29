@@ -59,8 +59,7 @@ int RegisterAs( task_name_t name ) {
   req.call_type = REGISTER_CALL;
   req.name = name;
 
-  int status = Send(nameserver_tid, &req, sizeof(nameserver_request_t), NULL, 0);
-  // FIXME: proper status check
+  Send(nameserver_tid, &req, sizeof(nameserver_request_t), NULL, 0);
   return 0;
 }
 
@@ -76,8 +75,7 @@ int WhoIs( task_name_t name ) {
   req.name = name;
 
   int recv_tid;
-  int bytes_recv = Send(nameserver_tid, &req, sizeof(nameserver_request_t), &recv_tid, sizeof(recv_tid));
-  // FIXME: status check on bytes_recv
+  Send(nameserver_tid, &req, sizeof(nameserver_request_t), &recv_tid, sizeof(recv_tid));
 
   return recv_tid;
 }

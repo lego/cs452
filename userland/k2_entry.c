@@ -97,7 +97,6 @@ void send_receive_test() {
   char *hello = "HELLO";
 
   int my_tid = MyTid();
-
   log_task("Task started", my_tid);
   new_task_id = Create(2, &k2_child_task);
   log_task("Created tid=%d", my_tid, new_task_id);
@@ -154,8 +153,6 @@ typedef struct {
 } rps_message_t;
 
 void rps_client() {
-  int i;
-
   int losses = 0;
 
   int rps_server_tid = WhoIs(RPS_SERVER);
@@ -303,7 +300,8 @@ void rps_server() {
               // Reset the game
               player1_move = -1;
               player2_move = -1;
-              bwgetc(COM2);
+              char c = bwgetc(COM2);
+              if (c == 'q') done();
             }
           } else {
             sendMessage.type = ERR_INVALID_MOVE;

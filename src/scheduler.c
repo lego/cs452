@@ -2,9 +2,6 @@
 #include <kern/context.h>
 #include <kern/scheduler.h>
 
-#define MIN_PRIORITY 0
-#define MAX_PRIORITY 31
-
 task_descriptor_t *ready_queues[MAX_PRIORITY + 1];
 task_descriptor_t *ready_queues_end[MAX_PRIORITY + 1];
 
@@ -31,10 +28,6 @@ void scheduler_requeue_task(task_descriptor_t *task) {
   }
 }
 
-bool scheduler_any_task() {
-  return !!priotities_ready;
-}
-
 int scheduler_ready_queue_size() {
   int count = 0;
   int i;
@@ -52,7 +45,7 @@ int scheduler_ready_queue_size() {
 
 task_descriptor_t *scheduler_next_task() {
   // get the lowest priority with a task
-  int next_priority = __builtin_ctz(priotities_ready);
+  int next_priority = ctz(priotities_ready);
   task_descriptor_t *next_task = ready_queues[next_priority];
 
   // If this is null, we're screwed, other logic should

@@ -20,21 +20,23 @@
 #include <k1_entry.h>
 #elif defined(USE_K2)
 #include <k2_entry.h>
+#elif defined(USE_BENCHMARK)
+#include <benchmark_entry.h>
 #else
-#error Bad PROJECT value provided to Makefile. Expected "K1" or "K2"
+#error Bad PROJECT value provided to Makefile. Expected "K1", "K2" or "BENCHMARK"
 #endif
 
 #define ENTRY_TASK_PRIORITY 1
 
 task_descriptor_t *active_task;
+
 context_t *ctx;
 
-
-kernel_request_t *activate(task_descriptor_t *task) {
+static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
 }
 
-void handle(kernel_request_t *request) {
+static inline void handle(kernel_request_t *request) {
   syscall_handle(request);
 }
 
@@ -53,6 +55,9 @@ int main() {
   stack_context.used_descriptors = 0;
   ctx = &stack_context;
 
+  // enable caches here, because these are after initialization
+  // io_enable_caches();
+
   /* create first user task */
   task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, ENTRY_FUNC);
   scheduler_requeue_task(first_user_task);
@@ -64,10 +69,12 @@ int main() {
     task_descriptor_t *next_task = scheduler_next_task();
     log_kmain("next task tid=%d", next_task->tid);
     kernel_request_t *request = activate(next_task);
-    // TODO: i'm not sure what the best way to create the request abstraction is
-    // currently all request handling logic lives in context_switch.c
-    handle(request);
+    if (next_task->state != STATE_ZOMBIE) {
+      handle(request);
+    }
   }
+
+  // io_disable_caches();
 
   return 0;
 }

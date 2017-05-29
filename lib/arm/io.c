@@ -8,12 +8,86 @@
 #include <io.h>
 #include <ts7200.h>
 
-void io_init() {
-  bwsetfifo(COM2, OFF);
-  bwsetspeed(COM2, 115200);
+void ts7200_timer3_init() {
+    // set timer3 to start at maximum value
+    int *timer3_load = (int *)(TIMER3_BASE + LDR_OFFSET);
+    *timer3_load = 0xFFFFFFFF;
 
+    // set timer3 frequency to 508khz and enable it
+    int *timer3_flags = (int *)(TIMER3_BASE + CRTL_OFFSET);
+    *timer3_flags = *timer3_flags | CLKSEL_MASK | ENABLE_MASK;
+}
+
+void ts7200_uart1_init() {
+  // FIXME: we probably want to hard set the flags in case they were messed up
   int *uart1_flags = (int *)(UART1_BASE + UART_LCRH_OFFSET);
   *uart1_flags |= STP2_MASK;
+}
+
+void ts7200_uart2_init() {
+  // FIXME: we probably want to hard set the flags in case they were messed up
+  bwsetfifo(COM2, OFF);
+  bwsetspeed(COM2, 115200);
+}
+
+void io_init() {
+  ts7200_uart1_init();
+  ts7200_uart2_init();
+  ts7200_timer3_init();
+}
+
+void io_enable_caches() {
+  asm volatile (
+    // invalidates I-Cache and D-Cache, see arm-920t (ARM 920T technical reference), pg. 312
+    "mov r1, #0\n\t"
+    "mcr p15, 0, r1, c7, c7, 0\n\t"
+
+    // pull value from coprocessor
+    "mrc p15, 0, r1, c1, c0, 0\n\t"
+    // enable I-cache (bit 12) ep93xx-user-guide section 2.2.3.3.1, page 43
+    "orr r1, r1, #4096\n\t"
+    // enable D-cache (bit 3) ep93xx-user-guide section 2.2.3.3.2, page 43
+    "orr r1, r1, #4\n\t"
+    // store new value into coprocessor
+    "mcr p15, 0, r1, c1, c0, 0\n\t"
+  );
+}
+
+void io_disable_caches() {
+  asm volatile (
+    // pull value from coprocessor
+    "mrc p15, 0, r1, c1, c0, 0\n\t"
+    // disable I-cache (bit 12) ep93xx-user-guide section 2.2.3.3.1, page 43
+    "bic r1, r1, #4096\n\t"
+    // disable D-cache (bit 3) ep93xx-user-guide section 2.2.3.3.2, page 43
+    "bic r1, r1, #4\n\t"
+    // store new value into coprocessor
+    "mcr p15, 0, r1, c1, c0, 0\n\t"
+  );
+}
+
+io_time_t io_get_time() {
+  int *data = (int *)(TIMER3_BASE + VAL_OFFSET);
+  // Taking the compliment helps achieve current - prev
+  return 0xFFFFFFFF - *data;
+}
+
+
+#define CLOCKS_PER_MILLISECOND 508
+
+unsigned int io_time_difference_ms(io_time_t current, io_time_t prev) {
+  // FIXME: This overflow check may not be correct
+  if (prev > current) prev = 0xFFFFFFFF - prev + current;
+  return (current - prev) / CLOCKS_PER_MILLISECOND;
+}
+
+unsigned int io_time_difference_us(io_time_t current, io_time_t prev) {
+  // FIXME: This overflow check may not be correct
+  if (prev > current) prev = 0xFFFFFFFF - prev + current;
+  // This constant was acquired from Wolfram Alpha for (1/0.508), as there are
+  // approximately 5.8us per clock tick. if you use the literal (1/0.508)
+  // that value is integer rounded to 0 :(
+  return (current - prev) * 1.96850393700787401574803;
 }
 
 bool ts7200_uart1_get_cts() {
@@ -110,7 +184,7 @@ int get(int channel) {
     return -2;
     break;
   }
-  int status = can_put(channel);
+  int status = can_get(channel);
   if (status != 0) return status;
   c = *data;
   return c;
