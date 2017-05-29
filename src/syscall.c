@@ -8,6 +8,30 @@
 #include <kern/scheduler.h>
 #include <kern/interrupts.h>
 
+static inline void syscall_create(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_my_tid(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_pass(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_exit(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_send(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_receive(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_reply(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_await(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_exit_kernel(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_malloc(task_descriptor_t *task, kernel_request_t *arg);
+static inline void syscall_free(task_descriptor_t *task, kernel_request_t *arg);
+
+static inline void hwi(task_descriptor_t *task, kernel_request_t *arg);
+static inline void hwi_uart1_rx(task_descriptor_t *task, kernel_request_t *arg);
+static inline void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg);
+static inline void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg);
+static inline void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg);
+static inline void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg);
+static inline void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg);
+
+static void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task);
+static bool is_valid_task(int tid);
+
 void syscall_handle(kernel_request_t *arg) {
   task_descriptor_t *task = &ctx->descriptors[arg->tid];
 
@@ -59,7 +83,7 @@ void syscall_handle(kernel_request_t *arg) {
   }
 }
 
-void syscall_create(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_create(task_descriptor_t *task, kernel_request_t *arg) {
   syscall_create_arg_t *create_arg = arg->arguments;
   task_descriptor_t *new_task = td_create(ctx, task->tid, create_arg->priority, create_arg->entrypoint, create_arg->func_name);
   log_syscall("Create priority=%d tid=%d", task->tid, create_arg->priority, new_task->tid);
@@ -68,40 +92,40 @@ void syscall_create(task_descriptor_t *task, kernel_request_t *arg) {
   ((syscall_pid_ret_t *) arg->ret_val)->tid = new_task->tid;
 }
 
-void syscall_my_tid(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_my_tid(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("MyTid", task->tid);
   scheduler_requeue_task(task);
 
   ((syscall_pid_ret_t *) arg->ret_val)->tid = task->tid;
 }
 
-void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("MyParentTid ret=%d", task->tid, task->parent_tid);
   scheduler_requeue_task(task);
 
   ((syscall_pid_ret_t *) arg->ret_val)->tid = task->parent_tid;
 }
 
-void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Pass", task->tid);
   scheduler_requeue_task(task);
 }
 
-void syscall_malloc(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_malloc(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Malloc", task->tid);
   unsigned int size = (unsigned int) arg->arguments;
   *(void **) arg->ret_val = alloc(size);
   scheduler_requeue_task(task);
 }
 
-void syscall_free(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_free(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Free", task->tid);
   void *data = arg->arguments;
   *(int *) arg->ret_val = jfree(data);
   scheduler_requeue_task(task);
 }
 
-void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Exit", task->tid);
   // don't reschedule task
   task->state = STATE_ZOMBIE;
@@ -109,7 +133,7 @@ void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   scheduler_exit_task(task);
 }
 
-void syscall_exit_kernel(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_exit_kernel(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("ExitKernel", task->tid);
   // don't reschedule task
   task->state = STATE_ZOMBIE;
@@ -118,7 +142,7 @@ void syscall_exit_kernel(task_descriptor_t *task, kernel_request_t *arg) {
   should_exit = true;
 }
 
-void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
+static void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
   syscall_message_t *src_msg = src_task->current_request.arguments;
   syscall_message_t *dest_msg = dest_task->current_request.ret_val;
 
@@ -169,7 +193,7 @@ void post_time_recording(io_time_t *recording_time) {
   *recording_time = now - beginning_recording_time;
 }
 
-void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   pre_time_recording(&task->send_execution_time);
   log_syscall("Send", task->tid);
   task->state = STATE_RECEIVE_BLOCKED;
@@ -204,7 +228,7 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   post_time_recording(&task->send_execution_time);
 }
 
-void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
   pre_time_recording(&task->recv_execution_time);
   log_syscall("Receive", task->tid);
   task->state = STATE_SEND_BLOCKED;
@@ -225,7 +249,7 @@ void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
   post_time_recording(&task->recv_execution_time);
 }
 
-void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
   pre_time_recording(&task->repl_execution_time);
   log_syscall("Reply", task->tid);
   syscall_message_t *msg = arg->arguments;
@@ -259,7 +283,7 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
   post_time_recording(&task->repl_execution_time);
 }
 
-void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Await", task->tid);
   syscall_await_arg_t *await_arg = arg->arguments;
   await_event_t event_type = await_arg->event;
@@ -284,7 +308,7 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   task->state = STATE_EVENT_BLOCKED;
 }
 
-void hwi(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void hwi(task_descriptor_t *task, kernel_request_t *arg) {
   task->was_interrupted = true;
 
   if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
@@ -323,7 +347,7 @@ task_descriptor_t *hwi_unblock_task_for_event(await_event_t event) {
   return event_blocked_task;
 }
 
-void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 2 TX interrupt");
 
   // write character
@@ -337,7 +361,7 @@ void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg) {
   hwi_unblock_task_for_event(EVENT_UART2_TX);
 }
 
-void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 2 RX interrupt");
   hwi_unblock_task_for_event(EVENT_UART2_RX);
   VMEM(UART2_BASE + UART_CTLR_OFFSET) &= ~RIEN_MASK;
@@ -345,7 +369,7 @@ void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
 
 static bool uart1_tx_saw_low = false;
 
-void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 1 TX interrupt");
 
   // write character
@@ -357,7 +381,7 @@ void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg) {
   VMEM(UART1_BASE + UART_CTLR_OFFSET) &= ~TIEN_MASK;
 }
 
-void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 1 MODEM interrupt");
 
   bool cts = VMEM(UART1_BASE + UART_FLAG_OFFSET) & CTS_MASK;
@@ -371,13 +395,13 @@ void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg) {
   VMEM(UART1_BASE + UART_INTR_OFFSET) = 0x0;
 }
 
-void hwi_uart1_rx(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void hwi_uart1_rx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 1 RX interrupt");
   hwi_unblock_task_for_event(EVENT_UART1_RX);
   VMEM(UART1_BASE + UART_CTLR_OFFSET) &= ~RIEN_MASK;
 }
 
-void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg) {
+static inline void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=Timer 2 interrupt");
   hwi_unblock_task_for_event(EVENT_TIMER);
   *((int*)(TIMER2_BASE+CLR_OFFSET)) = 0x0;
