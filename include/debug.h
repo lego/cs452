@@ -15,7 +15,7 @@
   #define DEBUG_KERNEL_MAIN true
   #define DEBUG_TASK true
   #define DEBUG_SYSCALL true
-  #define DEBUG_INTERRUPTS true
+  #define DEBUG_INTERRUPT true
 
 #define NOP do {} while(0)
 
@@ -86,8 +86,8 @@ void debugger();
 #define log_syscall(format, ...) NOP
 #endif
 
-#if DEBUG_INTERRUPTS
-#define log_interrupt(format, tid, ...) log_debug("INT " format, ## __VA_ARGS__)
+#if DEBUG_INTERRUPT
+#define log_interrupt(format, ...) log_debug("INT " format, ## __VA_ARGS__)
 #else
 #define log_interrupt(format, ...) NOP
 #endif
