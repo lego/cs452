@@ -3,6 +3,8 @@
 
 void k1_entry_task();
 
+#ifndef ENTRY_FUNC
 #define ENTRY_FUNC k1_entry_task
+#endif
 
 #endif

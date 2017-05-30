@@ -9,6 +9,8 @@
  *
  */
 
+#define REDBOOT_ENTRYPOINT 0x218000
+
 /*
  * A set of standard C defitions
  * - COMPILE_ASSERT and INLINE

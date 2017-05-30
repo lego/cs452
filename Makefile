@@ -18,6 +18,9 @@ ifndef PACKETS
 PACKETS=true
 endif
 
+CFLAGS_BACKTRACE = -mpoke-function-name -fverbose-asm -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs
+CFLAGS_COMPILE_WARNINGS = -Winline -Werror -Wno-unused-variable -Wno-format-security
+
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
@@ -25,7 +28,8 @@ CC     = ./armcheck; gcc
 AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
+
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -41,7 +45,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -Wno-undefined-inline  -Werror -Wno-unused-variable -Wno-int-to-void-pointer-cast -Wno-format-security
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -Wno-undefined-inline -Wno-int-to-void-pointer-cast $(CFLAGS_COMPILE_WARNINGS)
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, same as possible on the school ARM GCC
@@ -157,6 +161,8 @@ lib%.a: %.o
 libstdlib.a: $(STDLIB_OBJS)
 	$(AR) $(ARFLAGS) $@ $<
 
+funcmapgen: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
+	./funcmapgen.sh
 
 # clean all files in the top-level, the only place we have temp files
 clean:
@@ -164,7 +170,7 @@ clean:
 
 # always run clean (it doesn't produce files)
 # also always run main.a because it implicitly depends on all C files
-.PHONY: clean main.a
+.PHONY: clean main.a funcmapgen
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful

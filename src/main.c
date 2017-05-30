@@ -37,6 +37,8 @@
 #include <entry/malloc_test.h>
 #elif defined(USE_BENCHMARK)
 #include <entry/benchmark.h>
+#elif defined(USE_BACKTRACE_TEST)
+#include <entry/backtrace_test.h>
 #else
 #error Bad PROJECT value provided to Makefile. Expected "K1-4", "TC1", "BENCHMARK", "CLOCK_SERVER_TEST", "NAVIGATION_TEST"
 #endif
