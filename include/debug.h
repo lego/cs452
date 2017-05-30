@@ -18,6 +18,13 @@
 
 #define NOP do {} while(0)
 
+#define RESET_ATTRIBUTES "\x1b" "[0m"
+#ifdef DEBUG_MODE
+#define GREY_FG "\x1b" "[37m"
+#else
+#define GREY_FG "\x1b" "[90m"
+#endif
+
 #if DEBUG_MODE
 /**
  * This function is made to only be a breakpoint in GDB
@@ -25,9 +32,6 @@
  * while we can also stub this to otherwise be a NOP
  */
 void debugger();
-
-#define RESET_ATTRIBUTES "\x1b" "[0m"
-#define GREY_FG "\x1b" "[37m"
 
 #include <stdarg.h>
 #include <stdio.h>

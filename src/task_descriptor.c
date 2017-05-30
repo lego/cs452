@@ -1,15 +1,26 @@
 #include <basic.h>
+#include <bwio.h>
 #include <cbuffer.h>
 #include <kern/context.h>
 #include <kern/task_descriptor.h>
 
 #ifndef DEBUG_MODE
 #include <kern/arm/linker.h>
+#else
+#include <stdlib.h>
 #endif
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)()) {
   // TODO: Assert task priority is valid, i.e. in [1,5]
   int tid = ctx->used_descriptors++;
+  if (tid >= MAX_TASKS) {
+    bwprintf(COM2, "WARNING: MAXIMUM TASKS REACHED. HELP.");
+    #ifndef DEBUG_MODE
+    asm volatile("mov pc, #20");
+    #else
+    exit(1);
+    #endif
+  }
   task_descriptor_t *task = &ctx->descriptors[tid];
   task->priority = priority;
   task->tid = tid;

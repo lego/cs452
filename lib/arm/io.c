@@ -38,31 +38,38 @@ void io_init() {
 
 void io_enable_caches() {
   asm volatile (
+    // save r0 before stomping on it
+    "stmfd sp!, {r0}\n\t"
+    "mov r0, #0\n\t"
     // invalidates I-Cache and D-Cache, see arm-920t (ARM 920T technical reference), pg. 312
-    "mov r1, #0\n\t"
-    "mcr p15, 0, r1, c7, c7, 0\n\t"
+    "mov r0, #0\n\t"
+    "mcr p15, 0, r0, c7, c7, 0\n\t"
 
     // pull value from coprocessor
-    "mrc p15, 0, r1, c1, c0, 0\n\t"
+    "mrc p15, 0, r0, c1, c0, 0\n\t"
     // enable I-cache (bit 12) ep93xx-user-guide section 2.2.3.3.1, page 43
-    "orr r1, r1, #4096\n\t"
+    "orr r0, r0, #4096\n\t"
     // enable D-cache (bit 3) ep93xx-user-guide section 2.2.3.3.2, page 43
-    "orr r1, r1, #4\n\t"
+    "orr r0, r0, #4\n\t"
     // store new value into coprocessor
-    "mcr p15, 0, r1, c1, c0, 0\n\t"
+    "mcr p15, 0, r0, c1, c0, 0\n\t"
+    // save r0 before stomping on it
+    "ldmfd sp!, {r0}\n\t"
   );
 }
 
 void io_disable_caches() {
   asm volatile (
+    "stmfd sp!, {r0}\n\t"
     // pull value from coprocessor
-    "mrc p15, 0, r1, c1, c0, 0\n\t"
+    "mrc p15, 0, r0, c1, c0, 0\n\t"
     // disable I-cache (bit 12) ep93xx-user-guide section 2.2.3.3.1, page 43
-    "bic r1, r1, #4096\n\t"
+    "bic r0, r0, #4096\n\t"
     // disable D-cache (bit 3) ep93xx-user-guide section 2.2.3.3.2, page 43
-    "bic r1, r1, #4\n\t"
+    "bic r0, r0, #4\n\t"
     // store new value into coprocessor
-    "mcr p15, 0, r1, c1, c0, 0\n\t"
+    "mcr p15, 0, r0, c1, c0, 0\n\t"
+    "ldmfd sp!, {r0}\n\t"
   );
 }
 
