@@ -88,6 +88,11 @@ int Receive( int *tid, void *msg, int msglen ) {
 }
 
 int Reply( int tid, void *reply, int replylen ) {
+  // FIXME: assert tid is valid, replylen is positive or 0
+
+  // Ensure if reply is null, replylen is 0
+  assert(reply != NULL || replylen == 0);
+
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_REPLY;
@@ -100,4 +105,15 @@ int Reply( int tid, void *reply, int replylen ) {
 
   context_switch(&request);
   return arg.status;
+}
+
+int AwaitEvent( await_event_t event_type ) {
+  // FIXME: assert valid event
+
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_AWAIT;
+  request.arguments = &event_type;
+  context_switch(&request);
+  return *(int *) request.ret_val;
 }

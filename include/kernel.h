@@ -54,4 +54,10 @@ int Receive( int *tid, void *msg, int msglen );
 
 int Reply( int tid, void *reply, int replylen );
 
+enum await_event_t {
+  EVENT_CLOCK,
+}; typedef int await_event_t;
+
+int AwaitEvent( await_event_t event_type );
+
 #endif

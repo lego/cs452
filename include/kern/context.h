@@ -9,6 +9,7 @@
  * These defines are the different integers associated with software interrupts
  * to denote which syscall is being made
  */
+// FIXME: make syscall_t an enum
 typedef int syscall_t;
 #define SYSCALL_MY_TID (syscall_t) 1
 #define SYSCALL_MY_PARENT_TID (syscall_t) 2
@@ -18,6 +19,7 @@ typedef int syscall_t;
 #define SYSCALL_SEND (syscall_t) 6
 #define SYSCALL_RECEIVE (syscall_t) 7
 #define SYSCALL_REPLY (syscall_t) 8
+#define SYSCALL_AWAIT (syscall_t) 9
 
 /*
  * A global struct for kernel state

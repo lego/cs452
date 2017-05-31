@@ -33,6 +33,9 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_REPLY:
     syscall_reply(task, arg);
     break;
+  case SYSCALL_AWAIT:
+    syscall_await(task, arg);
+    break;
   default:
     log_syscall("WARNING: syscall not handled. syscall_no=%d", task->tid, arg->syscall);
     break;
@@ -193,4 +196,11 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
     scheduler_requeue_task(task);
     return;
   }
+}
+
+void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("syscall=Await", task->tid);
+  await_event_t msg = *(await_event_t *) arg->arguments;
+
+  task->state = STATE_EVENT_BLOCKED;
 }
