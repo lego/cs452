@@ -34,7 +34,7 @@ void syscall_handle(kernel_request_t *arg) {
     syscall_reply(task, arg);
     break;
   default:
-    log_syscall("WARNING: syscall not handled. syscall_no=%d", task->tid, arg->syscall);
+    bwprintf(COM2, "WARNING: syscall not handled. tid=%d syscall_no=%d\n\r", task->tid, arg->syscall);
     break;
   }
 }

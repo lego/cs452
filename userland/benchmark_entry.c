@@ -53,7 +53,7 @@ void benchmark_entry_task() {
   io_time_t t1;
   io_time_t t2;
 
-  bwprintf(COM2, "\n\r === WARMING CACHE === \n\r");
+  bwprintf(COM2, "=== WARMING CACHE ===\n\r");
 
   // SRR
   new_task_id = Create(2, &msg_child_task);
@@ -66,7 +66,7 @@ void benchmark_entry_task() {
   // Regular pass
   Pass();
 
-  bwprintf(COM2, "\n\r === BENCHMARKS === \n\r");
+  bwprintf(COM2, "=== BENCHMARKS ===\n\r");
 
   new_task_id = Create(2, &msg_child_task);
   TIMING_START(100);
@@ -103,7 +103,7 @@ void benchmark_entry_task() {
   TIMING_END("Task reschedule");
 
   // Sanity check SRR, prints result value
-  bwprintf(COM2, "\n\r === SANITY CHECK === \n\r");
+  bwprintf(COM2, "=== SANITY CHECK ===\n\r");
 
   int result;
   char *hello = "HELLO";
@@ -114,6 +114,4 @@ void benchmark_entry_task() {
   result = Send(new_task_id, hello, 6, NULL, 0);
   log_task("Sent msg", 0);
   bwprintf(COM2, "T0 Sent message. result=%d to_tid=%d\n\r", result, new_task_id);
-  log_task("Exiting", 0);
-  Exit();
 }
