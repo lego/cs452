@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include <basic.h>
 #include <bwio.h>
 #include <k3_entry.h>

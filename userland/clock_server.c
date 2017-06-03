@@ -31,7 +31,7 @@ void clock_server() {
   Create(1, clock_notifier);
 
   int requester;
-  unsigned long int time_value;
+  unsigned long int ticks;
 
   clock_request_t request;
 
@@ -43,10 +43,11 @@ void clock_server() {
       case NOTIFIER:
         // update time and check for terminated delays
         ReplyN(requester);
-        time_value = request.time_value;
+        // ticks = request.time_value;
+        ticks += 0xFFFF; // MAX_TIME from io.c
       case TIME_REQUEST:
         // reply with time
-        ReplyS(requester, time_value);
+        ReplyS(requester, ticks);
       case DELAY_REQUEST:
         break;
         // Add requester to list of suspended tasks

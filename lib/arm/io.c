@@ -13,12 +13,24 @@
 void ts7200_timer3_init() {
     // set timer3 to start at maximum value
     int *timer3_load = (int *)(TIMER3_BASE + LDR_OFFSET);
-    *timer3_load = MAX_TIME;
+    *timer3_load = 0xFFFFFFFF;
 
     // set timer3 frequency to 508khz and enable it
     int *timer3_flags = (int *)(TIMER3_BASE + CRTL_OFFSET);
     *timer3_flags = *timer3_flags | CLKSEL_MASK | MODE_MASK | ENABLE_MASK;
 }
+
+
+void ts7200_timer2_init() {
+    // set timer3 to start at maximum value
+    int *timer2_load = (int *)(TIMER2_BASE + LDR_OFFSET);
+    *timer2_load = 5080;
+
+    // set timer2 frequency to 508khz and enable it
+    int *timer2_flags = (int *)(TIMER2_BASE + CRTL_OFFSET);
+    *timer2_flags = *timer2_flags | CLKSEL_MASK | MODE_MASK | ENABLE_MASK;
+}
+
 
 void ts7200_uart1_init() {
   // FIXME: we probably want to hard set the flags in case they were messed up
@@ -35,6 +47,7 @@ void ts7200_uart2_init() {
 void io_init() {
   ts7200_uart1_init();
   ts7200_uart2_init();
+  ts7200_timer2_init();
   ts7200_timer3_init();
 }
 
@@ -74,7 +87,6 @@ io_time_t io_get_time() {
   // Taking the compliment helps achieve current - prev
   return MAX_TIME - *data;
 }
-
 
 #define CLOCKS_PER_MILLISECOND 508
 

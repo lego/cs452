@@ -110,10 +110,14 @@ int Reply( int tid, void *reply, int replylen ) {
 int AwaitEvent( await_event_t event_type ) {
   // FIXME: assert valid event
 
+  volatile int return_value;
+
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_AWAIT;
   request.arguments = &event_type;
+  request.ret_val = &return_value;
+
   context_switch(&request);
-  return *(int *) request.ret_val;
+  return return_value;
 }

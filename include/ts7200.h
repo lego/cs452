@@ -58,7 +58,7 @@
 	#define RIEN_MASK	0x10	// receive int
 	#define TIEN_MASK	0x20	// transmit int
 	#define RTIEN_MASK	0x40	// receive timeout int
-	#define LBEN_MASK	0x80	// loopback 
+	#define LBEN_MASK	0x80	// loopback
 #define UART_FLAG_OFFSET	0x18	// low 8 bits
 	#define CTS_MASK	0x1
 	#define DCD_MASK	0x2
@@ -81,6 +81,10 @@
 #define UART_HDLCRIB_OFFSET	0x218
 #define UART_HDLCSTS_OFFSET	0x21c
 
+// Memory access. This is here to make it easy to find code that is
+// TS7200 specific, when it hits memory
+#define VMEM(x) *((volatile unsigned int *)(x))
+
 // Interrupt stuff
 #define VIC1_BASE 0x800B0000
 #define VIC2_BASE 0x800C0000
@@ -89,5 +93,45 @@
 #define VIC_ENABLE_OFFSET 0x10
 #define VIC_CLEAR_OFFSET 0x14
 
-#define TIMER3_INTERRUPT 0x80000
-#define _1HZ_INTERRUPT 0x400
+// VIC1
+#define INTERRUPT_TIMER1 4
+#define INTERRUPT_TIMER2 5
+// VIC2
+#define INTERRUPT_1HZ 42
+#define INTERRUPT_TIMER3 51
+#define INTERRUPT_UART1 52
+#define INTERRUPT_UART2 54
+
+/**
+ * The follow macros help abstract out VIC1 vs. VIC2 code
+ */
+
+/**
+ * Provides the base address of the VIC that the interrupt is on
+ */
+#define VIC_ADDR(int_num) (int_num >= 32 ? VIC2_BASE : VIC1_BASE)
+
+/**
+ * Provides the VIC bit for the interrupt
+ */
+#define INTERRUPT_BIT(int_num) (int_num >= 32 ? (1 << (int_num - 32)) : (1 << int_num))
+
+/**
+ * Checks if an interrupt is active
+ */
+#define IS_INTERRUPT_ACTIVE(int_num) (VMEM(VIC_ADDR(int_num) + VIC_STATUS_OFFSET) & INTERRUPT_BIT(int_num))
+
+/**
+ * Clears a specific interrupt
+ */
+#define INTERRUPT_CLEAR(int_num) (VMEM(VIC_ADDR(int_num) + VIC_CLEAR_OFFSET) |= INTERRUPT_BIT(int_num))
+
+/**
+ * Enables an interrupt
+ */
+#define INTERRUPT_ENABLE(int_num) (VMEM(VIC_ADDR(int_num) + VIC_ENABLE_OFFSET) |= INTERRUPT_BIT(int_num))
+
+/**
+ * Disables an interrupt
+ */
+#define INTERRUPT_DISABLE(int_num) (VMEM(VIC_ADDR(int_num) + VIC_ENABLE_OFFSET) &= ~INTERRUPT_BIT(int_num))

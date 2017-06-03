@@ -212,16 +212,24 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
 }
 
 void hwi(task_descriptor_t *task, kernel_request_t *arg) {
-  if (*((int*)(VIC2_BASE+VIC_STATUS_OFFSET)) & TIMER3_INTERRUPT) {
-    hwi_timer3(task, arg);
+  if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
+    hwi_timer2(task, arg);
   } else {
-    log_syscall("HWI=Unknown (1Hz Interrupt?)", task->tid);
+    log_interrupt("HWI=Unknown interrupt");
     scheduler_requeue_task(task);
   }
 }
 
-void hwi_timer3(task_descriptor_t *task, kernel_request_t *arg) {
-  log_syscall("HWI=Timer 3 Interrupt", task->tid);
-  *((int*)(TIMER3_BASE+CLR_OFFSET)) = 0x0;
+void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=Timer 2 interrupt");
+  task_descriptor_t *event_blocked_task = interrupts_get_waiting_task(EVENT_TIMER);
+  if (event_blocked_task != NULL) {
+    interrupts_clear_waiting_task(event_blocked_task);
+    event_blocked_task->state = STATE_READY;
+    // super sketchy untyped stuff
+    *(int *) event_blocked_task->current_request.ret_val = io_get_time();
+    scheduler_requeue_task(event_blocked_task);
+  }
+  *((int*)(TIMER2_BASE+CLR_OFFSET)) = 0x0;
   scheduler_requeue_task(task);
 }

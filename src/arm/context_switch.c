@@ -10,17 +10,6 @@ typedef int (*interrupt_handler)(int);
 void context_switch_init() {
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
-
-  context_switch_clear_interrupts();
-
-  // Enable hardware interrupts
-  *((int*)(VIC2_BASE+VIC_ENABLE_OFFSET)) |= _1HZ_INTERRUPT;
-  *((int*)(VIC2_BASE+VIC_ENABLE_OFFSET)) |= TIMER3_INTERRUPT;
-}
-
-void context_switch_clear_interrupts() {
-  *((int*)(VIC1_BASE+VIC_CLEAR_OFFSET)) = 0xFFFFFFFF;
-  *((int*)(VIC2_BASE+VIC_CLEAR_OFFSET)) = 0xFFFFFFFF;
 }
 
 asm (

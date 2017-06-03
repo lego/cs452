@@ -46,19 +46,28 @@ static inline void handle(kernel_request_t *request) {
   syscall_handle(request);
 }
 
-io_time_t idle_time;
+io_time_t idle_time_total;
+io_time_t idle_time_start;
+io_time_t time_since_idle_print;
 
 static inline void idle_task_pre_activate(task_descriptor_t *task) {
   if (task->priority == 31) {
-    idle_time = io_get_time();
+    idle_time_start = io_get_time();
   }
 }
 
 static inline void idle_task_post_activate(task_descriptor_t *task) {
   if (task->priority == 31) {
-    io_time_t end_idle_time = io_get_time();
-    unsigned int total_idle_time = io_time_difference_us(end_idle_time, idle_time);
-    bwprintf(COM2, "Idle task ran for %dus\n\r", total_idle_time);
+    io_time_t idle_time_end = io_get_time();
+    idle_time_total += (idle_time_end - idle_time_start);
+
+    // Only print idle time every 1s
+    if (io_time_difference_us(idle_time_end, time_since_idle_print) >= 1000000) {
+      unsigned int idle_time_us = io_time_difference_us(idle_time_total, 0);
+      bwprintf(COM2, "Idle task ran for %dus\n\r", idle_time_us);
+      idle_time_total = 0;
+      time_since_idle_print = idle_time_end;
+    }
   }
 }
 
@@ -66,6 +75,7 @@ int main() {
   active_task = NULL;
   ctx = NULL;
   idle_task_tid = 0;
+  time_since_idle_print = io_get_time();
 
   /* initialize various kernel components */
   context_switch_init();
@@ -106,7 +116,7 @@ int main() {
   //   before starting a user task, even though we should start with
   //   interrupts disabled
   // TODO: figure out why ^
-  context_switch_clear_interrupts();
+  interrupts_clear_all();
 
   // io_disable_caches();
 
