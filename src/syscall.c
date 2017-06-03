@@ -37,8 +37,11 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_AWAIT:
     syscall_await(task, arg);
     break;
+  case SYSCALL_HW_INT:
+    hwi(task, arg);
+    break;
   default:
-    log_syscall("WARNING: syscall not handled. syscall_no=%d", task->tid, arg->syscall);
+    bwprintf(COM2, "WARNING: syscall not handled. tid=%d syscall_no=%d\n\r", task->tid, arg->syscall);
     break;
   }
 }
@@ -206,4 +209,19 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   interrupts_set_waiting_task(event_type, task);
 
   task->state = STATE_EVENT_BLOCKED;
+}
+
+void hwi(task_descriptor_t *task, kernel_request_t *arg) {
+  if (*((int*)(VIC2_BASE+VIC_STATUS_OFFSET)) & TIMER3_INTERRUPT) {
+    hwi_timer3(task, arg);
+  } else {
+    log_syscall("HWI=Unknown (1Hz Interrupt?)", task->tid);
+    scheduler_requeue_task(task);
+  }
+}
+
+void hwi_timer3(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("HWI=Timer 3 Interrupt", task->tid);
+  *((int*)(TIMER3_BASE+CLR_OFFSET)) = 0x0;
+  scheduler_requeue_task(task);
 }

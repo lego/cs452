@@ -5,18 +5,23 @@
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
-void* kernelSp = 0;
-
 typedef int (*interrupt_handler)(int);
 
 void context_switch_init() {
-  kernelSp = 0;
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
+  *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
+
+  context_switch_clear_interrupts();
+
+  // Enable hardware interrupts
+  *((int*)(VIC2_BASE+VIC_ENABLE_OFFSET)) |= _1HZ_INTERRUPT;
+  *((int*)(VIC2_BASE+VIC_ENABLE_OFFSET)) |= TIMER3_INTERRUPT;
 }
 
-void __asm_swi_handler();
-void __asm_switch_to_task(void* task_sp);
-void __asm_start_task(void* task_sp, void* task_pc);
+void context_switch_clear_interrupts() {
+  *((int*)(VIC1_BASE+VIC_CLEAR_OFFSET)) = 0xFFFFFFFF;
+  *((int*)(VIC2_BASE+VIC_CLEAR_OFFSET)) = 0xFFFFFFFF;
+}
 
 asm (
 "\n"
@@ -33,22 +38,30 @@ asm (
     // switch to argument stack pointer
     "mov sp, r0\n\t"
 
-    // recover task registers
-    "ldmfd sp!, {r1, r2, r4-r12, lr}\n\t"
+    // recover task spsr and lr
+    "ldmfd sp!, {r1, r2}\n\t"
     "msr spsr_c, r1\n\t"
   "msr cpsr_c, #211\n\t"
 
   "mov lr, r2\n\t"
+
+  // in system mode
+  "msr cpsr_c, #223\n\t"
+    // recover task registers
+    "ldmfd sp!, {r0-r12, lr}\n\t"
+  "msr cpsr_c, #211\n\t"
 
   // begin execution of task
   "movs pc, lr\n\t"
 
 "\n"
 "__asm_swi_handler:\n\t"
+  // start in svc mode
+
   // in system mode
   "msr cpsr_c, #223\n\t"
     // store task state and lr
-    "stmfd sp!, {r4-r12, lr}\n\t"
+    "stmfd sp!, {r0-r12, lr}\n\t"
   "msr cpsr_c, #211\n\t"
 
   "mrs r4, spsr\n\t"
@@ -75,6 +88,42 @@ asm (
   "mov pc, lr\n\t"
 
 "\n"
+"__asm_hwi_handler:\n\t"
+  // start in irq mode
+
+  "sub lr, lr, #4\n\r"
+
+  // in system mode
+  "msr cpsr_c, #223\n\t"
+    // store task state and lr
+    "stmfd sp!, {r0-r12, lr}\n\t"
+  // back to irq
+  "msr cpsr_c, #210\n\t"
+
+  "mrs r4, spsr\n\t"
+  // save return-to-user lr to r5 so it's not overwritten by r0-r3
+  "mov r5, lr\n\t"
+
+  // in system mode
+  "msr cpsr_c, #223\n\t"
+    "stmfd sp!, {r4, r5}\n\t"
+    "mov r4, sp\n\t"
+  // switch to svc mode
+  "msr cpsr_c, #211\n\t"
+
+  // set up args for syscall
+  "mov r0, r4\n\t" // task stack pointer
+
+  // handle syscall
+  "bl __hwint(PLT)\n\t"
+
+  // load the return-to-kernel lr + registers
+  "ldmfd sp!, {r4-r12, lr}\n\t"
+
+  // return from scheduler_activate_task in kernel
+  "mov pc, lr\n\t"
+
+"\n"
 "__asm_start_task:\n\t"
   // store return-to-kernel lr + registers
   "stmfd sp!, {r4-r12, lr}\n\t"
@@ -85,7 +134,7 @@ asm (
     "mov sp, r0\n\t"
 
     // Store Exit function as the return place
-    "ldr r4, .__asm_swi_handler_data+4\n\t"
+    "ldr r4, .__asm_swi_handler_data+0\n\t"
     "ldr lr, [sl, r4]\n\t"
   "msr cpsr_c, #211\n\t"
 
@@ -96,9 +145,18 @@ asm (
 
 "\n"
 ".__asm_swi_handler_data:\n\t"
-  ".word kernelSp(GOT)\n\t"
   ".word Exit(GOT)\n\t"
-  );
+);
+
+void __hwint(void* stack) {
+  int tid = active_task->tid;
+  ctx->descriptors[tid].current_request.tid = tid;
+  ctx->descriptors[tid].current_request.syscall = SYSCALL_HW_INT;
+
+  // save stack pointer
+  // we need to know how to get the current task
+  active_task->stack_pointer = stack;
+}
 
 void __syscall(void* stack, kernel_request_t *arg) {
   // copy over request

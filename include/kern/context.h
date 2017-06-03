@@ -21,6 +21,8 @@ typedef int syscall_t;
 #define SYSCALL_REPLY (syscall_t) 8
 #define SYSCALL_AWAIT (syscall_t) 9
 
+#define SYSCALL_HW_INT (syscall_t) 99
+
 /*
  * A global struct for kernel state
  */
