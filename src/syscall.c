@@ -2,6 +2,7 @@
 #include <kern/syscall.h>
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
+#include <kern/interrupts.h>
 
 void syscall_handle(kernel_request_t *arg) {
   task_descriptor_t *task = &ctx->descriptors[arg->tid];
@@ -200,7 +201,9 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
 
 void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("syscall=Await", task->tid);
-  await_event_t msg = *(await_event_t *) arg->arguments;
+  await_event_t event_type = *(await_event_t *) arg->arguments;
+
+  interrupts_set_waiting_task(event_type, task);
 
   task->state = STATE_EVENT_BLOCKED;
 }

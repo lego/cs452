@@ -52,7 +52,7 @@ void Exit( ) {
   context_switch(&request);
 }
 
-int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
+int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_SEND;
@@ -72,7 +72,7 @@ int Send( int tid, void *msg, int msglen, void *reply, int replylen) {
   return ret_val.status;
 }
 
-int Receive( int *tid, void *msg, int msglen ) {
+int Receive( int *tid, volatile void *msg, int msglen ) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_RECEIVE;

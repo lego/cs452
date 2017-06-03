@@ -13,6 +13,7 @@
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
+#include <kern/interrupts.h>
 #include <kern/syscall.h>
 #include <kernel.h>
 
@@ -20,6 +21,8 @@
 #include <k1_entry.h>
 #elif defined(USE_K2)
 #include <k2_entry.h>
+#elif defined(USE_K3)
+#include <k3_entry.h>
 #elif defined(USE_BENCHMARK)
 #include <benchmark_entry.h>
 #else
@@ -32,6 +35,9 @@ task_descriptor_t *active_task;
 
 context_t *ctx;
 
+int idle_task_tid;
+
+
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
 }
@@ -40,14 +46,32 @@ static inline void handle(kernel_request_t *request) {
   syscall_handle(request);
 }
 
+io_time_t idle_time;
+
+static inline void idle_task_pre_activate(task_descriptor_t *task) {
+  if (task->priority == 31) {
+    idle_time = io_get_time();
+  }
+}
+
+static inline void idle_task_post_activate(task_descriptor_t *task) {
+  if (task->priority == 31) {
+    io_time_t end_idle_time = io_get_time();
+    unsigned int total_idle_time = io_time_difference_us(end_idle_time, idle_time);
+    bwprintf(COM2, "Idle task ran for %dus\n\r", total_idle_time);
+  }
+}
+
 int main() {
   active_task = NULL;
   ctx = NULL;
+  idle_task_tid = 0;
 
   /* initialize various kernel components */
   context_switch_init();
   io_init();
   scheduler_init();
+  interrupts_init();
 
   /* initialize core kernel global variables */
   // create shared kernel context memory
@@ -68,7 +92,9 @@ int main() {
   while (scheduler_any_task()) {
     task_descriptor_t *next_task = scheduler_next_task();
     log_kmain("next task tid=%d", next_task->tid);
+    idle_task_pre_activate(next_task);
     kernel_request_t *request = activate(next_task);
+    idle_task_post_activate(next_task);
     if (next_task->state != STATE_ZOMBIE) {
       handle(request);
     }

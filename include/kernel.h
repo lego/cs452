@@ -1,6 +1,7 @@
 #ifndef __KERNEL_H__
 #define __KERNEL_H__
 
+#include <basic.h>
 // Hardcoded maximum used in a number of places
 // WARNING: this is also defined in orex.ld
 // if this in increased, you should also increase that one
@@ -48,14 +49,18 @@ void Exit( );
 #define ReceiveS(tid, arg1) Receive(tid, &arg1, sizeof(arg1))
 #define ReplyS(tid, arg1) Reply(tid, &arg1, sizeof(arg1))
 
-int Send( int tid, void *msg, int msglen, void *reply, int replylen);
+#define ReceiveN(tid) Receive(tid, NULL, 0)
+#define ReplyN(tid) Reply(tid, NULL, 0)
 
-int Receive( int *tid, void *msg, int msglen );
+
+int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen);
+
+int Receive( int *tid, volatile void *msg, int msglen );
 
 int Reply( int tid, void *reply, int replylen );
 
 enum await_event_t {
-  EVENT_CLOCK,
+  EVENT_TIMER,
 }; typedef int await_event_t;
 
 int AwaitEvent( await_event_t event_type );
