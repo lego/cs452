@@ -5,18 +5,22 @@
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
-void* kernelSp = 0;
-
 typedef int (*interrupt_handler)(int);
 
 void context_switch_init() {
-  kernelSp = 0;
-
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
 
+  context_switch_clear_interrupts();
+
   // Enable hardware interrupts
   *((int*)(VIC2_BASE+VIC_ENABLE_OFFSET)) |= _1HZ_INTERRUPT;
+  *((int*)(VIC2_BASE+VIC_ENABLE_OFFSET)) |= TIMER3_INTERRUPT;
+}
+
+void context_switch_clear_interrupts() {
+  *((int*)(VIC1_BASE+VIC_CLEAR_OFFSET)) = 0xFFFFFFFF;
+  *((int*)(VIC2_BASE+VIC_CLEAR_OFFSET)) = 0xFFFFFFFF;
 }
 
 asm (
@@ -145,11 +149,9 @@ asm (
 );
 
 void __hwint(void* stack) {
-  bwprintf(COM2, "__hwint\n\r");
-
   int tid = active_task->tid;
   ctx->descriptors[tid].current_request.tid = tid;
-  ctx->descriptors[tid].current_request.syscall = 99;
+  ctx->descriptors[tid].current_request.syscall = SYSCALL_HW_INT;
 
   // save stack pointer
   // we need to know how to get the current task

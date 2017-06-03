@@ -8,14 +8,16 @@
 #include <io.h>
 #include <ts7200.h>
 
+#define MAX_TIME 0xFFFFFFFF
+
 void ts7200_timer3_init() {
     // set timer3 to start at maximum value
     int *timer3_load = (int *)(TIMER3_BASE + LDR_OFFSET);
-    *timer3_load = 0xFFFFFFFF;
+    *timer3_load = MAX_TIME;
 
     // set timer3 frequency to 508khz and enable it
     int *timer3_flags = (int *)(TIMER3_BASE + CRTL_OFFSET);
-    *timer3_flags = *timer3_flags | CLKSEL_MASK | ENABLE_MASK;
+    *timer3_flags = *timer3_flags | CLKSEL_MASK | MODE_MASK | ENABLE_MASK;
 }
 
 void ts7200_uart1_init() {
@@ -70,7 +72,7 @@ void io_disable_caches() {
 io_time_t io_get_time() {
   int *data = (int *)(TIMER3_BASE + VAL_OFFSET);
   // Taking the compliment helps achieve current - prev
-  return 0xFFFFFFFF - *data;
+  return MAX_TIME - *data;
 }
 
 
@@ -78,13 +80,13 @@ io_time_t io_get_time() {
 
 unsigned int io_time_difference_ms(io_time_t current, io_time_t prev) {
   // FIXME: This overflow check may not be correct
-  if (prev > current) prev = 0xFFFFFFFF - prev + current;
+  if (prev > current) prev = MAX_TIME - prev + current;
   return (current - prev) / CLOCKS_PER_MILLISECOND;
 }
 
 unsigned int io_time_difference_us(io_time_t current, io_time_t prev) {
   // FIXME: This overflow check may not be correct
-  if (prev > current) prev = 0xFFFFFFFF - prev + current;
+  if (prev > current) prev = MAX_TIME - prev + current;
   // This constant was acquired from Wolfram Alpha for (1/0.508), as there are
   // approximately 5.8us per clock tick. if you use the literal (1/0.508)
   // that value is integer rounded to 0 :(

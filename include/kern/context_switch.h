@@ -15,6 +15,7 @@
 void context_switch(kernel_request_t *arg);
 
 void context_switch_init();
+void context_switch_clear_interrupts();
 
 void __asm_swi_handler();
 void __asm_hwi_handler();

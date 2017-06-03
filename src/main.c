@@ -76,6 +76,14 @@ int main() {
     }
   }
 
+  // Clear out any interrupt bits
+  // This is needed because for some reason if we run our program more than
+  //   once, on the second time we immediately hit the interrupt handler
+  //   before starting a user task, even though we should start with
+  //   interrupts disabled
+  // TODO: figure out why ^
+  context_switch_clear_interrupts();
+
   // io_disable_caches();
 
   return 0;
