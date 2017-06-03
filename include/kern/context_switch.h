@@ -17,6 +17,7 @@ void context_switch(kernel_request_t *arg);
 void context_switch_init();
 
 void __asm_swi_handler();
+void __asm_hwi_handler();
 void __asm_start_task(void* task_sp, void* task_pc);
 void __asm_switch_to_task(void* task_sp);
 

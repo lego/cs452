@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
 ifndef PROJECT
-PROJECT=K2
+PROJECT=K3
 endif
 
 ifndef LOCAL

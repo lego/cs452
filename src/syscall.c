@@ -33,6 +33,9 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_REPLY:
     syscall_reply(task, arg);
     break;
+  case SYSCALL_HW_INT:
+    scheduler_requeue_task(task);
+    break;
   default:
     bwprintf(COM2, "WARNING: syscall not handled. tid=%d syscall_no=%d\n\r", task->tid, arg->syscall);
     break;

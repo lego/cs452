@@ -19,6 +19,8 @@ typedef int syscall_t;
 #define SYSCALL_RECEIVE (syscall_t) 7
 #define SYSCALL_REPLY (syscall_t) 8
 
+#define SYSCALL_HW_INT (syscall_t) 99
+
 /*
  * A global struct for kernel state
  */

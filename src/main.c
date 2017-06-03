@@ -20,6 +20,8 @@
 #include <k1_entry.h>
 #elif defined(USE_K2)
 #include <k2_entry.h>
+#elif defined(USE_K3)
+#include <k3_entry.h>
 #elif defined(USE_BENCHMARK)
 #include <benchmark_entry.h>
 #else
