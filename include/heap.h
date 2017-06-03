@@ -40,4 +40,15 @@ void *heap_pop (heap_t *h);
  */
 int heap_size (heap_t *h);
 
+/**
+ * Gets the lowest priority (which is a single peek)
+ */
+int heap_peek_priority (heap_t *h);
+
+
+/**
+ * Gets the lowest priority value (which is a single peek)
+ */
+void *heap_peek (heap_t *h);
+
 #endif

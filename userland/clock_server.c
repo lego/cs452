@@ -20,20 +20,24 @@ void clock_notifier() {
   clock_request_t req;
   req.type = NOTIFIER;
   while (true) {
-    req.time_value = AwaitEvent(EVENT_TIMER);
+    AwaitEvent(EVENT_TIMER);
     int result = Send(clock_server_tid, &req, sizeof(clock_request_t), NULL, 0);
     // FIXME: handle bad results ?
   }
 }
 
 void clock_server() {
-  RegisterAs(CLOCK_SERVER);
-  Create(1, clock_notifier);
-
   int requester;
-  unsigned long int ticks;
+  unsigned long int ticks = 0;
 
   clock_request_t request;
+
+  int delayed_tids[MAX_TASKS];
+  heapnode_t queue_nodes[MAX_TASKS];
+  heap_t delay_queue = heap_create(queue_nodes, MAX_TASKS);
+
+  RegisterAs(CLOCK_SERVER);
+  Create(1, clock_notifier);
 
   while (true) {
       int size_received = Receive(&requester, &request, sizeof(clock_request_t));
@@ -41,10 +45,9 @@ void clock_server() {
 
       switch ( request.type ) {
       case NOTIFIER:
-        // update time and check for terminated delays
         ReplyN(requester);
-        // ticks = request.time_value;
-        ticks += 0xFFFF; // MAX_TIME from io.c
+        ticks += 1;
+        // check for terminated delays
       case TIME_REQUEST:
         // reply with time
         ReplyS(requester, ticks);

@@ -125,7 +125,7 @@ $(ARCH)%.s: lib/$(ARCH)/%.c
 
 # create binaries for each test file, depending on all lib code
 %.a: test/%.c $(LIB_SRCS)
-	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_SRCS) -lncurses -lpthread -o $@
+	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_SRCS) -lncurses -lpthread -lcheck -o $@
 
 # create library binaries from object files, for ARM bundling
 lib%.a: %.o

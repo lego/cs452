@@ -2,11 +2,11 @@
 #include <heap.h>
 
 heap_t heap_create(heapnode_t *nodes, int size) {
-  return (heap_t) {
-           .nodes = nodes,
-           .size = size,
-           .len = 0
-  };
+  heap_t heap;
+  heap.nodes = nodes;
+  heap.size = size;
+  heap.len = 0;
+  return heap;
 }
 
 int heap_size (heap_t *h) {
@@ -56,4 +56,18 @@ void *heap_pop (heap_t *h) {
   }
   h->nodes[i] = h->nodes[h->len + 1];
   return data;
+}
+
+int heap_peek_priority (heap_t *h) {
+  if (!h->len) {
+    return -1;
+  }
+  return h->nodes[1].priority;
+}
+
+void *heap_peek (heap_t *h) {
+  if (!h->len) {
+    return NULL;
+  }
+  return h->nodes[1].data;
 }

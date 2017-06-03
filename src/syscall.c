@@ -226,8 +226,6 @@ void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg) {
   if (event_blocked_task != NULL) {
     interrupts_clear_waiting_task(event_blocked_task);
     event_blocked_task->state = STATE_READY;
-    // super sketchy untyped stuff
-    *(int *) event_blocked_task->current_request.ret_val = io_get_time();
     scheduler_requeue_task(event_blocked_task);
   }
   *((int*)(TIMER2_BASE+CLR_OFFSET)) = 0x0;
