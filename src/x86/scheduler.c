@@ -31,27 +31,27 @@ void scheduler_exit_task(task_descriptor_t *task) {
 void scheduler_reschedule_the_world() {
   int tid = active_task->tid;
   task_descriptor_t *task = &ctx->descriptors[tid];
-  log_scheduler_task("t%d signal kernel", tid);
+  log_scheduler_task("signal kernel", tid);
   pthread_cond_signal(&kernel_cv);
   active_task = NULL;
   if (task->state == STATE_ACTIVE) task->state = STATE_READY;
-  log_scheduler_task("t%d cv wait", tid);
+  log_scheduler_task("cv wait", tid);
   while (task->state != STATE_ACTIVE) pthread_cond_wait(&task_cvs[tid], &active_mutex);
-  log_scheduler_task("t%d cv woke", tid);
+  log_scheduler_task("cv woke", tid);
 }
 
 void *scheduler_start_task(void *td) {
   task_descriptor_t *task = (task_descriptor_t *) td;
-  log_scheduler_task("t%d acquire mutex", task->tid);
+  log_scheduler_task("acquire mutex", task->tid);
   pthread_mutex_lock(&active_mutex);
   task->entrypoint();
 
   active_task = NULL;
-  log_scheduler_task("t%d signal kernel (exit)", task->tid);
+  log_scheduler_task("signal kernel (exit)", task->tid);
   pthread_cond_signal(&kernel_cv);
-  log_scheduler_task("t%d release mutex (exit)", task->tid);
+  log_scheduler_task("release mutex (exit)", task->tid);
   pthread_mutex_unlock(&active_mutex);
-  log_scheduler_task("t%d thread KILL", task->tid);
+  log_scheduler_task("thread KILL", task->tid);
   task->state = STATE_ZOMBIE;
   pthread_exit(NULL);
 

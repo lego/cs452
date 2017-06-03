@@ -5,7 +5,8 @@
 static int nameserver_tid = -1;
 
 void nameserver() {
-  nameserver_tid = MyTid();
+  int tid = MyTid();
+  nameserver_tid = tid;
 
   int i;
   int status;
@@ -29,6 +30,7 @@ void nameserver() {
 
     if (req.call_type == REGISTER_CALL) {
       // If register call, just add to the hashmap
+      log_task("nameserver registered name=%d tid=%d", tid, req.name, source_tid);
       mapping[req.name] = source_tid;
       // FIXME: handle status
       status = Reply(source_tid, NULL, 0);
@@ -36,6 +38,7 @@ void nameserver() {
       // If whois, get the value
       // Reply -1 if no tid found, else reply tid
       int val = mapping[req.name];
+      log_task("nameserver resp name=%d tid=%d", tid, req.name, val);
       status = Reply(source_tid, &val, sizeof(int));
 
       // Reply failed, continue ?
@@ -49,6 +52,7 @@ void nameserver() {
 }
 
 int RegisterAs( task_name_t name ) {
+  log_task("RegisterAs name=%d", active_task->tid, name);
   if (nameserver_tid == -1){
     // Don't make data syscall, but still reschedule
     Pass();
@@ -64,6 +68,7 @@ int RegisterAs( task_name_t name ) {
 }
 
 int WhoIs( task_name_t name ) {
+  log_task("WhoIs name=%d", active_task->tid, name);
   if (nameserver_tid == -1) {
     // Don't make data syscall, but still reschedule
     Pass();

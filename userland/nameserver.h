@@ -7,10 +7,12 @@
 enum task_name_t {
   PRODUCER_TEST,
   RPS_SERVER,
-  NUM_TASK_NAMES,
   CLOCK_SERVER,
   CLOCK_NOTIFIER,
   IDLE_TASK,
+
+  // NOTE: leave this at the end, OR ELSE!
+  NUM_TASK_NAMES,
 };
 
 typedef int task_name_t;

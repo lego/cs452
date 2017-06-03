@@ -6,7 +6,6 @@
 #include <jstring.h>
 
 int Create(int priority, void (*entrypoint)()) {
-  log_task("Create priority=%d", active_task->tid, priority);
   assert(0 <= priority && priority < 32);
 
   kernel_request_t request;
@@ -53,6 +52,8 @@ void Exit( ) {
 }
 
 int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
+  KASSERT(tid != active_task->tid, "Attempted send to self tid=%d", tid);
+
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_SEND;
@@ -88,6 +89,7 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
 }
 
 int Reply( int tid, void *reply, int replylen ) {
+  KASSERT(tid != active_task->tid, "Attempted reply to self tid=%d", tid);
   // FIXME: assert tid is valid, replylen is positive or 0
 
   // Ensure if reply is null, replylen is 0

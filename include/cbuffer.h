@@ -5,7 +5,7 @@
  * Circular buffer, using a pre-allocated buffer
  */
 
-#include <basic.h>
+#include <stdbool.h>
 
 typedef struct {
   void **buffer;

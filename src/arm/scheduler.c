@@ -10,16 +10,16 @@ void scheduler_arch_init() {
 }
 
 void scheduler_exit_task(task_descriptor_t *task) {
-  log_scheduler_task("would exit task");
+  log_scheduler_task("would exit task", task->tid);
 }
 
 void scheduler_reschedule_the_world() {
-  log_scheduler_task("would go back to kernel");
+  log_scheduler_task("would go back to kernel", active_task->tid);
 }
 
 void *scheduler_start_task(void *td) {
   task_descriptor_t *task = (task_descriptor_t *) td;
-  log_scheduler_task("would start task tid=%d", task->tid);
+  log_scheduler_task("would start task", task->tid);
   return NULL;
 }
 

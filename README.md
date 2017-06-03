@@ -2,7 +2,11 @@ CS452-Codebase
 ==============
 
 ### TODO
-
+- Idle task metrics tracking
+  - [ ] Idling time
+  - [ ] SendQ depth
+  - [ ] Task stack sizes
+  - [ ] Kernel stack size (compile time / once? it won't grow)
 
 Building
 --------

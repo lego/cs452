@@ -23,6 +23,8 @@
 #include <k2_entry.h>
 #elif defined(USE_K3)
 #include <k3_entry.h>
+#elif defined(USE_CLOCK_SERVER_TEST)
+#include <clock_server_test.h>
 #elif defined(USE_BENCHMARK)
 #include <benchmark_entry.h>
 #else
@@ -71,6 +73,17 @@ static inline void idle_task_post_activate(task_descriptor_t *task) {
   }
 }
 
+void cleanup() {
+  // Clear out any interrupt bits
+  // This is needed because for some reason if we run our program more than
+  //   once, on the second time we immediately hit the interrupt handler
+  //   before starting a user task, even though we should start with
+  //   interrupts disabled
+  // TODO: figure out why ^
+  // NOTE: others were having this issue too
+  interrupts_clear_all();
+}
+
 int main() {
   active_task = NULL;
   ctx = NULL;
@@ -110,13 +123,7 @@ int main() {
     }
   }
 
-  // Clear out any interrupt bits
-  // This is needed because for some reason if we run our program more than
-  //   once, on the second time we immediately hit the interrupt handler
-  //   before starting a user task, even though we should start with
-  //   interrupts disabled
-  // TODO: figure out why ^
-  interrupts_clear_all();
+  cleanup();
 
   // io_disable_caches();
 

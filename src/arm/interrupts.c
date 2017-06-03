@@ -13,7 +13,6 @@ void interrupts_arch_init() {
   INTERRUPT_ENABLE(INTERRUPT_TIMER2);
 }
 
-
 void interrupts_enable_irq(await_event_t event_type) {
   if (event_type == EVENT_TIMER) {
     INTERRUPT_ENABLE(INTERRUPT_TIMER2);
@@ -26,7 +25,6 @@ void interrupts_disable_irq(await_event_t event_type) {
     INTERRUPT_CLEAR(INTERRUPT_TIMER2);
   }
 }
-
 
 void interrupts_clear_all() {
   VMEM(VIC1_BASE + VIC_CLEAR_OFFSET) = 0xFFFFFFFF;

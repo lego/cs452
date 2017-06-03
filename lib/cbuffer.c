@@ -1,7 +1,4 @@
-/*
- * cbuffer.c - circular buffer
- */
-
+#include <basic.h>
 #include <cbuffer.h>
 
 

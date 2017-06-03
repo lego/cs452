@@ -24,7 +24,7 @@ void ts7200_timer3_init() {
 void ts7200_timer2_init() {
     // set timer3 to start at maximum value
     int *timer2_load = (int *)(TIMER2_BASE + LDR_OFFSET);
-    *timer2_load = 5080;
+    *timer2_load = 0xFFFF;
 
     // set timer2 frequency to 508khz and enable it
     int *timer2_flags = (int *)(TIMER2_BASE + CRTL_OFFSET);
