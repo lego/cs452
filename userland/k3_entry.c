@@ -12,7 +12,24 @@ typedef struct {
   int delay_amount;
 } client_data_t;
 
+volatile int programs_active;
+volatile io_time_t start_time;
+
+static inline void Prepare() {
+  programs_active++;
+}
+
+
+static inline void ExitIfComplete() {
+  programs_active--;
+  if (programs_active == 0) {
+    bwprintf(COM2, "finishing total_time=%d", io_time_difference_us(io_get_time(), start_time));
+    ExitKernel();
+  }
+}
+
 void k3_client_task() {
+  Prepare();
   volatile client_data_t data;
   int my_tid = MyTid();
   int parent_tid = MyParentTid();
@@ -27,15 +44,20 @@ void k3_client_task() {
     Delay(clock_server_tid, ticks);
     bwprintf(COM2, "tid=%d delay=%d completed_delays=%d\n\r", my_tid, ticks, i+1);
   }
+
+  ExitIfComplete();
 }
 
 void k3_entry_task() {
+  start_time = io_get_time();
+
   Create(1, &nameserver);
   Create(2, &clock_server);
   Create(IDLE_TASK_PRIORITY, &idle_task);
 
   client_data_t data;
   int recv_tid;
+  programs_active = 0;
 
   // Client
   // priority = 3
