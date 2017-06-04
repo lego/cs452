@@ -62,9 +62,15 @@ static inline void idle_task_post_activate(task_descriptor_t *task) {
     idle_time_total += (idle_time_end - idle_time_start);
 
     // Only print idle time every 1s
-    if (io_time_difference_us(idle_time_end, time_since_idle_print) >= 1000000) {
-      unsigned int idle_time_us = io_time_difference_us(idle_time_total, 0);
-      bwprintf(COM2, "Idle task ran for %dus\n\r", idle_time_us);
+    if (io_time_difference_ms(idle_time_end, time_since_idle_print) >= 1000) {
+      unsigned int idle_time_ms = io_time_difference_ms(idle_time_total, 0);
+      if (idle_time_ms < 5) {
+        unsigned int idle_time_us = io_time_difference_us(idle_time_total, 0);
+        bwprintf(COM2, "Idle task ran for %dus\n\r", idle_time_us);
+
+      } else {
+        bwprintf(COM2, "Idle task ran for %dms\n\r", idle_time_ms);
+      }
       idle_time_total = 0;
       time_since_idle_print = idle_time_end;
     }
