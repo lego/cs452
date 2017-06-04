@@ -19,7 +19,7 @@ typedef struct {
 void clock_notifier() {
   int tid = MyTid();
   RegisterAs(CLOCK_NOTIFIER);
-  log_task("In clock_notifier", tid);
+  log_clock_server("In clock_notifier", tid);
   int clock_server_tid = MyParentTid();
 
   clock_request_t req;
@@ -49,7 +49,7 @@ void clock_server() {
 
   RegisterAs(CLOCK_SERVER);
 
-  log_task("In clock_server", tid);
+  log_clock_server("In clock_server", tid);
 
   Create(1, clock_notifier);
 
@@ -62,18 +62,18 @@ void clock_server() {
       ticks += 1;
       break;
     case TIME_REQUEST:
-      log_task("clock_server time request tid=%d", tid, requester);
+      log_clock_server("clock_server time request tid=%d", tid, requester);
       // reply with time
       ReplyS(requester, ticks);
       break;
     case DELAY_REQUEST:
       // Add requester to list of suspended tasks
-      log_task("clock_server delay tid=%d until=%d", tid, requester, ticks + request.time_value);
+      log_clock_server("clock_server delay tid=%d until=%d", tid, requester, ticks + request.time_value);
       heap_push(&delay_queue, ticks + request.time_value, requester);
       break;
     case DELAY_UNTIL_REQUEST:
       // Add requester to list of suspended tasks
-      log_task("clock_server delay tid=%d until=%d", tid, requester, request.time_value);
+      log_clock_server("clock_server delay tid=%d until=%d", tid, requester, request.time_value);
       heap_push(&delay_queue, request.time_value, requester);
       break;
     default:
@@ -83,21 +83,21 @@ void clock_server() {
       break;
     }
 
-    log_task("clock_server heap size=%d top=%d", tid, heap_size(&delay_queue), heap_peek_priority(&delay_queue));
+    log_clock_server("clock_server heap size=%d top=%d", tid, heap_size(&delay_queue), heap_peek_priority(&delay_queue));
 
     // Reply to suspended tasks that have timed out
     while (heap_size(&delay_queue) > 0 && heap_peek_priority(&delay_queue) <= ticks) {
       int tid_of_delay_done = (int) heap_pop(&delay_queue);
-      log_task("clock_server undelay tid=%d", tid, tid_of_delay_done);
+      log_clock_server("clock_server undelay tid=%d", tid, tid_of_delay_done);
       ReplyN(tid_of_delay_done);
     }
 
-    log_task("clock_server time=%d", tid, ticks);
+    log_clock_server("clock_server time=%d", tid, ticks);
   }
 }
 
 int Delay( int tid, unsigned int delay ) {
-  log_task("Delay tid=%d delay=%d", active_task->tid, tid, delay);
+  log_clock_server("Delay tid=%d delay=%d", active_task->tid, tid, delay);
   clock_request_t req;
   req.type = DELAY_REQUEST;
   req.time_value = delay;
@@ -106,7 +106,7 @@ int Delay( int tid, unsigned int delay ) {
 }
 
 int Time( int tid ) {
-  log_task("Time tid=%d", active_task->tid, tid);
+  log_clock_server("Time tid=%d", active_task->tid, tid);
   clock_request_t req;
   req.type = TIME_REQUEST;
   volatile unsigned long int time_value;
@@ -115,7 +115,7 @@ int Time( int tid ) {
 }
 
 int DelayUntil( int tid, unsigned long int until ) {
-  log_task("DelayUntil tid=%d until=%d", active_task->tid, tid, until);
+  log_clock_server("DelayUntil tid=%d until=%d", active_task->tid, tid, until);
   clock_request_t req;
   req.type = DELAY_UNTIL_REQUEST;
   req.time_value = until;

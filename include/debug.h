@@ -16,6 +16,8 @@
   #define DEBUG_TASK true
   #define DEBUG_SYSCALL false
   #define DEBUG_INTERRUPT false
+  #define DEBUG_CLOCK_SERVER false
+  #define DEBUG_NAMESERVER false
 
 #define NOP do {} while(0)
 
@@ -106,6 +108,18 @@ static inline void exit() {
 #define log_interrupt(format, ...) log_debug("IN  " format, ## __VA_ARGS__)
 #else
 #define log_interrupt(format, ...) NOP
+#endif
+
+#if DEBUG_CLOCK_SERVER
+#define log_clock_server(format, ...) log_task(format, ## __VA_ARGS__)
+#else
+#define log_clock_server(format, ...) NOP
+#endif
+
+#if DEBUG_NAMESERVER
+#define log_nameserver(format, ...) log_debug("  [N]  " format, ## __VA_ARGS__)
+#else
+#define log_nameserver(format, ...) NOP
 #endif
 
 #endif

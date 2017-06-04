@@ -30,7 +30,7 @@ void nameserver() {
 
     if (req.call_type == REGISTER_CALL) {
       // If register call, just add to the hashmap
-      log_task("nameserver registered name=%d tid=%d", tid, req.name, source_tid);
+      log_nameserver("nameserver registered name=%d tid=%d", req.name, source_tid);
       mapping[req.name] = source_tid;
       // FIXME: handle status
       status = Reply(source_tid, NULL, 0);
@@ -38,7 +38,7 @@ void nameserver() {
       // If whois, get the value
       // Reply -1 if no tid found, else reply tid
       int val = mapping[req.name];
-      log_task("nameserver resp name=%d tid=%d", tid, req.name, val);
+      log_nameserver("nameserver resp name=%d tid=%d", req.name, val);
       status = Reply(source_tid, &val, sizeof(int));
 
       // Reply failed, continue ?
