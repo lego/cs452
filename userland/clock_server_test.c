@@ -32,6 +32,7 @@ void clock_server_test_child() {
     Delay(clock_server_tid, ticks);
     bwprintf(COM2, "tid=%d delay=%d completed_delays=%d\n\r", tid, ticks, i+1);
   }
+  ExitKernel();
 }
 
 void clock_server_test() {
