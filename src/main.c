@@ -92,7 +92,7 @@ int main() {
   should_exit = false;
   active_task = NULL;
   ctx = NULL;
-  time_since_idle_print = io_get_time();
+  idle_time_total = 0;
 
   /* initialize various kernel components */
   context_switch_init();
@@ -112,6 +112,9 @@ int main() {
   /* create first user task */
   task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, ENTRY_FUNC);
   scheduler_requeue_task(first_user_task);
+
+  // NOTE: this needs to be after io_init, as it uses the timer
+  time_since_idle_print = io_get_time();
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
 

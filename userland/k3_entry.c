@@ -23,7 +23,7 @@ static inline void Prepare() {
 static inline void ExitIfComplete() {
   programs_active--;
   if (programs_active == 0) {
-    bwprintf(COM2, "finishing total_time=%dms", io_time_difference_ms(io_get_time(), start_time));
+    bwprintf(COM2, "finishing program total_time=%dms", io_time_difference_ms(io_get_time(), start_time));
     ExitKernel();
   }
 }
@@ -42,7 +42,7 @@ void k3_client_task() {
   int i;
   for (i = 0; i < amount; i++) {
     Delay(clock_server_tid, ticks);
-    bwprintf(COM2, "tid=%d delay=%d completed_delays=%d\n\r", my_tid, ticks, i+1);
+    bwprintf(COM2, "Finished delay tid=%d ticks=%d completed=%d\n\r", my_tid, ticks, i+1);
   }
 
   ExitIfComplete();

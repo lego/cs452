@@ -7,13 +7,13 @@
  * Debug tooling
  */
 
-#define DEBUG_LOGGING_ARM false
+#define DEBUG_LOGGING_ARM true
 #define DEBUG_LOGGING_X86 true
 // Enable various log_debug statements in the code
   #define DEBUG_SCHEDULER false
   #define DEBUG_CONTEXT_SWITCH false
   #define DEBUG_KERNEL_MAIN false
-  #define DEBUG_TASK true
+  #define DEBUG_TASK false
   #define DEBUG_SYSCALL false
   #define DEBUG_INTERRUPT false
   #define DEBUG_CLOCK_SERVER false
