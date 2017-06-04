@@ -23,7 +23,7 @@ static inline void Prepare() {
 static inline void ExitIfComplete() {
   programs_active--;
   if (programs_active == 0) {
-    bwprintf(COM2, "finishing total_time=%d", io_time_difference_us(io_get_time(), start_time));
+    bwprintf(COM2, "finishing total_time=%dms", io_time_difference_ms(io_get_time(), start_time));
     ExitKernel();
   }
 }
