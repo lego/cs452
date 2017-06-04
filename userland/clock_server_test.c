@@ -48,8 +48,8 @@ void clock_server_test() {
 
   log_task("Initialize child task", tid);
   Create(3, &clock_server_test_child);
-  data.delay_ticks = 10;
-  data.delay_amount = 20;
+  data.delay_ticks = 7;
+  data.delay_amount = 10;
   log_task("Send child task data", tid);
   ReceiveN(&recv_tid);
   ReplyS(recv_tid, data);
