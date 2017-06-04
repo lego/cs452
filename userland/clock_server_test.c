@@ -5,6 +5,7 @@
 #include <nameserver.h>
 #include <clock_server.h>
 #include <idle_task.h>
+#include <io.h>
 
 
 typedef struct {
@@ -25,13 +26,25 @@ void clock_server_test_child() {
   int clock_server_tid = WhoIs(CLOCK_SERVER);
   int i;
 
-  log_task("Initialized", tid);
+  bwprintf(COM2, "Initialized ticks=%d amount=%d\n\r", ticks, amount);
+
+  io_time_t start_time = io_get_time();
+  io_time_t curr_time = start_time;
 
   for (i = 0; i < amount; i++) {
     log_task("Delaying ticks=%d", tid, ticks);
     Delay(clock_server_tid, ticks);
-    bwprintf(COM2, "tid=%d delay=%d completed_delays=%d\n\r", tid, ticks, i+1);
+    io_time_t last_time = curr_time;
+    curr_time = io_get_time();
+    bwprintf(COM2, "tid=%d delay=%d completed_delays=%d ticktime=%dms cumtime=%dms\n\r", tid, ticks, i+1,  io_time_difference_ms(curr_time, last_time), io_time_difference_ms(curr_time, start_time));
   }
+
+  int time_ticks = Time(clock_server_tid);
+
+  io_time_t end_time = io_get_time();
+
+  bwprintf(COM2, "finished. standard_time=%dms tick_time=%d\n\r", io_time_difference_ms(end_time, start_time), time_ticks);
+
   ExitKernel();
 }
 
@@ -48,7 +61,7 @@ void clock_server_test() {
 
   log_task("Initialize child task", tid);
   Create(3, &clock_server_test_child);
-  data.delay_ticks = 7;
+  data.delay_ticks = 10;
   data.delay_amount = 10;
   log_task("Send child task data", tid);
   ReceiveN(&recv_tid);

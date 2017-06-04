@@ -7,7 +7,7 @@
  * Debug tooling
  */
 
-#define DEBUG_LOGGING_ARM true
+#define DEBUG_LOGGING_ARM false
 #define DEBUG_LOGGING_X86 true
 // Enable various log_debug statements in the code
   #define DEBUG_SCHEDULER false

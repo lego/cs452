@@ -24,11 +24,10 @@ void ts7200_timer3_init() {
 void ts7200_timer2_init() {
     // set timer2 to start to 10ms in 508khz clock cycles
     int *timer2_load = (int *)(TIMER2_BASE + LDR_OFFSET);
-    // this constant is 10000/0.5084689 in hex
-    // 10,000 is the amount of ms in us, and 0.5084689 is the amount of us in a clock cycle
-    // so the end result is the number of clock cycles in 10ms, 19666.886
-    // NOTE: this will have a skew of a few us every tick
-    *timer2_load = 0x4CD2;
+    // this constant is 10 / ((1/508468.9) * 1000) in hex
+    // 10 is the desired MS per tick, and ((1/508468.9) * 1000) is the amount of MS per clock cycle
+    // NOTE: this will have a skew of a few us every tick, as the constant is 5084.689 (rational)
+    *timer2_load = 5085;
 
     // set timer2 frequency to 508khz and enable it
     int *timer2_flags = (int *)(TIMER2_BASE + CRTL_OFFSET);
