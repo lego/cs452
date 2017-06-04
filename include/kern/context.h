@@ -62,6 +62,6 @@ extern context_t *ctx;
  * should_exit is a boolean for whether the kernel should
  * exit on the next taks cycle
  */
-extern bool shouldExit;
+extern bool should_exit;
 
 #endif
