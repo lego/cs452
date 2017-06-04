@@ -5,7 +5,7 @@
 #include <nameserver.h>
 #include <clock_server.h>
 #include <idle_task.h>
-
+#include <io.h>
 
 typedef struct {
   int delay_ticks;
