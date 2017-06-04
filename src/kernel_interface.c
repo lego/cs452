@@ -51,6 +51,13 @@ void Exit( ) {
   context_switch(&request);
 }
 
+void ExitKernel( ) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_EXIT_KERNEL;
+  context_switch(&request);
+}
+
 int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
   KASSERT(tid != active_task->tid, "Attempted send to self tid=%d", tid);
 

@@ -15,6 +15,7 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg);
 void syscall_receive(task_descriptor_t *task, kernel_request_t *arg);
 void syscall_reply(task_descriptor_t *task, kernel_request_t *arg);
 void syscall_await(task_descriptor_t *task, kernel_request_t *arg);
+void syscall_exit_program(task_descriptor_t *task, kernel_request_t *arg);
 
 void hwi(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg);

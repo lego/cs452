@@ -34,10 +34,8 @@
 #define ENTRY_TASK_PRIORITY 1
 
 task_descriptor_t *active_task;
-
 context_t *ctx;
-
-int idle_task_tid;
+bool should_exit;
 
 
 static inline kernel_request_t *activate(task_descriptor_t *task) {
@@ -85,9 +83,9 @@ void cleanup() {
 }
 
 int main() {
+  should_exit = false;
   active_task = NULL;
   ctx = NULL;
-  idle_task_tid = 0;
   time_since_idle_print = io_get_time();
 
   /* initialize various kernel components */
@@ -112,7 +110,7 @@ int main() {
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
 
   // start executing user tasks
-  while (scheduler_any_task()) {
+  while (!should_exit) {
     task_descriptor_t *next_task = scheduler_next_task();
     log_kmain("next task tid=%d", next_task->tid);
     idle_task_pre_activate(next_task);

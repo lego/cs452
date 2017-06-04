@@ -44,6 +44,11 @@ void Pass( );
  */
 void Exit( );
 
+/**
+ * Exit the kernel as early as possible
+ */
+void ExitKernel( );
+
 #define SendS(tid, arg1, arg2) Send(tid, &arg1, sizeof(arg1), &arg2, sizeof(arg2))
 #define ReceiveS(tid, arg1) Receive(tid, &arg1, sizeof(arg1))
 #define ReplyS(tid, arg1) Reply(tid, &arg1, sizeof(arg1))

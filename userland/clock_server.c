@@ -19,7 +19,7 @@ typedef struct {
 void clock_notifier() {
   int tid = MyTid();
   RegisterAs(CLOCK_NOTIFIER);
-  log_clock_server("In clock_notifier", tid);
+  log_clock_server("clock_notifier initialized", tid);
   int clock_server_tid = MyParentTid();
 
   clock_request_t req;
@@ -48,10 +48,9 @@ void clock_server() {
   heap_t delay_queue = heap_create(queue_nodes, MAX_TASKS + 1);
 
   RegisterAs(CLOCK_SERVER);
-
-  log_clock_server("In clock_server", tid);
-
   Create(1, clock_notifier);
+
+  log_clock_server("clock_server initialized", tid);
 
   while (true) {
     Receive(&requester, &request, sizeof(clock_request_t));
@@ -62,18 +61,18 @@ void clock_server() {
       ticks += 1;
       break;
     case TIME_REQUEST:
-      log_clock_server("clock_server time request tid=%d", tid, requester);
+      log_clock_server("clock_server: time request tid=%d", tid, requester);
       // reply with time
       ReplyS(requester, ticks);
       break;
     case DELAY_REQUEST:
       // Add requester to list of suspended tasks
-      log_clock_server("clock_server delay tid=%d until=%d", tid, requester, ticks + request.time_value);
+      log_clock_server("clock_server: delay tid=%d until=%d", tid, requester, ticks + request.time_value);
       heap_push(&delay_queue, ticks + request.time_value, requester);
       break;
     case DELAY_UNTIL_REQUEST:
       // Add requester to list of suspended tasks
-      log_clock_server("clock_server delay tid=%d until=%d", tid, requester, request.time_value);
+      log_clock_server("clock_server: delay tid=%d until=%d", tid, requester, request.time_value);
       heap_push(&delay_queue, request.time_value, requester);
       break;
     default:
@@ -83,16 +82,16 @@ void clock_server() {
       break;
     }
 
-    log_clock_server("clock_server heap size=%d top=%d", tid, heap_size(&delay_queue), heap_peek_priority(&delay_queue));
+    log_clock_server("clock_server: heap size=%d top=%d", tid, heap_size(&delay_queue), heap_peek_priority(&delay_queue));
 
     // Reply to suspended tasks that have timed out
     while (heap_size(&delay_queue) > 0 && heap_peek_priority(&delay_queue) <= ticks) {
       int tid_of_delay_done = (int) heap_pop(&delay_queue);
-      log_clock_server("clock_server undelay tid=%d", tid, tid_of_delay_done);
+      log_clock_server("clock_server: undelay tid=%d", tid, tid_of_delay_done);
       ReplyN(tid_of_delay_done);
     }
 
-    log_clock_server("clock_server time=%d", tid, ticks);
+    log_clock_server("clock_server: time=%d", tid, ticks);
   }
 }
 

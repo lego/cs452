@@ -25,6 +25,9 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_EXIT:
     syscall_exit(task, arg);
     break;
+  case SYSCALL_EXIT_KERNEL:
+    syscall_exit_kernel(task, arg);
+    break;
   case SYSCALL_SEND:
     syscall_send(task, arg);
     break;
@@ -80,6 +83,15 @@ void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   task->state = STATE_ZOMBIE;
   // do some cleanup, like remove the thread (x86)
   scheduler_exit_task(task);
+}
+
+void syscall_exit_kernel(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("ExitKernel", task->tid);
+  // don't reschedule task
+  task->state = STATE_ZOMBIE;
+  // do some cleanup, like remove the thread (x86)
+  scheduler_exit_task(task);
+  should_exit = true;
 }
 
 void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {

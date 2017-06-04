@@ -20,6 +20,7 @@ typedef int syscall_t;
 #define SYSCALL_RECEIVE (syscall_t) 7
 #define SYSCALL_REPLY (syscall_t) 8
 #define SYSCALL_AWAIT (syscall_t) 9
+#define SYSCALL_EXIT_KERNEL (syscall_t) 10
 
 #define SYSCALL_HW_INT (syscall_t) 99
 
@@ -56,5 +57,11 @@ extern task_descriptor_t *active_task;
  * - main.c for creating the initial task descriptor, and init kernel state (only tasks)
  */
 extern context_t *ctx;
+
+/*
+ * should_exit is a boolean for whether the kernel should
+ * exit on the next taks cycle
+ */
+extern bool shouldExit;
 
 #endif
