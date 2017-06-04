@@ -22,9 +22,13 @@ void ts7200_timer3_init() {
 
 
 void ts7200_timer2_init() {
-    // set timer3 to start at maximum value
+    // set timer2 to start to 10ms in 508khz clock cycles
     int *timer2_load = (int *)(TIMER2_BASE + LDR_OFFSET);
-    *timer2_load = 0xFFFF;
+    // this constant is 10000/0.5084689 in hex
+    // 10,000 is the amount of ms in us, and 0.5084689 is the amount of us in a clock cycle
+    // so the end result is the number of clock cycles in 10ms, 19666.886
+    // NOTE: this will have a skew of a few us every tick
+    *timer2_load = 0x4CD2;
 
     // set timer2 frequency to 508khz and enable it
     int *timer2_flags = (int *)(TIMER2_BASE + CRTL_OFFSET);
@@ -99,10 +103,11 @@ unsigned int io_time_difference_ms(io_time_t current, io_time_t prev) {
 unsigned int io_time_difference_us(io_time_t current, io_time_t prev) {
   // FIXME: This overflow check may not be correct
   if (prev > current) prev = MAX_TIME - prev + current;
-  // This constant was acquired from Wolfram Alpha for (1/0.508), as there are
-  // approximately 5.8us per clock tick. if you use the literal (1/0.508)
+  // This constant was acquired from Wolfram Alpha for (1/0.5084689), as there are
+  // approximately 5.8us per clock tick. if you use the literal (1/0.5084689)
   // that value is integer rounded to 0 :(
-  return (current - prev) * 1.96850393700787401574803;
+  // NOTE: the actual clock speed is 508.4689khz, see ep93xx-user-guide pg. 134 (section 5.1.5.2.2)
+  return (current - prev) * 1.96668862146731098008157431064;
 }
 
 bool ts7200_uart1_get_cts() {
