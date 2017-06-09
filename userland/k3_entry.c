@@ -95,7 +95,7 @@ void k3_entry_task() {
   // delay_amount = 03
   Create(6, &k3_client_task);
   data.delay_ticks = 71;
-  data.delay_amount = 30;
+  data.delay_amount = 3000;
   ReceiveN(&recv_tid);
   ReplyS(recv_tid, data);
 }
