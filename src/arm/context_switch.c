@@ -29,7 +29,7 @@ asm (
 
     // recover task spsr and lr
     "ldmfd sp!, {r1, r2}\n\t"
-    "msr spsr_c, r1\n\t"
+    "msr spsr, r1\n\t"
   "msr cpsr_c, #211\n\t"
 
   "mov lr, r2\n\t"
@@ -80,8 +80,6 @@ asm (
 "__asm_hwi_handler:\n\t"
   // start in irq mode
 
-  "sub lr, lr, #4\n\r"
-
   // in system mode
   "msr cpsr_c, #223\n\t"
     // store task state and lr
@@ -89,19 +87,16 @@ asm (
   // back to irq
   "msr cpsr_c, #210\n\t"
 
-  "mrs r4, spsr\n\t"
-  // save return-to-user lr to r5 so it's not overwritten by r0-r3
-  "mov r5, lr\n\t"
+  "mrs r0, spsr\n\t"
+  "mov r1, lr\n\t"
+  "sub r1, r1, #4\n\t"
 
   // in system mode
   "msr cpsr_c, #223\n\t"
-    "stmfd sp!, {r4, r5}\n\t"
-    "mov r4, sp\n\t"
+    "stmfd sp!, {r0, r1}\n\t"
+    "mov r0, sp\n\t" // set up arg for syscall
   // switch to svc mode
   "msr cpsr_c, #211\n\t"
-
-  // set up args for syscall
-  "mov r0, r4\n\t" // task stack pointer
 
   // handle syscall
   "bl __hwint(PLT)\n\t"
@@ -127,7 +122,7 @@ asm (
     "ldr lr, [sl, r4]\n\t"
   "msr cpsr_c, #211\n\t"
 
-  "msr spsr_c, #16\n\t"
+  "msr spsr, #16\n\t"
 
   "mov lr, r1\n\t"
   "movs pc, lr\n\t"

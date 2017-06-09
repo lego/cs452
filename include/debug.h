@@ -17,6 +17,7 @@
   #define DEBUG_SYSCALL false
   #define DEBUG_INTERRUPT false
   #define DEBUG_CLOCK_SERVER false
+  #define DEBUG_UART_SERVER false
   #define DEBUG_NAMESERVER false
 
 #define NOP do {} while(0)
@@ -114,6 +115,12 @@ static inline void exit() {
 #define log_clock_server(format, ...) log_task(format, ## __VA_ARGS__)
 #else
 #define log_clock_server(format, ...) NOP
+#endif
+
+#if DEBUG_UART_SERVER
+#define log_uart_server(format, ...) log_task(format, ## __VA_ARGS__)
+#else
+#define log_uart_server(format, ...) NOP
 #endif
 
 #if DEBUG_NAMESERVER

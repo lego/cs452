@@ -65,6 +65,8 @@ int Reply( int tid, void *reply, int replylen );
 
 enum await_event_t {
   EVENT_TIMER,
+  EVENT_UART2_TX,
+  EVENT_NUM_TYPES,
 }; typedef int await_event_t;
 
 int AwaitEvent( await_event_t event_type );

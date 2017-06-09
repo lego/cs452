@@ -216,6 +216,12 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Await", task->tid);
   await_event_t event_type = *(await_event_t *) arg->arguments;
 
+  //if (event_type == EVENT_UART2_TX) {
+  //  int *uart2_ctlr = (int *)(UART2_BASE + UART_CTLR_OFFSET);
+  //  *uart2_ctlr |= TIEN_MASK;
+  //  INTERRUPT_ENABLE(INTERRUPT_UART2);
+  //}
+
   interrupts_set_waiting_task(event_type, task);
 
   task->state = STATE_EVENT_BLOCKED;
@@ -224,20 +230,39 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
 void hwi(task_descriptor_t *task, kernel_request_t *arg) {
   if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
     hwi_timer2(task, arg);
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2)) {
+    hwi_uart2(task, arg);
   } else {
     log_interrupt("HWI=Unknown interrupt");
     scheduler_requeue_task(task);
   }
 }
 
-void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg) {
-  log_interrupt("HWI=Timer 2 interrupt");
-  task_descriptor_t *event_blocked_task = interrupts_get_waiting_task(EVENT_TIMER);
+task_descriptor_t *hwi_unblock_task_for_event(await_event_t event) {
+  task_descriptor_t *event_blocked_task = interrupts_get_waiting_task(event);
   if (event_blocked_task != NULL) {
     interrupts_clear_waiting_task(event_blocked_task);
     event_blocked_task->state = STATE_READY;
     scheduler_requeue_task(event_blocked_task);
   }
+  return event_blocked_task;
+}
+
+void hwi_uart2(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=UART 2 interrupt");
+  task_descriptor_t *unblocked = interrupts_get_waiting_task(EVENT_UART2_TX);
+  hwi_unblock_task_for_event(EVENT_UART2_TX);
+  //int *uart2_ctlr = (int *)(UART2_BASE + UART_CTLR_OFFSET);
+  //*uart2_ctlr &= ~TIEN_MASK;
+  //INTERRUPT_CLEAR(INTERRUPT_UART2);
+  *(int*)(UART2_BASE+UART_DATA_OFFSET) = 'V';
+  scheduler_requeue_task(task);
+}
+
+void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=Timer 2 interrupt");
+  hwi_unblock_task_for_event(EVENT_TIMER);
   *((int*)(TIMER2_BASE+CLR_OFFSET)) = 0x0;
   scheduler_requeue_task(task);
 }
