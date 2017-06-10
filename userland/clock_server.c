@@ -76,7 +76,7 @@ void clock_server() {
       heap_push(&delay_queue, request.time_value, requester);
       break;
     default:
-      bwprintf(COM2, "UH OH...\n\r");
+      //bwprintf(COM2, "UH OH...\n\r");
       // FIXME: Clock server receive request.type unknown.
       assert(false);
       break;

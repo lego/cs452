@@ -252,7 +252,6 @@ void hwi_uart2(task_descriptor_t *task, kernel_request_t *arg) {
   task_descriptor_t *unblocked = interrupts_get_waiting_task(EVENT_UART2_TX);
   hwi_unblock_task_for_event(EVENT_UART2_TX);
   INTERRUPT_CLEAR(INTERRUPT_UART2);
-  //*(int*)(UART2_BASE+UART_DATA_OFFSET) = 'V';
   scheduler_requeue_task(task);
 }
 

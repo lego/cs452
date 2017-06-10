@@ -30,10 +30,9 @@ void uart_tx_notifier() {
   volatile int volatile *flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
   while (true) {
     Send(uart_server_tid, &req, sizeof(uart_request_t), &ch, sizeof(char));
-    //bwprintf(COM2, "\n\rA\n\r");
     AwaitEvent(EVENT_UART2_TX);
-    //bwprintf(COM2, "\n\rB\n\r");
     //while( ( *flags & TXFF_MASK ) ) ;
+    // Write the data
     *(int*)(UART2_BASE+UART_DATA_OFFSET) = ch;
   }
 }
@@ -67,10 +66,10 @@ void uart_server() {
   int len = 7;
   int index = 0;
 
+  int i;
+
   while (true) {
     Receive(&requester, &request, sizeof(uart_request_t));
-    int index;
-    int send = 0;
 
     switch ( request.type ) {
     case TX_NOTIFIER:
@@ -80,16 +79,19 @@ void uart_server() {
       break;
     case PUT_REQUEST:
       //bwprintf(COM2, "PUT_REQUEST\n\r");
-      if (tx_ready_tid && outputQueueLength == 0) {
-        char c = str[index];
+      if (tx_ready_tid != -1 && outputQueueLength == 0) {
+        //char c = str[index];
         //char c = outputQueue[outputStart];
-        index = (index+1) % len;
+        char c = request.ch;
+        //index = (index+1) % len;
         //bwprintf(COM2, "Send character\n\r");
         Reply(tx_ready_tid, &c, sizeof(char));
         //outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
-        outputQueueLength -= 1;
+        //outputQueueLength -= 1;
         tx_ready_tid = -1;
       } else {
+        i = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
+        outputQueue[i] = request.ch;
         outputQueueLength += 1;
       }
       //bwprintf(COM2, "PUT_REQUEST\n\r");
@@ -105,12 +107,12 @@ void uart_server() {
     //bwprintf(COM2, "After switch\n\r");
 
     if (tx_ready_tid >= 0 && outputQueueLength > 0) {
-      char c = str[index];
-      //char c = outputQueue[outputStart];
-      index = (index+1) % len;
+      //char c = str[index];
+      char c = outputQueue[outputStart];
+      //index = (index+1) % len;
       //bwprintf(COM2, "Send character\n\r");
       Reply(tx_ready_tid, &c, sizeof(char));
-      //outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
+      outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
       outputQueueLength -= 1;
       tx_ready_tid = -1;
     }
