@@ -45,6 +45,8 @@ void ts7200_uart2_init() {
   // FIXME: we probably want to hard set the flags in case they were messed up
   bwsetfifo(COM2, OFF);
   bwsetspeed(COM2, 115200);
+  int *uart2_ctlr = (int *)(UART2_BASE + UART_CTLR_OFFSET);
+  *uart2_ctlr |= TIEN_MASK;
 }
 
 void io_init() {
