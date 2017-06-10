@@ -29,7 +29,8 @@ void uart_tx_notifier() {
   req.type = TX_NOTIFIER;
   volatile int volatile *flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
   while (true) {
-    Send(uart_server_tid, &req, sizeof(uart_request_t), &ch, sizeof(char));
+    volatile int i = 0;
+    SendS(uart_server_tid, req, ch);
     AwaitEvent(EVENT_UART2_TX);
     //while( ( *flags & TXFF_MASK ) ) ;
     // Write the data
@@ -56,66 +57,44 @@ void uart_server() {
   int outputQueueLength = 0;
 
   RegisterAs(UART_SERVER);
-  Create(1, uart_tx_notifier);
-
-  int tx_ready_tid = -1;
+  int uart_notifier_tid = Create(1, uart_tx_notifier);
+  int uart_ready = false;
 
   log_uart_server("uart_server initialized", tid);
 
-  char* str = "Hello\n\r";
-  int len = 7;
-  int index = 0;
-
-  int i;
-
   while (true) {
-    Receive(&requester, &request, sizeof(uart_request_t));
+    ReceiveS(&requester, request);
 
     switch ( request.type ) {
     case TX_NOTIFIER:
-      //bwprintf(COM2, "TX_NOTIFIER\n\r");
-      log_uart_server("uart_server: NOTIFIER", requester);
-      tx_ready_tid = requester;
+      log_uart_server("uart_server: NOTIFIER", tid);
+      uart_ready = true;
       break;
     case PUT_REQUEST:
-      //bwprintf(COM2, "PUT_REQUEST\n\r");
-      if (tx_ready_tid != -1 && outputQueueLength == 0) {
-        //char c = str[index];
-        //char c = outputQueue[outputStart];
+      log_uart_server("uart_server: NOTIFIER", tid);
+      if (uart_ready && outputQueueLength == 0) {
         char c = request.ch;
-        //index = (index+1) % len;
-        //bwprintf(COM2, "Send character\n\r");
-        Reply(tx_ready_tid, &c, sizeof(char));
-        //outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
-        //outputQueueLength -= 1;
-        tx_ready_tid = -1;
+        ReplyS(uart_notifier_tid, c);
+        uart_ready = false;
       } else {
         KASSERT(outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits!", tid);
-        i = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
+        int i = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
         outputQueue[i] = request.ch;
         outputQueueLength += 1;
       }
-      //bwprintf(COM2, "PUT_REQUEST\n\r");
-      //index = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
-      //outputQueue[index] = request.ch;
       ReplyN(requester);
       break;
     default:
-      // FIXME: Uart server receive request.type unknown.
-      assert(false);
+      KASSERT(false, "uart_server received unknown request type");
       break;
     }
-    //bwprintf(COM2, "After switch\n\r");
 
-    if (tx_ready_tid >= 0 && outputQueueLength > 0) {
-      //char c = str[index];
+    if (uart_ready && outputQueueLength > 0) {
       char c = outputQueue[outputStart];
-      //index = (index+1) % len;
-      //bwprintf(COM2, "Send character\n\r");
-      Reply(tx_ready_tid, &c, sizeof(char));
+      ReplyS(uart_notifier_tid, c);
       outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
       outputQueueLength -= 1;
-      tx_ready_tid = -1;
+      uart_ready = false;
     }
   }
 }
