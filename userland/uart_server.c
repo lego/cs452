@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <cbuffer.h>
 #include <kernel.h>
 #include <uart_server.h>
 #include <kernel.h>
@@ -48,73 +49,54 @@ void uart_tx_notifier() {
 void uart_server() {
   int tid = MyTid();
   int requester;
-
   uart_request_t request;
+  int status;
 
-  char outputQueue[OUTPUT_QUEUE_MAX];
-  int outputStart = 0;
-  int outputQueueLength = 0;
+  // Create circular buffer
+  cbuffer_t output_buf;
+  char tmp_buf[OUTPUT_QUEUE_MAX];
+  cbuffer_init(&output_buf, tmp_buf, OUTPUT_QUEUE_MAX);
 
   RegisterAs(UART_SERVER);
-  Create(1, uart_tx_notifier);
 
-  int tx_ready_tid = -1;
-
+  int uart_notifier = Create(1, uart_tx_notifier);
+  bool xnot_ready = false;
   log_uart_server("uart_server initialized", tid);
 
-  char* str = "Hello\n\r";
-  int len = 7;
-  int index = 0;
-
-  int i;
-
   while (true) {
-    Receive(&requester, &request, sizeof(uart_request_t));
+    ReceiveS(&requester, request);
 
     switch ( request.type ) {
     case TX_NOTIFIER:
-      //bwprintf(COM2, "TX_NOTIFIER\n\r");
-      log_uart_server("uart_server: NOTIFIER", requester);
-      tx_ready_tid = requester;
+      log_uart_server("uart_server: NOTIFIER requester=%d", tid, requester);
+      xnot_ready = true;
       break;
     case PUT_REQUEST:
-      //bwprintf(COM2, "PUT_REQUEST\n\r");
-      if (tx_ready_tid != -1 && outputQueueLength == 0) {
-        //char c = str[index];
-        //char c = outputQueue[outputStart];
+      log_uart_server("uart_server: PUT_REQUEST requester=%d", tid, requester);
+      if (xnot_ready && cbuffer_empty(&output_buf)) {
         char c = request.ch;
-        //index = (index+1) % len;
-        //bwprintf(COM2, "Send character\n\r");
-        Reply(tx_ready_tid, &c, sizeof(char));
-        //outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
-        //outputQueueLength -= 1;
-        tx_ready_tid = -1;
+        log_uart_server("uart_server: xnot ready, not queuing c=%c", tid, c);
+        ReplyS(uart_notifier, c);
+        xnot_ready = false;
       } else {
-        i = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
-        outputQueue[i] = request.ch;
-        outputQueueLength += 1;
+        status = cbuffer_add(&output_buf, (void *) request.ch);
+        KASSERT(status == 0, "cbuffer_add error, likely full");
+        log_uart_server("uart_server: xnot not ready, queuing c=%c", tid, request.ch);
       }
-      //bwprintf(COM2, "PUT_REQUEST\n\r");
-      //index = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
-      //outputQueue[index] = request.ch;
       ReplyN(requester);
       break;
     default:
-      // FIXME: Uart server receive request.type unknown.
-      assert(false);
+      KASSERT(false, "UART server received unknown request type");
       break;
     }
-    //bwprintf(COM2, "After switch\n\r");
 
-    if (tx_ready_tid >= 0 && outputQueueLength > 0) {
-      //char c = str[index];
-      char c = outputQueue[outputStart];
-      //index = (index+1) % len;
-      //bwprintf(COM2, "Send character\n\r");
-      Reply(tx_ready_tid, &c, sizeof(char));
-      outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
-      outputQueueLength -= 1;
-      tx_ready_tid = -1;
+
+    if (xnot_ready && !cbuffer_empty(&output_buf)) {
+      char c = (char) cbuffer_pop(&output_buf, &status);
+      KASSERT(status == 0, "cbuffer_pop error, likely empty");
+      log_uart_server("uart_server: xnot now ready and sending char: c=%c queue_length=%d", tid, c, outputQueueLength);
+      ReplyS(uart_notifier, c);
+      xnot_ready = false;
     }
   }
 }
