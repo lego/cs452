@@ -31,7 +31,7 @@ void uart_tx_notifier() {
   while (true) {
     Send(uart_server_tid, &req, sizeof(uart_request_t), &ch, sizeof(char));
     AwaitEvent(EVENT_UART2_TX);
-    //while( ( *flags & TXFF_MASK ) ) ;
+    // while( ( *flags & TXFF_MASK ) ) ;
     // Write the data
     *(int*)(UART2_BASE+UART_DATA_OFFSET) = ch;
   }

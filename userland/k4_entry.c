@@ -22,7 +22,10 @@ void print_task() {
   //Putc(uart_server_tid, COM2, 'H');
 
   while (1) {
-    Putc(uart_server_tid, COM2, '0' + x);
+    Putc(uart_server_tid, COM2, '0' + (x / 1000) % 10);
+    Putc(uart_server_tid, COM2, '0' + (x / 100) % 10);
+    Putc(uart_server_tid, COM2, '0' + (x / 10) % 10);
+    Putc(uart_server_tid, COM2, '0' + x % 10);
     Putc(uart_server_tid, COM2, ' ');
     Putc(uart_server_tid, COM2, 'H');
     Putc(uart_server_tid, COM2, 'e');
@@ -32,18 +35,11 @@ void print_task() {
     Putc(uart_server_tid, COM2, '\n');
     Putc(uart_server_tid, COM2, '\r');
     Delay(clock_server_tid, 1);
-    x = (x+1)%10;
+    x++;
   }
 }
 
 void k4_entry_task() {
-  Create(1, &nameserver);
-  Create(2, &clock_server);
-  Create(2, &uart_server);
-  Create(IDLE_TASK_PRIORITY, &idle_task);
-
-  Create(4, &print_task);
-
   int requester;
   uart_request_t request;
 
@@ -51,10 +47,17 @@ void k4_entry_task() {
   int len = 7;
   int index = 0;
 
+  Create(1, &nameserver);
+  Create(2, &clock_server);
+  Create(2, &uart_server);
+  Create(IDLE_TASK_PRIORITY, &idle_task);
+
+  Create(4, &print_task);
+
   while(true) {
-    Receive(&requester, &request, sizeof(uart_request_t));
+    ReceiveS(&requester, request);
     char c = str[index];
     index = (index+1) % len;
-    Reply(requester, &c, sizeof(char));
+    ReplyS(requester, c);
   }
 }
