@@ -216,11 +216,9 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Await", task->tid);
   await_event_t event_type = *(await_event_t *) arg->arguments;
 
-  //if (event_type == EVENT_UART2_TX) {
-  //  int *uart2_ctlr = (int *)(UART2_BASE + UART_CTLR_OFFSET);
-  //  *uart2_ctlr |= TIEN_MASK;
-  //  INTERRUPT_ENABLE(INTERRUPT_UART2);
-  //}
+  if (event_type == EVENT_UART2_TX) {
+    INTERRUPT_ENABLE(INTERRUPT_UART2);
+  }
 
   interrupts_set_waiting_task(event_type, task);
 
@@ -253,10 +251,8 @@ void hwi_uart2(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 2 interrupt");
   task_descriptor_t *unblocked = interrupts_get_waiting_task(EVENT_UART2_TX);
   hwi_unblock_task_for_event(EVENT_UART2_TX);
-  //int *uart2_ctlr = (int *)(UART2_BASE + UART_CTLR_OFFSET);
-  //*uart2_ctlr &= ~TIEN_MASK;
-  //INTERRUPT_CLEAR(INTERRUPT_UART2);
-  *(int*)(UART2_BASE+UART_DATA_OFFSET) = 'V';
+  INTERRUPT_CLEAR(INTERRUPT_UART2);
+  //*(int*)(UART2_BASE+UART_DATA_OFFSET) = 'V';
   scheduler_requeue_task(task);
 }
 

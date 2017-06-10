@@ -60,6 +60,13 @@ void ExitKernel( ) {
 }
 
 int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
+  if (tid == active_task->tid) {
+    asm (
+      "mov r0, #1\n\t"
+      "mov r1, lr\n\t"
+      "bl bwputr\n\t"
+    );
+  }
   KASSERT(tid != active_task->tid, "Attempted send to self tid=%d", tid);
 
   kernel_request_t request;

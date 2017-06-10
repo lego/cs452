@@ -8,9 +8,6 @@
 
 enum {
   TX_NOTIFIER,
-  TIME_REQUEST,
-  DELAY_REQUEST,
-  DELAY_UNTIL_REQUEST,
   PUT_REQUEST,
 };
 
@@ -26,15 +23,18 @@ void uart_tx_notifier() {
   log_uart_server("uart_tx_notifier initialized", tid);
   int uart_server_tid = MyParentTid();
   char ch;
+  int i;
 
   uart_request_t req;
   req.type = TX_NOTIFIER;
   volatile int volatile *flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
   while (true) {
-    //Send(uart_server_tid, &req, sizeof(uart_request_t), &ch, sizeof(char));
+    Send(uart_server_tid, &req, sizeof(uart_request_t), &ch, sizeof(char));
+    //bwprintf(COM2, "\n\rA\n\r");
     AwaitEvent(EVENT_UART2_TX);
+    //bwprintf(COM2, "\n\rB\n\r");
     //while( ( *flags & TXFF_MASK ) ) ;
-    *(int*)(UART2_BASE+UART_DATA_OFFSET) = 'B';
+    *(int*)(UART2_BASE+UART_DATA_OFFSET) = ch;
   }
 }
 
@@ -63,26 +63,38 @@ void uart_server() {
 
   log_uart_server("uart_server initialized", tid);
 
+  char* str = "Hello\n\r";
+  int len = 7;
+  int index = 0;
+
   while (true) {
     Receive(&requester, &request, sizeof(uart_request_t));
+    int index;
+    int send = 0;
 
     switch ( request.type ) {
     case TX_NOTIFIER:
-      //bwprintf(COM2, "TX_NOTIFIER done!\n\r");
+      //bwprintf(COM2, "TX_NOTIFIER\n\r");
       log_uart_server("uart_server: NOTIFIER", requester);
       tx_ready_tid = requester;
       break;
     case PUT_REQUEST:
-      //if (tx_ready_tid >= 0 && outputQueueLength == 0) {
-      //  Reply(tx_ready_tid, &request.ch, sizeof(char));
-      //  tx_ready_tid = -1;
-      //} else {
-      {
-        int index = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
-        outputQueue[index] = request.ch;
+      //bwprintf(COM2, "PUT_REQUEST\n\r");
+      if (tx_ready_tid && outputQueueLength == 0) {
+        char c = str[index];
+        //char c = outputQueue[outputStart];
+        index = (index+1) % len;
+        //bwprintf(COM2, "Send character\n\r");
+        Reply(tx_ready_tid, &c, sizeof(char));
+        //outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
+        outputQueueLength -= 1;
+        tx_ready_tid = -1;
+      } else {
         outputQueueLength += 1;
-        //bwprintf(COM2, "\n\r PUT outputQueue[%d]: %c %d \n\r", index, outputQueue[index], outputQueueLength);
       }
+      //bwprintf(COM2, "PUT_REQUEST\n\r");
+      //index = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
+      //outputQueue[index] = request.ch;
       ReplyN(requester);
       break;
     default:
@@ -90,20 +102,15 @@ void uart_server() {
       assert(false);
       break;
     }
+    //bwprintf(COM2, "After switch\n\r");
 
     if (tx_ready_tid >= 0 && outputQueueLength > 0) {
-      //If (outputQueue[outputStart] == 'H') {
-      //  if (outputStart < 10) {
-      //    bwprintf(COM2, "%d   ", outputStart);
-      //  } else if (outputStart < 100) {
-      //    bwprintf(COM2, "%d  ", outputStart);
-      //  } else {
-      //    bwprintf(COM2, "%d ", outputStart);
-      //  }
-      //}
-      Reply(tx_ready_tid, &outputQueue[outputStart], sizeof(char));
-      //bwprintf(COM2, "\n\r GET outputQueue[%d]: %c, length %d \n\r", outputStart, outputQueue[outputStart], outputQueueLength);
-      outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
+      char c = str[index];
+      //char c = outputQueue[outputStart];
+      index = (index+1) % len;
+      //bwprintf(COM2, "Send character\n\r");
+      Reply(tx_ready_tid, &c, sizeof(char));
+      //outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
       outputQueueLength -= 1;
       tx_ready_tid = -1;
     }
