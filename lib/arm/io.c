@@ -37,6 +37,8 @@ void ts7200_timer2_init() {
 
 void ts7200_uart1_init() {
   // FIXME: we probably want to hard set the flags in case they were messed up
+  bwsetspeed(COM1, 2400);
+  bwsetfifo(COM1, OFF);
   int *uart1_flags = (int *)(UART1_BASE + UART_LCRH_OFFSET);
   *uart1_flags |= STP2_MASK;
 }

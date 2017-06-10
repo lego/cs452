@@ -229,6 +229,7 @@ void hwi(task_descriptor_t *task, kernel_request_t *arg) {
   if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
     hwi_timer2(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
+    hwi_uart2(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2)) {
     hwi_uart2(task, arg);
   } else {
@@ -252,6 +253,14 @@ void hwi_uart2(task_descriptor_t *task, kernel_request_t *arg) {
   task_descriptor_t *unblocked = interrupts_get_waiting_task(EVENT_UART2_TX);
   hwi_unblock_task_for_event(EVENT_UART2_TX);
   INTERRUPT_CLEAR(INTERRUPT_UART2);
+  scheduler_requeue_task(task);
+}
+
+void hwi_uart1(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=UART 1 interrupt");
+  task_descriptor_t *unblocked = interrupts_get_waiting_task(EVENT_UART1_TX);
+  hwi_unblock_task_for_event(EVENT_UART1_TX);
+  INTERRUPT_CLEAR(INTERRUPT_UART1);
   scheduler_requeue_task(task);
 }
 
