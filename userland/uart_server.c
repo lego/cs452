@@ -18,23 +18,33 @@ typedef struct {
 } uart_request_t;
 
 void uart_tx_notifier() {
-  int tid = MyTid();
-  RegisterAs(UART_NOTIFIER);
-  log_uart_server("uart_tx_notifier initialized", tid);
-  int uart_server_tid = MyParentTid();
   char ch;
-  int i;
+  int receiver;
+  int tid = MyTid();
+
+  RegisterAs(UART_NOTIFIER);
+  int uart_server_tid = MyParentTid();
 
   uart_request_t req;
+  ReceiveS(&receiver, req);
+  KASSERT(receiver != uart_server_tid, "uart_tx_notifier receive message not from uart_server (parent)");
+  ReplyN(receiver);
+  int channel = req.channel;
+
+  log_uart_server("uart_tx_notifier initialized", tid);
+
   req.type = TX_NOTIFIER;
-  volatile int volatile *flags = (int *)( UART2_BASE + UART_FLAG_OFFSET );
   while (true) {
-    volatile int i = 0;
     SendS(uart_server_tid, req, ch);
-    AwaitEvent(EVENT_UART2_TX);
-    //while( ( *flags & TXFF_MASK ) ) ;
-    // Write the data
-    *(int*)(UART2_BASE+UART_DATA_OFFSET) = ch;
+    if (channel == COM1) {
+      AwaitEvent(EVENT_UART2_TX);
+      *(int*)(UART2_BASE+UART_DATA_OFFSET) = ch;
+    } else if (channel == COM2) {
+      AwaitEvent(EVENT_UART2_TX);
+      *(int*)(UART2_BASE+UART_DATA_OFFSET) = ch;
+    } else {
+      KASSERT(false, "Invalid channel provided to uart_tx_notifier");
+    }
   }
 }
 
@@ -53,12 +63,16 @@ void uart_server() {
   uart_request_t request;
 
   char outputQueue[OUTPUT_QUEUE_MAX];
-  int outputStart = 0;
-  int outputQueueLength = 0;
+  int uart2_outputStart = 0;
+  int uart2_outputQueueLength = 0;
 
   RegisterAs(UART_SERVER);
-  int uart_notifier_tid = Create(1, uart_tx_notifier);
-  int uart_ready = false;
+
+  int uart2_notifier_tid = Create(1, uart_tx_notifier);
+  request.channel = COM2;
+  Send(uart2_notifier_tid, &request, sizeof(request), NULL, 0);
+  int uart2_ready = false;
+
 
   log_uart_server("uart_server initialized", tid);
 
@@ -68,19 +82,19 @@ void uart_server() {
     switch ( request.type ) {
     case TX_NOTIFIER:
       log_uart_server("uart_server: NOTIFIER", tid);
-      uart_ready = true;
+      uart2_ready = true;
       break;
     case PUT_REQUEST:
       log_uart_server("uart_server: NOTIFIER", tid);
-      if (uart_ready && outputQueueLength == 0) {
+      if (uart2_ready && uart2_outputQueueLength == 0) {
         char c = request.ch;
-        ReplyS(uart_notifier_tid, c);
-        uart_ready = false;
+        ReplyS(uart2_notifier_tid, c);
+        uart2_ready = false;
       } else {
-        KASSERT(outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits!", tid);
-        int i = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
-        outputQueue[i] = request.ch;
-        outputQueueLength += 1;
+        KASSERT(uart2_outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits!", tid);
+        int i = (uart2_outputStart+uart2_outputQueueLength) % OUTPUT_QUEUE_MAX;
+        uart2_outputQueue[i] = request.ch;
+        uart2_outputQueueLength += 1;
       }
       ReplyN(requester);
       break;
@@ -89,12 +103,12 @@ void uart_server() {
       break;
     }
 
-    if (uart_ready && outputQueueLength > 0) {
-      char c = outputQueue[outputStart];
-      ReplyS(uart_notifier_tid, c);
-      outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
-      outputQueueLength -= 1;
-      uart_ready = false;
+    if (uart2_ready && uart2_outputQueueLength > 0) {
+      char c = uart2_outputQueue[uart2_outputStart];
+      ReplyS(uart2_notifier_tid, c);
+      uart2_outputStart = (uart2_outputStart+1) % OUTPUT_QUEUE_MAX;
+      uart2_outputQueueLength -= 1;
+      uart2_ready = false;
     }
   }
 }

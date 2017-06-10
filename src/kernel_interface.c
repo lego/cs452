@@ -92,7 +92,7 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
   request.ret_val = &ret_val;
 
   context_switch(&request);
-  *tid = ret_val.tid;
+  if (tid != NULL) *tid = ret_val.tid;
   return ret_val.status;
 }
 
