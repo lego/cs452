@@ -42,13 +42,13 @@ void uart_tx_notifier() {
     log_uart_server("uart_notifer channel=%d", channel);
     switch(channel) {
       case COM1:
-        AwaitEvent(EVENT_UART1_TX);
-        VMEM(UART1_BASE + UART_DATA_OFFSET) = ch;
+        AwaitEventPut(EVENT_UART1_TX, ch);
+        // VMEM(UART1_BASE + UART_DATA_OFFSET) = ch;
         log_uart_server("uart_notifer COM1 putc=%c", ch);
         break;
       case COM2:
-        AwaitEvent(EVENT_UART2_TX);
-        VMEM(UART2_BASE + UART_DATA_OFFSET) = ch;
+        AwaitEventPut(EVENT_UART2_TX, ch);
+        // VMEM(UART2_BASE + UART_DATA_OFFSET) = ch;
         // log_uart_server("uart_notifer COM1 putc=%c", ch);
         break;
     }
@@ -130,7 +130,7 @@ void uart_tx_server() {
       ReplyN(requester);
       break;
     default:
-      //KASSERT(false, "uart_server received unknown request type=%d", request.type);
+      KASSERT(false, "uart_server received unknown request type=%d", request.type);
       bwprintf(COM2, " ERR %d\n\r", request.type);
       break;
     }

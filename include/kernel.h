@@ -75,5 +75,6 @@ enum await_event_t {
 }; typedef int await_event_t;
 
 int AwaitEvent( await_event_t event_type );
+int AwaitEventPut( await_event_t event_type, char ch );
 
 #endif

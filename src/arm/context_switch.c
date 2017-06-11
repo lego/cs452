@@ -37,8 +37,9 @@ asm (
 
     // recover task spsr and lr
     "ldmfd sp!, {r1, r2}\n\t"
-    "msr spsr, r1\n\t"
+  // go into svc mode, and recover the user CPSR into SPSR_svc
   "msr cpsr_c, #211\n\t"
+  "msr spsr, r1\n\t"
 
   "mov lr, r2\n\t"
 

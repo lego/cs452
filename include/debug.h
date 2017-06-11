@@ -67,10 +67,14 @@ static inline void exit() {
 }
 int lr;
 int cpsr;
-#define KASSERT(a, msg, ...) do { if (!(a)) { \
-  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-  bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
-  exit();} } while(0)
+#if false
+  #define KASSERT(a, msg, ...) do { if (!(a)) { \
+    bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+    bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
+    exit();} } while(0)
+#else
+  #define KASSERT(...) NOP
+#endif
 
 #if DEBUG_SCHEDULER
 #define log_scheduler_kern(format, ...) log_debug(" [-]{SC}  " format, ## __VA_ARGS__)

@@ -102,8 +102,8 @@ static void insert_two_char_int(int b, char *buf) {
 }
 
 void ticks2a(int ticks, char *buf, int buf_size) {
-  KASSERT(buf_size >= 10, "Buffer provided is not big enough");
-  KASSERT(ticks < 360000, "Uptime exceeded an hour. Can't handle time display.");
+  KASSERT(buf_size >= 10, "Buffer provided is not big enough. Got %d, wanted >=10", buf_size);
+  KASSERT(ticks < 360000, "Uptime exceeded an hour. Can't handle time display, ticks (%d) >= 360000", ticks);
 
   int minutes = (ticks / 6000) % 24;
   int seconds = (ticks / 100) % 60;
@@ -139,7 +139,7 @@ void move_cursor(unsigned int x, unsigned int y) {
 void DrawInitialScreen() {
   Putstr(COM2, SAVE_TERMINAL);
   Putstr(COM2, "Time xx:xx xx0\n\r");
-  Putstr(COM2, "Idle xx.x%%\n\r");
+  Putstr(COM2, "Idle xx.x%\n\r");
 
   // Change BG colour
   Putstr(COM2, BLACK_FG);
@@ -182,29 +182,27 @@ void DrawTime(int t) {
 extern volatile io_time_t idle_time_total;
 extern volatile io_time_t time_since_idle_totalled;
 
-io_time_t GetIdleTicks() {
-  return idle_time_total;
-}
-
 void DrawIdlePercent() {
-  io_time_t idle_total = GetIdleTicks();
+  // get idle total, current time, and total time for idle total start
+  io_time_t idle_total = idle_time_total;
   io_time_t curr_time = io_get_time();
   io_time_t time_total = curr_time - time_since_idle_totalled;
+  // reset counters
   time_since_idle_totalled = curr_time;
+  idle_time_total = 0;
 
-  int idle_percent = (time_total * 100) / idle_total;
+  int idle_percent = (idle_total * 1000) / time_total;
 
   // "Idle 99.9% "
   //       ^ 6th char
-  Putstr(COM2, "\n\rIdle ");
-  char tmp[12];
-  i2a(idle_percent, tmp);
-  Putstr(COM2, tmp);
+  move_cursor(0, 2);
 
-  // Putc(COM2, '0' + (idle_percent / 100) % 10);
-  // Putc(COM2, '0' + (idle_percent / 10) % 10);
-  // Putc(COM2, '.');
-  // Putc(COM2, '0' + idle_percent % 10);
+  Putstr(COM2, "Idle ");
+  Putc(COM2, '0' + (idle_percent / 100) % 10);
+  Putc(COM2, '0' + (idle_percent / 10) % 10);
+  Putc(COM2, '.');
+  Putc(COM2, '0' + idle_percent % 10);
+  Putc(COM2, '%');
 }
 
 void interactive() {

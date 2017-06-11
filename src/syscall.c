@@ -216,7 +216,8 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
 
 void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Await", task->tid);
-  await_event_t event_type = *(await_event_t *) arg->arguments;
+  syscall_await_arg_t *await_arg = arg->arguments;
+  await_event_t event_type = await_arg->event;
 
   if (event_type == EVENT_UART1_RX) {
     INTERRUPT_ENABLE(INTERRUPT_UART1_RX);
@@ -265,8 +266,17 @@ task_descriptor_t *hwi_unblock_task_for_event(await_event_t event) {
 
 void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 2 TX interrupt");
-  hwi_unblock_task_for_event(EVENT_UART2_TX);
+
+  // write character
+  task_descriptor_t *event_blocked_task = interrupts_get_waiting_task(EVENT_UART2_TX);
+  syscall_await_arg_t *await_arg = event_blocked_task->current_request.arguments;
+  VMEM(UART2_BASE + UART_DATA_OFFSET) = await_arg->arg;
+
+  // disable interrupt
+  INTERRUPT_DISABLE(INTERRUPT_UART2_TX);
   INTERRUPT_CLEAR(INTERRUPT_UART2_TX);
+
+  hwi_unblock_task_for_event(EVENT_UART2_TX);
   scheduler_requeue_task(task);
 }
 

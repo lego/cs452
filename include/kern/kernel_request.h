@@ -9,22 +9,29 @@
  */
 
 
-typedef struct {
+typedef struct SyscallCreateArg {
   int priority;
   void (*entrypoint)();
 } syscall_create_arg_t;
 
-typedef struct {
+typedef struct SyscallPIDRet {
   volatile int tid;
 } syscall_pid_ret_t;
 
 
-typedef struct {
+typedef struct SyscallMessage {
   int tid;
   volatile int status;
   volatile int msglen;
   volatile char *msg;
 } syscall_message_t;
+
+
+typedef struct SyscallAwaitEventArg {
+  await_event_t event;
+  char arg;
+} syscall_await_arg_t;
+
 
 typedef struct {
   int tid;

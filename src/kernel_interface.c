@@ -124,7 +124,23 @@ int AwaitEvent( await_event_t event_type ) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_AWAIT;
-  request.arguments = &event_type;
+  syscall_await_arg_t arg;
+  arg.event = event_type;
+  request.arguments = &arg;
+  context_switch(&request);
+  return 0;
+}
+
+int AwaitEventPut( await_event_t event_type, char ch) {
+  // FIXME: assert valid event
+
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_AWAIT;
+  syscall_await_arg_t arg;
+  arg.event = event_type;
+  arg.arg = ch;
+  request.arguments = &arg;
 
   context_switch(&request);
   return 0;
