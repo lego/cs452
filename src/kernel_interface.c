@@ -60,6 +60,10 @@ void ExitKernel( ) {
 }
 
 int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
+  // Somehow this exposes a branching optimisation issue in our code.
+  // We're not really sure why this is happening, but in order to make sure we
+  //   have the time to finish this assignment, we're commenting this out for now.
+  // TODO: Look into this issue
   KASSERT(tid != active_task->tid, "Attempted send to self tid=%d, %d", tid, active_task->tid);
 
   kernel_request_t request;
@@ -97,6 +101,7 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
 }
 
 int Reply( int tid, void *reply, int replylen ) {
+  // See send for why this is commented out
   KASSERT(tid != active_task->tid, "Attempted reply to self tid=%d", tid);
   // FIXME: assert tid is valid, replylen is positive or 0
 
