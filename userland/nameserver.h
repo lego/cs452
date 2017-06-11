@@ -13,6 +13,7 @@ enum task_name_t {
   UART_TX_NOTIFIER,
   UART_RX_SERVER,
   UART_RX_NOTIFIER,
+  TRAIN_CONTROLLER_SERVER,
   IDLE_TASK,
 
   // NOTE: leave this at the end, OR ELSE!

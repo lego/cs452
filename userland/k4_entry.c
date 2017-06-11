@@ -6,95 +6,117 @@
 #include <uart_tx_server.h>
 #include <uart_rx_server.h>
 
+enum {
+  TRAIN_COMMAND,
+  TRAIN_TASK_READY,
+  TRAIN_GO,
+  TRAIN_STOP,
+  TRAIN_REVERSE,
+};
+
 typedef struct {
   int type;
-  int channel;
-  char ch;
-} uart_request_t;
+  int train;
+  int command;
+} train_control_request_t;
 
-void print_task() {
-  int uart_server_tid = WhoIs(UART_TX_SERVER);
-  int uart_server_tid_rx = WhoIs(UART_RX_SERVER);
+void train_controller_task() {
   int clock_server_tid = WhoIs(CLOCK_SERVER);
-
-  int x = 0;
-
-  int train = 69;
-
-  //Putc(uart_server_tid, COM2, 'H');
+  int uart_tx_server_tid = WhoIs(UART_TX_SERVER);
+  int server_tid = MyParentTid();
 
   char buf[2];
   buf[0] = 0;
-  buf[1] = train;
+  buf[1] = 0;
+
+  train_control_request_t notify;
+  notify.type = TRAIN_TASK_READY;
+  notify.train = MyTid();
+
+  train_control_request_t request;
 
   while (1) {
-    char c = Getc(uart_server_tid_rx, COM2);
-    if (c == 's') {
-      Putc(uart_server_tid, COM2, '!');
-      Putstr(uart_server_tid, COM2, "STOP!\n\r");
-      buf[0] =  0; Putcs(uart_server_tid, COM1, &buf, 2);
-    } else if (c == 'g') {
-      Putstr(uart_server_tid, COM2, "GO!\n\r");
-      buf[0] = 14; Putcs(uart_server_tid, COM1, &buf, 2);
-    } else if (c == 'r') {
-      Putstr(uart_server_tid, COM2, "REVERSE!\n\r");
-      buf[0] = 0; Putcs(uart_server_tid, COM1, &buf, 2);
+    SendS(server_tid, notify, request);
+    buf[1] = request.train;
+    if (request.command == TRAIN_STOP) {
+      Putc(uart_tx_server_tid, COM2, '!');
+      Putstr(uart_tx_server_tid, COM2, "STOP!\n\r");
+      buf[0] =  0; Putcs(uart_tx_server_tid, COM1, buf, 2);
+    } else if (request.command == TRAIN_GO) {
+      Putstr(uart_tx_server_tid, COM2, "GO!\n\r");
+      buf[0] = 14; Putcs(uart_tx_server_tid, COM1, buf, 2);
+    } else if (request.command == TRAIN_REVERSE) {
+      Putstr(uart_tx_server_tid, COM2, "REVERSE!\n\r");
+      buf[0] = 0; Putcs(uart_tx_server_tid, COM1, buf, 2);
       Delay(clock_server_tid, 300);
-      buf[0] = 15; Putcs(uart_server_tid, COM1, &buf, 2);
+      buf[0] = 15; Putcs(uart_tx_server_tid, COM1, buf, 2);
       Delay(clock_server_tid, 5);
-      buf[0] = 14; Putcs(uart_server_tid, COM1, &buf, 2);
+      buf[0] = 14; Putcs(uart_tx_server_tid, COM1, buf, 2);
     }
-
-    //Putc(uart_server_tid, COM2, c);
-    //Putc(uart_server_tid, COM2, ' ');
-
-    //Putc(uart_server_tid, COM2, '0' + x);
-    //Putc(uart_server_tid, COM2, ' ');
-    //Putc(uart_server_tid, COM2, 'R');
-    //Putc(uart_server_tid, COM2, 'u');
-    //Putc(uart_server_tid, COM2, 'n');
-    //Putc(uart_server_tid, COM2, 'n');
-    //Putc(uart_server_tid, COM2, 'i');
-    //Putc(uart_server_tid, COM2, 'n');
-    //Putc(uart_server_tid, COM2, 'g');
-    //Putc(uart_server_tid, COM2, '\n');
-    //Putc(uart_server_tid, COM2, '\r');
-
-    //Putc(uart_server_tid, COM1, '0' + x);
-    //Putc(uart_server_tid, COM1, ' ');
-    //Putc(uart_server_tid, COM1, 'H');
-    //Putc(uart_server_tid, COM1, 'e');
-    //Putc(uart_server_tid, COM1, 'l');
-    //Putc(uart_server_tid, COM1, 'l');
-    //Putc(uart_server_tid, COM1, 'o');
-    //Putc(uart_server_tid, COM1, '\n');
-    //Putc(uart_server_tid, COM1, '\r');
-
-    Delay(clock_server_tid, 5);
-    x = (x+1)%10;
   }
 }
 
-void train_control_task() {
-  int uart_server_tid = WhoIs(UART_TX_SERVER);
-  int clock_server_tid = WhoIs(CLOCK_SERVER);
+void train_controller_server() {
+  RegisterAs(TRAIN_CONTROLLER_SERVER);
+  int uart_tx_server_tid = WhoIs(UART_TX_SERVER);
+  const int NUM_WORKERS = 4;
+  int workers[NUM_WORKERS];
+  bool workerReady[NUM_WORKERS];
 
-  // Putstr(uart_server_tid, COM2, "Starting set\n\r");
-  Putc(uart_server_tid, COM1, 0x60);
+  int receiver;
+  train_control_request_t request;
 
-  Delay(clock_server_tid, 500);
-  // Putstr(uart_server_tid, COM2, "Train 70 -> 14\n\r");
-  Putc(uart_server_tid, COM1, 14);
-  Putc(uart_server_tid, COM1, 70);
+  for (int i = 0; i < NUM_WORKERS; i++) {
+    workers[i] = Create(3, &train_controller_task);
+    workerReady[i] = false;
+  }
 
-  Delay(clock_server_tid, 500);
-  // Putstr(uart_server_tid, COM2, "Train 70 -> 0\n\r");
-  Putc(uart_server_tid, COM1, 0);
-  Putc(uart_server_tid, COM1, 70);
+  while (1) {
+    ReceiveS(&receiver, request);
+    if (request.type == TRAIN_TASK_READY) {
+      for (int i = 0; i < NUM_WORKERS; i++) {
+        if (request.train == workers[i]) {
+          workerReady[i] = true;
+          break;
+        }
+      }
+    } else if (request.type == TRAIN_COMMAND) {
+      for (int i = 0; i < NUM_WORKERS; i++) {
+        if (workerReady[i]) {
+          ReplyS(workers[i], request);
+          workerReady[i] = false;
+          break;
+        }
+      }
+      ReplyN(receiver);
+    }
+  }
+}
 
-  Delay(clock_server_tid, 500);
-  bwprintf(COM2, "Exiting\n\r");
-  ExitKernel();
+void print_task() {
+  int uart_tx_server_tid = WhoIs(UART_TX_SERVER);
+  int uart_rx_server_tid = WhoIs(UART_RX_SERVER);
+  int train_controller_server_tid = WhoIs(TRAIN_CONTROLLER_SERVER);
+
+  train_control_request_t request;
+  train_control_request_t request2;
+
+  request.type = TRAIN_COMMAND;
+  request.train = 70;
+
+  while (1) {
+    char c = Getc(uart_rx_server_tid, COM2);
+    if (c == 's') {
+      request.command = TRAIN_STOP;
+      request2.command = TRAIN_STOP;
+    } else if (c == 'g') {
+      request.command = TRAIN_GO;
+      request2.command = TRAIN_GO;
+    } else if (c == 'r') {
+      request.command = TRAIN_REVERSE;
+      request2.command = TRAIN_REVERSE;
+    }
+  }
 }
 
 void k4_entry_task() {
@@ -104,5 +126,6 @@ void k4_entry_task() {
   Create(2, &uart_rx_server);
   Create(IDLE_TASK_PRIORITY, &idle_task);
 
-  Create(4, &print_task);
+  Create(10, &train_controller_server);
+  Create(11, &print_task);
 }
