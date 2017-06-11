@@ -6,6 +6,9 @@
 #include <heap.h>
 #include <bwio.h>
 
+extern int lr;
+extern int cpsr;
+
 enum {
   RX_NOTIFIER,
   GET_REQUEST,
@@ -118,7 +121,7 @@ void uart_rx_server() {
       }
       break;
     default:
-      KASSERT(false, "uart_server received unknown request type=%d", request.type);
+      KASSERT(false, "uart_server RX received unknown request type=%d", request.type);
       break;
     }
 

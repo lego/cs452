@@ -71,7 +71,11 @@ static inline void exit() {
   cleanup();
   asm volatile ("mov pc, %0" : : "r" (REDBOOT_LR));
 }
-#define KASSERT(a, msg, ...) do { if (!(a)) {bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); exit();} } while(0)
+#define KASSERT(a, msg, ...) do { if (!(a)) { \
+  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+  bwprintf(COM2, "failed at lr=%x cpsr=%x", lr, cpsr); \
+  exit(); \
+} } while(0)
 
 #if DEBUG_SCHEDULER
 #define log_scheduler_kern(format, ...) log_debug(" [-]{SC}  " format, ## __VA_ARGS__)

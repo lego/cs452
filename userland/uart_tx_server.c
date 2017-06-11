@@ -6,6 +6,9 @@
 #include <heap.h>
 #include <bwio.h>
 
+extern int lr;
+extern int cpsr;
+
 enum {
   TX_NOTIFIER,
   PUT_REQUEST,
@@ -88,7 +91,7 @@ void uart_tx_server() {
   Send(uart1_notifier_tid, &request, sizeof(request), NULL, 0);
   int uart1_ready = false;
 
-  log_uart_server("uart_server initialized tid=%d", tid);
+  log_uart_server("uart_server TX initialized tid=%d", tid);
 
   while (true) {
     ReceiveS(&requester, request);
@@ -127,8 +130,8 @@ void uart_tx_server() {
       ReplyN(requester);
       break;
     default:
-      //KASSERT(false, "uart_server received unknown request type=%d", request.type);
-      bwprintf(COM2, " ERR %d\n\r", request.type);
+      // KASSERT(false, "uart_server received unknown request type=%d", request.type);
+      bwprintf(COM2, "FUCK");
       break;
     }
 

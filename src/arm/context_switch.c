@@ -78,6 +78,9 @@ asm (
 
 "\n"
 "__asm_hwi_handler:\n\t"
+
+
+
   // start in irq mode
 
   "sub lr, lr, #4\n\r"
@@ -92,6 +95,20 @@ asm (
   "mrs r4, spsr\n\t"
   // save return-to-user lr to r5 so it's not overwritten by r0-r3
   "mov r5, lr\n\t"
+
+  // tmp save
+  // "stmfd sp!, {r0-r3}\n\t"
+  // "mov r0, r4\n\t"
+  // "mov r1, r5\n\t"
+  // "bl save\n\t"
+  // "ldmfd sp!, {r0-r3}\n\t"
+
+  // "mov r0, #1\n\t"
+  // "mov r1, r5\n\t"
+  // "bl bwputr\n\t"
+  //
+  // // tmp recover
+  // "ldmfd sp!, {r0, r1}\n\t"
 
   // in system mode
   "msr cpsr_c, #223\n\t"

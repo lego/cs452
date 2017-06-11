@@ -39,6 +39,13 @@ volatile task_descriptor_t volatile *active_task;
 context_t *ctx;
 bool should_exit;
 
+int lr;
+int cpsr;
+
+void save(int l, int c) {
+  lr = l;
+  cpsr = c;
+}
 
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);

@@ -6,6 +6,9 @@
 #include <nameserver.h>
 #include <jstring.h>
 
+extern int lr;
+extern int cpsr;
+
 int Create(int priority, void (*entrypoint)()) {
   assert(0 <= priority && priority < 32);
 
@@ -97,7 +100,7 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
 }
 
 int Reply( int tid, void *reply, int replylen ) {
-  KASSERT(tid != active_task->tid, "Attempted reply to self tid=%d", tid);
+  // KASSERT(tid != active_task->tid, "Attempted reply to self tid=%d", tid);
   // FIXME: assert tid is valid, replylen is positive or 0
 
   // Ensure if reply is null, replylen is 0
