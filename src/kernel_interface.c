@@ -60,7 +60,7 @@ void ExitKernel( ) {
 }
 
 int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
-  KASSERT(tid != active_task->tid, "Attempted send to self tid=%d", tid);
+  KASSERT(tid != active_task->tid, "Attempted send to self tid=%d, %d", tid, active_task->tid);
 
   kernel_request_t request;
   request.tid = active_task->tid;

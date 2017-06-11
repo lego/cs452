@@ -127,7 +127,8 @@ void uart_tx_server() {
       ReplyN(requester);
       break;
     default:
-      KASSERT(false, "uart_server received unknown request type=%d", request.type);
+      //KASSERT(false, "uart_server received unknown request type=%d", request.type);
+      bwprintf(COM2, " ERR %d\n\r", request.type);
       break;
     }
 

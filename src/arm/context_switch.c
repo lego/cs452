@@ -29,7 +29,7 @@ asm (
 
     // recover task spsr and lr
     "ldmfd sp!, {r1, r2}\n\t"
-    "msr spsr_c, r1\n\t"
+    "msr spsr, r1\n\t"
   "msr cpsr_c, #211\n\t"
 
   "mov lr, r2\n\t"
@@ -127,7 +127,7 @@ asm (
     "ldr lr, [sl, r4]\n\t"
   "msr cpsr_c, #211\n\t"
 
-  "msr spsr_c, #16\n\t"
+  "msr spsr, #16\n\t"
 
   "mov lr, r1\n\t"
   "movs pc, lr\n\t"

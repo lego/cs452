@@ -216,10 +216,15 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Await", task->tid);
   await_event_t event_type = *(await_event_t *) arg->arguments;
 
+  if (event_type == EVENT_UART1_RX) {
+    INTERRUPT_ENABLE(INTERRUPT_UART1_RX);
+  }
+  if (event_type == EVENT_UART1_TX) {
+    INTERRUPT_ENABLE(INTERRUPT_UART1_TX);
+  }
   if (event_type == EVENT_UART2_RX) {
     INTERRUPT_ENABLE(INTERRUPT_UART2_RX);
   }
-
   if (event_type == EVENT_UART2_TX) {
     INTERRUPT_ENABLE(INTERRUPT_UART2_TX);
   }
@@ -232,8 +237,10 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
 void hwi(task_descriptor_t *task, kernel_request_t *arg) {
   if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
     hwi_timer2(task, arg);
-  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
-    hwi_uart1(task, arg);
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1_TX)) {
+    hwi_uart1_tx(task, arg);
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1_RX)) {
+    hwi_uart1_rx(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_TX)) {
     hwi_uart2_tx(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_RX)) {
@@ -268,11 +275,17 @@ void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
   scheduler_requeue_task(task);
 }
 
-void hwi_uart1(task_descriptor_t *task, kernel_request_t *arg) {
-  log_interrupt("HWI=UART 1 interrupt");
-  task_descriptor_t *unblocked = interrupts_get_waiting_task(EVENT_UART1_TX);
+void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=UART 1 TX interrupt");
   hwi_unblock_task_for_event(EVENT_UART1_TX);
-  INTERRUPT_CLEAR(INTERRUPT_UART1);
+  INTERRUPT_CLEAR(INTERRUPT_UART1_TX);
+  scheduler_requeue_task(task);
+}
+
+void hwi_uart1_rx(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=UART 1 RX interrupt");
+  hwi_unblock_task_for_event(EVENT_UART1_RX);
+  INTERRUPT_CLEAR(INTERRUPT_UART1_RX);
   scheduler_requeue_task(task);
 }
 
