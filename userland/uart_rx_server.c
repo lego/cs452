@@ -6,6 +6,8 @@
 #include <heap.h>
 #include <bwio.h>
 
+static int uart_rx_server_tid = -1;
+
 enum {
   RX_NOTIFIER,
   GET_REQUEST,
@@ -62,6 +64,7 @@ void uart_rx_notifier() {
 
 void uart_rx_server() {
   int tid = MyTid();
+  uart_rx_server_tid = tid;
   int requester;
   char c;
 
@@ -140,14 +143,20 @@ void uart_rx_server() {
   }
 }
 
-char Getc( int tid, int channel ) {
+char Getc( int channel ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
-  log_task("Getc tid=%d", active_task->tid, tid);
+  log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
+  if (uart_rx_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    KASSERT(false, "UART rx server not initialized");
+    return -1;
+  }
   uart_request_t req;
   req.type = GET_REQUEST;
   req.channel = channel;
   char result;
-  Send(tid, &req, sizeof(req), &result, sizeof(char));
+  Send(uart_rx_server_tid, &req, sizeof(req), &result, sizeof(char));
   return result;
 }
 

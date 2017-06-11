@@ -159,6 +159,7 @@ int Putc(int channel, char c ) {
   if (uart_tx_server_tid == -1) {
     // Don't make data syscall, but still reschedule
     Pass();
+    KASSERT(false, "UART tx server not initialized");
     return -1;
   }
 
@@ -176,6 +177,7 @@ int Putstr(int channel, char *str ) {
   if (uart_tx_server_tid == -1) {
     // Don't make data syscall, but still reschedule
     Pass();
+    KASSERT(false, "UART tx server not initialized");
     return -1;
   }
 

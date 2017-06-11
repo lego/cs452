@@ -8,13 +8,13 @@
  * Debug tooling
  */
 
-#define DEBUG_LOGGING_ARM false
+#define DEBUG_LOGGING_ARM true
 #define DEBUG_LOGGING_X86 true
 // Enable various log_debug statements in the code
   #define DEBUG_SCHEDULER false
   #define DEBUG_CONTEXT_SWITCH false
   #define DEBUG_KERNEL_MAIN false
-  #define DEBUG_TASK true
+  #define DEBUG_TASK false
   #define DEBUG_SYSCALL false
   #define DEBUG_INTERRUPT false
   #define DEBUG_CLOCK_SERVER false
@@ -67,14 +67,14 @@ static inline void exit() {
 }
 int lr;
 int cpsr;
-#if false
-  #define KASSERT(a, msg, ...) do { if (!(a)) { \
-    bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-    bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
-    exit();} } while(0)
-#else
-  #define KASSERT(...) NOP
-#endif
+// TODO: it would be cool if our KASSERT was sensitive to user/kernel mode
+// It can check the CPSR, and exit() if in the kernel or call
+// ExitProgram if in user mode, to cleanly exit!
+// Or maybe in kernel move it can jump to a label at the end of main?
+#define KASSERT(a, msg, ...) do { if (!(a)) { \
+  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+  bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
+  exit();} } while(0)
 
 #if DEBUG_SCHEDULER
 #define log_scheduler_kern(format, ...) log_debug(" [-]{SC}  " format, ## __VA_ARGS__)

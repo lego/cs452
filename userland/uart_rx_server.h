@@ -3,6 +3,6 @@
 
 void uart_rx_server();
 
-char Getc( int tid, int channel );
+char Getc(int channel );
 
 #endif

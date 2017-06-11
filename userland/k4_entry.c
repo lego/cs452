@@ -74,7 +74,7 @@ void k4_entry_task() {
   Create(1, &nameserver);
   Create(2, &clock_server);
   Create(2, &uart_tx_server);
-  //Create(2, &uart_rx_server);
+  Create(2, &uart_rx_server);
   Create(IDLE_TASK_PRIORITY, &idle_task);
 
   Create(10, &interactive);
