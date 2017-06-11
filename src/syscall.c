@@ -216,8 +216,12 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Await", task->tid);
   await_event_t event_type = *(await_event_t *) arg->arguments;
 
+  if (event_type == EVENT_UART2_RX) {
+    INTERRUPT_ENABLE(INTERRUPT_UART2_RX);
+  }
+
   if (event_type == EVENT_UART2_TX) {
-    INTERRUPT_ENABLE(INTERRUPT_UART2);
+    INTERRUPT_ENABLE(INTERRUPT_UART2_TX);
   }
 
   interrupts_set_waiting_task(event_type, task);
@@ -229,9 +233,11 @@ void hwi(task_descriptor_t *task, kernel_request_t *arg) {
   if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
     hwi_timer2(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
-    hwi_uart2(task, arg);
-  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2)) {
-    hwi_uart2(task, arg);
+    hwi_uart1(task, arg);
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_TX)) {
+    hwi_uart2_tx(task, arg);
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_RX)) {
+    hwi_uart2_rx(task, arg);
   } else {
     log_interrupt("HWI=Unknown interrupt");
     scheduler_requeue_task(task);
@@ -241,18 +247,24 @@ void hwi(task_descriptor_t *task, kernel_request_t *arg) {
 task_descriptor_t *hwi_unblock_task_for_event(await_event_t event) {
   task_descriptor_t *event_blocked_task = interrupts_get_waiting_task(event);
   if (event_blocked_task != NULL) {
-    interrupts_clear_waiting_task(event_blocked_task);
+    interrupts_clear_waiting_task(event);
     event_blocked_task->state = STATE_READY;
     scheduler_requeue_task(event_blocked_task);
   }
   return event_blocked_task;
 }
 
-void hwi_uart2(task_descriptor_t *task, kernel_request_t *arg) {
-  log_interrupt("HWI=UART 2 interrupt");
-  task_descriptor_t *unblocked = interrupts_get_waiting_task(EVENT_UART2_TX);
+void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=UART 2 TX interrupt");
   hwi_unblock_task_for_event(EVENT_UART2_TX);
-  INTERRUPT_CLEAR(INTERRUPT_UART2);
+  INTERRUPT_CLEAR(INTERRUPT_UART2_TX);
+  scheduler_requeue_task(task);
+}
+
+void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=UART 2 RX interrupt");
+  hwi_unblock_task_for_event(EVENT_UART2_RX);
+  INTERRUPT_CLEAR(INTERRUPT_UART2_RX);
   scheduler_requeue_task(task);
 }
 

@@ -35,7 +35,7 @@
 
 #define ENTRY_TASK_PRIORITY 1
 
-task_descriptor_t *active_task;
+volatile task_descriptor_t volatile *active_task;
 context_t *ctx;
 bool should_exit;
 

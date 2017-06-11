@@ -48,7 +48,7 @@ typedef struct Context context_t;
  * - kernel_interface.c for current task state to set in the syscall request
  * - scheduler.c for current task state in switching tasks
  */
-extern task_descriptor_t *active_task;
+extern volatile task_descriptor_t volatile *active_task;
 /*
  * ctx is the kernels state. this includes
  * - list of task descriptors, and it's memory

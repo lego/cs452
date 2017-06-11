@@ -22,7 +22,7 @@ void uart_tx_notifier() {
   int receiver;
   int tid = MyTid();
 
-  RegisterAs(UART_NOTIFIER);
+  RegisterAs(UART_TX_NOTIFIER);
   int uart_server_tid = MyParentTid();
 
   uart_request_t req;
@@ -68,7 +68,7 @@ void uart_tx_server() {
 
   uart_request_t request;
 
-  RegisterAs(UART_SERVER);
+  RegisterAs(UART_TX_SERVER);
 
   // uart2 stuff
   char uart2_outputQueue[OUTPUT_QUEUE_MAX];

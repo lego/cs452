@@ -67,6 +67,10 @@ enum await_event_t {
   EVENT_TIMER,
   EVENT_UART2_TX,
   EVENT_UART1_TX,
+  EVENT_UART2_RX,
+  EVENT_UART1_RX,
+
+  // Must be last
   EVENT_NUM_TYPES,
 }; typedef int await_event_t;
 

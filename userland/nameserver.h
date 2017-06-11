@@ -9,8 +9,10 @@ enum task_name_t {
   RPS_SERVER,
   CLOCK_SERVER,
   CLOCK_NOTIFIER,
-  UART_SERVER,
-  UART_NOTIFIER,
+  UART_TX_SERVER,
+  UART_TX_NOTIFIER,
+  UART_RX_SERVER,
+  UART_RX_NOTIFIER,
   IDLE_TASK,
 
   // NOTE: leave this at the end, OR ELSE!

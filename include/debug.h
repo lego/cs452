@@ -31,7 +31,7 @@
 
 // Dangerous global use, but used only for debug lines
 #include <kern/task_descriptor.h>
-extern task_descriptor_t *active_task;
+extern volatile task_descriptor_t volatile *active_task;
 
 #if DEBUG_MODE
 /**

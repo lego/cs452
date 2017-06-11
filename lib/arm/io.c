@@ -48,7 +48,7 @@ void ts7200_uart2_init() {
   bwsetfifo(COM2, OFF);
   bwsetspeed(COM2, 115200);
   int *uart2_ctlr = (int *)(UART2_BASE + UART_CTLR_OFFSET);
-  *uart2_ctlr |= TIEN_MASK;
+  *uart2_ctlr |= TIEN_MASK | RIEN_MASK;
 }
 
 void io_init() {

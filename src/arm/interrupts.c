@@ -12,9 +12,6 @@ void interrupts_arch_init() {
   log_interrupt("Enabling TIMER2 interrupts");
   INTERRUPT_ENABLE(INTERRUPT_TIMER2);
 
-  log_interrupt("Enabling UART2 interrupts");
-  INTERRUPT_ENABLE(INTERRUPT_UART2);
-
   log_interrupt("Enabling UART1 interrupts");
   INTERRUPT_ENABLE(INTERRUPT_UART1);
 }
