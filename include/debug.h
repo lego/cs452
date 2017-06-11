@@ -2,6 +2,7 @@
 #define __DEBUG_H__
 
 #include <stdbool.h>
+#include <terminal.h>
 
 /*
  * Debug tooling
@@ -13,21 +14,14 @@
   #define DEBUG_SCHEDULER false
   #define DEBUG_CONTEXT_SWITCH false
   #define DEBUG_KERNEL_MAIN false
-  #define DEBUG_TASK false
+  #define DEBUG_TASK true
   #define DEBUG_SYSCALL false
   #define DEBUG_INTERRUPT false
   #define DEBUG_CLOCK_SERVER false
-  #define DEBUG_UART_SERVER true
+  #define DEBUG_UART_SERVER false
   #define DEBUG_NAMESERVER false
 
 #define NOP do {} while(0)
-
-#define RESET_ATTRIBUTES "\x1b" "[0m"
-#ifdef DEBUG_MODE
-#define GREY_FG "\x1b" "[37m"
-#else
-#define GREY_FG "\x1b" "[37m"
-#endif
 
 // Dangerous global use, but used only for debug lines
 #include <kern/task_descriptor.h>
@@ -71,7 +65,12 @@ static inline void exit() {
   cleanup();
   asm volatile ("mov pc, %0" : : "r" (REDBOOT_LR));
 }
-#define KASSERT(a, msg, ...) do { if (!(a)) {bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); exit();} } while(0)
+int lr;
+int cpsr;
+#define KASSERT(a, msg, ...) do { if (!(a)) { \
+  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+  bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
+  exit();} } while(0)
 
 #if DEBUG_SCHEDULER
 #define log_scheduler_kern(format, ...) log_debug(" [-]{SC}  " format, ## __VA_ARGS__)

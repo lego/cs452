@@ -48,9 +48,9 @@ static inline void handle(kernel_request_t *request) {
   syscall_handle(request);
 }
 
-io_time_t idle_time_total;
+volatile io_time_t idle_time_total;
 io_time_t idle_time_start;
-io_time_t time_since_idle_print;
+volatile io_time_t time_since_idle_totalled;
 
 static inline void idle_task_pre_activate(task_descriptor_t *task) {
   if (task->priority == 31) {
@@ -62,20 +62,6 @@ static inline void idle_task_post_activate(task_descriptor_t *task) {
   if (task->priority == 31) {
     io_time_t idle_time_end = io_get_time();
     idle_time_total += (idle_time_end - idle_time_start);
-
-    // Only print idle time every 1s
-    if (io_time_difference_us(idle_time_end, time_since_idle_print) >= 1000000) {
-      unsigned int idle_time_ms = io_time_difference_ms(idle_time_total, 0);
-      if (idle_time_ms < 5) {
-        unsigned int idle_time_us = io_time_difference_us(idle_time_total, 0);
-        //bwprintf(COM2, "Idle task ran for %dus\n\r", idle_time_us);
-
-      } else {
-        //bwprintf(COM2, "Idle task ran for %dms\n\r", idle_time_ms);
-      }
-      idle_time_total = 0;
-      time_since_idle_print = idle_time_end;
-    }
   }
 }
 
@@ -114,9 +100,6 @@ int main() {
   /* create first user task */
   task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, ENTRY_FUNC);
   scheduler_requeue_task(first_user_task);
-
-  // NOTE: this needs to be after io_init, as it uses the timer
-  time_since_idle_print = io_get_time();
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
 

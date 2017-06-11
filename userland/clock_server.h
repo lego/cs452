@@ -4,8 +4,8 @@
 void clock_server();
 
 /* Clock server calls */
-int Delay( int tid, unsigned int delay );
-int Time( int tid );
-int DelayUntil( int tid, unsigned long int until );
+int Delay(unsigned int delay );
+int Time();
+int DelayUntil(unsigned long int until );
 
 #endif

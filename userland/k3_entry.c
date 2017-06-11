@@ -38,10 +38,9 @@ void k3_client_task() {
   int ticks = data.delay_ticks;
   int amount = data.delay_amount;
 
-  int clock_server_tid = WhoIs(CLOCK_SERVER);
   int i;
   for (i = 0; i < amount; i++) {
-    Delay(clock_server_tid, ticks);
+    Delay(ticks);
     bwprintf(COM2, "Finished delay tid=%d ticks=%d completed=%d\n\r", my_tid, ticks, i+1);
   }
 

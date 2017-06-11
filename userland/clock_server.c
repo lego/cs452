@@ -4,6 +4,8 @@
 #include <nameserver.h>
 #include <heap.h>
 
+static int clock_server_tid = -1;
+
 enum {
   NOTIFIER,
   TIME_REQUEST,
@@ -38,6 +40,7 @@ void clock_notifier() {
 
 void clock_server() {
   int tid = MyTid();
+  clock_server_tid = tid;
   int requester;
   unsigned long int ticks = 0;
 
@@ -68,12 +71,12 @@ void clock_server() {
     case DELAY_REQUEST:
       // Add requester to list of suspended tasks
       log_clock_server("clock_server: delay tid=%d until=%d", tid, requester, ticks + request.time_value);
-      heap_push(&delay_queue, ticks + request.time_value, requester);
+      heap_push(&delay_queue, ticks + request.time_value, (void *) requester);
       break;
     case DELAY_UNTIL_REQUEST:
       // Add requester to list of suspended tasks
       log_clock_server("clock_server: delay tid=%d until=%d", tid, requester, request.time_value);
-      heap_push(&delay_queue, request.time_value, requester);
+      heap_push(&delay_queue, request.time_value, (void *) requester);
       break;
     default:
       bwprintf(COM2, "UH OH...\n\r");
@@ -95,29 +98,47 @@ void clock_server() {
   }
 }
 
-int Delay( int tid, unsigned int delay ) {
-  log_clock_server("Delay tid=%d delay=%d", active_task->tid, tid, delay);
+int Delay(unsigned int delay ) {
+  log_clock_server("Delay delay=%d", active_task->tid, delay);
+  if (clock_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
   clock_request_t req;
   req.type = DELAY_REQUEST;
   req.time_value = delay;
-  Send(tid, &req, sizeof(req), NULL, 0);
+  Send(clock_server_tid, &req, sizeof(req), NULL, 0);
   return 0;
 }
 
-int Time( int tid ) {
-  log_clock_server("Time tid=%d", active_task->tid, tid);
+int Time() {
+  log_clock_server("Time", active_task->tid);
+  if (clock_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
   clock_request_t req;
   req.type = TIME_REQUEST;
   volatile unsigned long int time_value;
-  SendS(tid, req, time_value);
+  SendS(clock_server_tid, req, time_value);
   return time_value;
 }
 
-int DelayUntil( int tid, unsigned long int until ) {
-  log_clock_server("DelayUntil tid=%d until=%d", active_task->tid, tid, until);
+int DelayUntil(unsigned long int until ) {
+  log_clock_server("DelayUntil until=%d", active_task->tid, until);
+  if (clock_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
   clock_request_t req;
   req.type = DELAY_UNTIL_REQUEST;
   req.time_value = until;
-  Send(tid, &req, sizeof(req), NULL, 0);
+  Send(clock_server_tid, &req, sizeof(req), NULL, 0);
   return 0;
 }

@@ -127,7 +127,7 @@ void copy_msg(task_descriptor_t *src_task, task_descriptor_t *dest_task) {
 
 
 bool is_valid_task(int tid) {
-  return ctx->used_descriptors > tid && ctx->descriptors[tid].state != STATE_ZOMBIE;
+  return ctx->used_descriptors > tid;
 }
 
 void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
@@ -141,6 +141,8 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
     scheduler_requeue_task(task);
     return;
   }
+
+  KASSERT(ctx->descriptors[msg->tid].state != STATE_ZOMBIE, "Attempting to send to a zombie. If this is expected, please remove me.");
 
   task_descriptor_t *target_task = &ctx->descriptors[msg->tid];
 

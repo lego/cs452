@@ -12,6 +12,14 @@ void context_switch_init() {
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
 }
 
+int cpsr;
+int lr;
+
+void save(int r0, int r1) {
+  cpsr = r0;
+  lr = r1;
+}
+
 asm (
 "\n"
 // export of the function
@@ -92,6 +100,13 @@ asm (
   "mrs r4, spsr\n\t"
   // save return-to-user lr to r5 so it's not overwritten by r0-r3
   "mov r5, lr\n\t"
+
+  // Debugging save. Saves the task CPSR and LR to global variables for crashes
+  "stmfd sp!, {r0-r3}\n\t"
+  "mov r0, r4\n\t"
+  "mov r1, r5\n\t"
+  "bl save\n\t"
+  "ldmfd sp!, {r0-r3}\n\t"
 
   // in system mode
   "msr cpsr_c, #223\n\t"

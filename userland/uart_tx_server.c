@@ -6,6 +6,8 @@
 #include <heap.h>
 #include <bwio.h>
 
+static int uart_tx_server_tid = -1;
+
 enum {
   TX_NOTIFIER,
   PUT_REQUEST,
@@ -63,6 +65,7 @@ void uart_tx_notifier() {
 
 void uart_tx_server() {
   int tid = MyTid();
+  uart_tx_server_tid = tid;
   int requester;
   char c;
 
@@ -108,7 +111,7 @@ void uart_tx_server() {
           ReplyS(uart1_notifier_tid, c);
           uart1_ready = false;
         } else {
-          KASSERT(uart1_outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits!");
+          KASSERT(uart1_outputQueueLength < OUTPUT_QUEUE_MAX, "UART1 output server queue has reached its limits! size=%d limit=%d", uart1_outputQueueLength, OUTPUT_QUEUE_MAX);
           int i = (uart1_outputStart+uart1_outputQueueLength) % OUTPUT_QUEUE_MAX;
           uart1_outputQueue[i] = c;
           uart1_outputQueueLength += 1;
@@ -118,7 +121,7 @@ void uart_tx_server() {
           ReplyS(uart2_notifier_tid, c);
           uart2_ready = false;
         } else {
-          KASSERT(uart2_outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits!");
+          KASSERT(uart2_outputQueueLength < OUTPUT_QUEUE_MAX, "UART1 output server queue has reached its limits! size=%d limit=%d", uart2_outputQueueLength, OUTPUT_QUEUE_MAX);
           int i = (uart2_outputStart+uart2_outputQueueLength) % OUTPUT_QUEUE_MAX;
           uart2_outputQueue[i] = c;
           uart2_outputQueueLength += 1;
@@ -150,26 +153,38 @@ void uart_tx_server() {
   }
 }
 
-int Putc( int tid, int channel, char c ) {
+int Putc(int channel, char c ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
-  log_task("Putc tid=%d char=%c", active_task->tid, tid, c);
+  log_task("Putc c=%c", active_task->tid, c);
+  if (uart_tx_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
   uart_request_t req;
   req.type = PUT_REQUEST;
   req.channel = channel;
   req.ch = c;
-  Send(tid, &req, sizeof(req), NULL, 0);
+  Send(uart_tx_server_tid, &req, sizeof(req), NULL, 0);
   return 0;
 }
 
-int Putstr( int tid, int channel, char *str ) {
+int Putstr(int channel, char *str ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
-  log_task("Putstr tid=%d str=%s", active_task->tid, tid, str);
+  log_task("Putstr str=%s", active_task->tid, str);
+  if (uart_tx_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    return -1;
+  }
+
   uart_request_t req;
   req.type = PUT_REQUEST;
   req.channel = channel;
-  while (*str != NULL) {
+  while (*str != '\0') {
     req.ch = *str;
-    Send(tid, &req, sizeof(req), NULL, 0);
+    Send(uart_tx_server_tid, &req, sizeof(req), NULL, 0);
     str++;
   }
   return 0;

@@ -17,7 +17,7 @@ CC     = ./armcheck; gcc
 AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture

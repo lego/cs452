@@ -23,7 +23,6 @@ void clock_server_test_child() {
   int ticks = data.delay_ticks;
   int amount = data.delay_amount;
 
-  int clock_server_tid = WhoIs(CLOCK_SERVER);
   int i;
 
   bwprintf(COM2, "Initialized ticks=%d amount=%d\n\r", ticks, amount);
@@ -33,13 +32,13 @@ void clock_server_test_child() {
 
   for (i = 0; i < amount; i++) {
     log_task("Delaying ticks=%d", tid, ticks);
-    Delay(clock_server_tid, ticks);
+    Delay(ticks);
     io_time_t last_time = curr_time;
     curr_time = io_get_time();
     bwprintf(COM2, "tid=%d delay=%d completed_delays=%d ticktime=%dms cumtime=%dms\n\r", tid, ticks, i+1,  io_time_difference_ms(curr_time, last_time), io_time_difference_ms(curr_time, start_time));
   }
 
-  int time_ticks = Time(clock_server_tid);
+  int time_ticks = Time();
 
   io_time_t end_time = io_get_time();
 
