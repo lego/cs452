@@ -16,7 +16,8 @@ enum {
 typedef struct {
   int type;
   int channel;
-  char ch;
+  char *ch;
+  int len;
 } uart_request_t;
 
 void uart_tx_notifier() {
@@ -36,6 +37,8 @@ void uart_tx_notifier() {
 
   log_uart_server("uart_tx_notifier initialized tid=%d channel=%d", tid, channel);
 
+  volatile int volatile *flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
+
   req.type = TX_NOTIFIER;
   while (true) {
     SendS(uart_server_tid, req, ch);
@@ -45,6 +48,15 @@ void uart_tx_notifier() {
         AwaitEventPut(EVENT_UART1_TX, ch);
         // VMEM(UART1_BASE + UART_DATA_OFFSET) = ch;
         log_uart_server("uart_notifer COM1 putc=%c", ch);
+        int i;
+        const int max = 100000;
+        int low = false;
+        for (i = 0; i < max && (!low || !(*flags & CTS_MASK)); i++) {
+          if (!(*flags & CTS_MASK)) {
+            low = true;
+          }
+        }
+        KASSERT(i < max, "Waited for CTS low then high, but it didn't come :( %x", ch);
         break;
       case COM2:
         AwaitEventPut(EVENT_UART2_TX, ch);
@@ -105,33 +117,41 @@ void uart_tx_server() {
       }
       break;
     case PUT_REQUEST:
-      c = request.ch;
-      if (request.channel == COM1) {
-        if (uart1_ready && uart1_outputQueueLength == 0) {
-          ReplyS(uart1_notifier_tid, c);
-          uart1_ready = false;
-        } else {
-          KASSERT(uart1_outputQueueLength < OUTPUT_QUEUE_MAX, "UART1 output server queue has reached its limits! size=%d limit=%d", uart1_outputQueueLength, OUTPUT_QUEUE_MAX);
-          int i = (uart1_outputStart+uart1_outputQueueLength) % OUTPUT_QUEUE_MAX;
-          uart1_outputQueue[i] = c;
-          uart1_outputQueueLength += 1;
+      while (true) {
+        if ((request.len == -1 && !(*request.ch)) || request.len == 0) {
+          break;
         }
-      } else if (request.channel == COM2) {
-        if (uart2_ready && uart2_outputQueueLength == 0) {
-          ReplyS(uart2_notifier_tid, c);
-          uart2_ready = false;
-        } else {
-          KASSERT(uart2_outputQueueLength < OUTPUT_QUEUE_MAX, "UART1 output server queue has reached its limits! size=%d limit=%d", uart2_outputQueueLength, OUTPUT_QUEUE_MAX);
-          int i = (uart2_outputStart+uart2_outputQueueLength) % OUTPUT_QUEUE_MAX;
-          uart2_outputQueue[i] = c;
-          uart2_outputQueueLength += 1;
+        c = *request.ch;
+        if (request.len != -1) {
+          request.len--;
+        }
+        request.ch++;
+        if (request.channel == COM1) {
+          if (uart1_ready && uart1_outputQueueLength == 0) {
+            ReplyS(uart1_notifier_tid, c);
+            uart1_ready = false;
+          } else {
+            KASSERT(uart1_outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits %d!", uart1_outputQueueLength);
+            int i = (uart1_outputStart+uart1_outputQueueLength) % OUTPUT_QUEUE_MAX;
+            uart1_outputQueue[i] = c;
+            uart1_outputQueueLength += 1;
+          }
+        } else if (request.channel == COM2) {
+          if (uart2_ready && uart2_outputQueueLength == 0) {
+            ReplyS(uart2_notifier_tid, c);
+            uart2_ready = false;
+          } else {
+            KASSERT(uart2_outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits %d!", uart2_outputQueueLength);
+            int i = (uart2_outputStart+uart2_outputQueueLength) % OUTPUT_QUEUE_MAX;
+            uart2_outputQueue[i] = c;
+            uart2_outputQueueLength += 1;
+          }
         }
       }
       ReplyN(requester);
       break;
     default:
       KASSERT(false, "uart_server received unknown request type=%d", request.type);
-      bwprintf(COM2, " ERR %d\n\r", request.type);
       break;
     }
 
@@ -153,7 +173,7 @@ void uart_tx_server() {
   }
 }
 
-int Putc(int channel, char c ) {
+int Putcs( int channel, char* c, int len ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Putc c=%c", active_task->tid, c);
   if (uart_tx_server_tid == -1) {
@@ -167,6 +187,25 @@ int Putc(int channel, char c ) {
   req.type = PUT_REQUEST;
   req.channel = channel;
   req.ch = c;
+  req.len = len;
+  Send(uart_tx_server_tid, &req, sizeof(req), NULL, 0);
+  return 0;
+}
+
+int Putc( int channel, char c ) {
+  KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
+  log_task("Putc tid=%d char=%c", active_task->tid, uart_tx_server_tid, c);
+  if (uart_tx_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    KASSERT(false, "UART tx server not initialized");
+    return -1;
+  }
+  uart_request_t req;
+  req.type = PUT_REQUEST;
+  req.channel = channel;
+  req.ch = &c;
+  req.len = 1;
   Send(uart_tx_server_tid, &req, sizeof(req), NULL, 0);
   return 0;
 }
@@ -184,10 +223,9 @@ int Putstr(int channel, char *str ) {
   uart_request_t req;
   req.type = PUT_REQUEST;
   req.channel = channel;
-  while (*str != '\0') {
-    req.ch = *str;
-    Send(uart_tx_server_tid, &req, sizeof(req), NULL, 0);
-    str++;
-  }
+  req.ch = str;
+  req.len = -1;
+  Send(uart_tx_server_tid, &req, sizeof(req), NULL, 0);
+  str++;
   return 0;
 }

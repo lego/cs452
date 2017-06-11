@@ -5,5 +5,6 @@ void uart_tx_server();
 
 int Putc(int channel, char c );
 int Putstr(int channel, char *str );
+int Putcs( int channel, char *c, int len );
 
 #endif

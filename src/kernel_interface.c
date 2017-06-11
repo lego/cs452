@@ -98,6 +98,7 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
 }
 
 int Reply( int tid, void *reply, int replylen ) {
+  // See send for why this is commented out
   KASSERT(tid != active_task->tid, "Attempted reply to self tid=%d", tid);
   // FIXME: assert tid is valid, replylen is positive or 0
 
