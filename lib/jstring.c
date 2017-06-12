@@ -180,3 +180,29 @@ int ja2i(char* str) {
   }
   return total;
 }
+
+void jui2a(unsigned int num, unsigned int base, char *bf) {
+  int n = 0;
+  int dgt;
+  unsigned int d = 1;
+
+  while((num / d) >= base) d *= base;
+  while(d != 0) {
+    dgt = num / d;
+    num %= d;
+    d /= base;
+    if(n || dgt > 0 || d == 0) {
+      *bf++ = dgt + (dgt < 10 ? '0' : 'a' - 10);
+      ++n;
+    }
+  }
+  *bf = 0;
+}
+
+void ji2a(int num, char *bf) {
+  if(num < 0) {
+    num = -num;
+    *bf++ = '-';
+  }
+  jui2a(num, 10, bf);
+}

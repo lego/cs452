@@ -19,3 +19,5 @@ int jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size);
 
 int jc2i(char c);
 int ja2i(char* str);
+void jui2a(unsigned int num, unsigned int base, char *bf);
+void ji2a(int num, char *bf);

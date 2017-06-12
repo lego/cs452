@@ -13,6 +13,7 @@
 #define SENSOR_HISTORY_LOCATION 10
 #define COMMAND_LOCATION 23
 
+#define NUM_SWITCHES 22
 
 // use for command parsing
 // in particular this is where the command is string split
@@ -63,6 +64,8 @@ command_t get_command_type(char *command) {
     return COMMAND_TRAIN_REVERSE;
   } else if (jstrcmp(command, "sw")) {
     return COMMAND_SWITCH_TOGGLE;
+  } else if (jstrcmp(command, "swa")) {
+    return COMMAND_SWITCH_TOGGLE_ALL;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -399,7 +402,7 @@ void interactive() {
             break;
           case COMMAND_SWITCH_TOGGLE:
             {
-              Putstr(COM2, "Set train ");
+              Putstr(COM2, "Set switch ");
               Putstr(COM2, req.arg1);
               Putstr(COM2, " to ");
               Putstr(COM2, req.arg2);
@@ -408,6 +411,34 @@ void interactive() {
                 SetSwitch(sw, SWITCH_CURVED);
               } else if (jstrcmp(req.arg2, "s")) {
                 SetSwitch(sw, SWITCH_STRAIGHT);
+              }
+            }
+            break;
+          case COMMAND_SWITCH_TOGGLE_ALL:
+            {
+              Putstr(COM2, "Set all switches to ");
+              Putstr(COM2, req.arg1);
+              int state = SWITCH_CURVED;
+              if (jstrcmp(req.arg1, "c")) {
+                state = SWITCH_CURVED;
+              } else if (jstrcmp(req.arg1, "s")) {
+                state = SWITCH_STRAIGHT;
+              }
+              for (int i = 0; i < NUM_SWITCHES; i++) {
+                int switchNumber = i+1;
+                if (switchNumber >= 19) {
+                  switchNumber += 134; // 19 -> 153, etc
+                }
+                char buf[10];
+                move_cursor(0, COMMAND_LOCATION + 1);
+                Putstr(COM2, CLEAR_LINE);
+                Putstr(COM2, "Set switch ");
+                ji2a(switchNumber, buf);
+                Putstr(COM2, buf);
+                Putstr(COM2, " to ");
+                Putstr(COM2, req.arg1);
+                SetSwitch(switchNumber, state);
+                Delay(15);
               }
             }
             break;
