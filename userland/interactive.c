@@ -149,7 +149,7 @@ interactive_req_t figure_out_command(char *command_buffer) {
 //   }
 // }
 
-#define MAX_COMMAND_LIMIT 80
+#define MAX_COMMAND_LIMIT 20
 
 void command_parser() {
   int tid = MyTid();
@@ -201,7 +201,7 @@ void command_parser() {
       Send(parent, &echo_cmd, sizeof(echo_cmd), NULL, 0);
 
       command_buffer[input_size++] = c;
-      if (input_size == MAX_COMMAND_LIMIT) {
+      if (input_size >= MAX_COMMAND_LIMIT) {
         command_done = true;
         continue;
       }
