@@ -154,3 +154,29 @@ int jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
 
   return 0;
 }
+
+int jc2i(char c) {
+  if (c >= '0' && c <= '9') {
+    return c - '0';
+  };
+  return -1;
+}
+
+int ja2i(char* str) {
+  int length;
+  for (length = 0; *(str+length); length++);
+  length -= 1; // go back to last character to skip the '\0'
+  int total = 0;
+  int base = 1;
+  char c;
+  for (; length >= 0; length--) {
+    c = *(str+length);
+    int converted = jc2i(c);
+    if (converted < 0) {
+      return -1;
+    }
+    total += converted * base;
+    base *= 10;
+  }
+  return total;
+}

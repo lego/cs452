@@ -273,7 +273,6 @@ void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg) {
   VMEM(UART2_BASE + UART_DATA_OFFSET) = await_arg->arg;
 
   // disable interrupt
-  INTERRUPT_DISABLE(INTERRUPT_UART2_TX);
   INTERRUPT_CLEAR(INTERRUPT_UART2_TX);
 
   hwi_unblock_task_for_event(EVENT_UART2_TX);
@@ -289,8 +288,15 @@ void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
 
 void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 1 TX interrupt");
-  hwi_unblock_task_for_event(EVENT_UART1_TX);
+
+  // write character
+  task_descriptor_t *event_blocked_task = interrupts_get_waiting_task(EVENT_UART1_TX);
+  syscall_await_arg_t *await_arg = event_blocked_task->current_request.arguments;
+  VMEM(UART1_BASE + UART_DATA_OFFSET) = await_arg->arg;
+
   INTERRUPT_CLEAR(INTERRUPT_UART1_TX);
+
+  hwi_unblock_task_for_event(EVENT_UART1_TX);
   scheduler_requeue_task(task);
 }
 

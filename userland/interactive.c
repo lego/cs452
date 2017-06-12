@@ -5,6 +5,7 @@
 #include <terminal.h>
 #include <uart_rx_server.h>
 #include <uart_tx_server.h>
+#include <train_controller.h>
 #include <kernel.h>
 #include <jstring.h>
 
@@ -56,6 +57,12 @@ typedef struct {
 command_t get_command_type(char *command) {
   if (jstrcmp(command, "q")) {
     return COMMAND_QUIT;
+  } else if (jstrcmp(command, "tr")) {
+    return COMMAND_TRAIN_SPEED;
+  } else if (jstrcmp(command, "rv")) {
+    return COMMAND_TRAIN_REVERSE;
+  } else if (jstrcmp(command, "sw")) {
+    return COMMAND_SWITCH_TOGGLE;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -366,8 +373,43 @@ void interactive() {
         Putstr(COM2, CLEAR_LINE);
         switch (req.command_type) {
           case COMMAND_QUIT:
-            bwprintf(COM2, CLEAR_LINE "Running quit\n\r");
+            Putstr(COM2, "\033[2J\033[HRunning quit");
+            Delay(5);
             ExitKernel();
+            break;
+          case COMMAND_TRAIN_SPEED:
+            {
+              Putstr(COM2, "Set train ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " to speed ");
+              Putstr(COM2, req.arg2);
+              int train = ja2i(req.arg1);
+              int speed = ja2i(req.arg2);
+              SetTrainSpeed(train, speed);
+            }
+            break;
+          case COMMAND_TRAIN_REVERSE:
+            {
+              Putstr(COM2, "Train ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " reverse");
+              int train = ja2i(req.arg1);
+              ReverseTrain(train, 14);
+            }
+            break;
+          case COMMAND_SWITCH_TOGGLE:
+            {
+              Putstr(COM2, "Set train ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " to ");
+              Putstr(COM2, req.arg2);
+              int sw = ja2i(req.arg1);
+              if (jstrcmp(req.arg2, "c")) {
+                SetSwitch(sw, SWITCH_CURVED);
+              } else if (jstrcmp(req.arg2, "s")) {
+                SetSwitch(sw, SWITCH_STRAIGHT);
+              }
+            }
             break;
           default:
             Putstr(COM2, "Got invalid command=");

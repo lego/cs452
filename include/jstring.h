@@ -16,3 +16,6 @@ char **jstrsplit(char *str, char delimiter);
 // Returns status:
 // 0 => OK
 int jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size);
+
+int jc2i(char c);
+int ja2i(char* str);

@@ -56,7 +56,7 @@ void uart_tx_notifier() {
             low = true;
           }
         }
-        KASSERT(i < max, "Waited for CTS low then high, but it didn't come :( %x", ch);
+        //KASSERT(i < max, "Waited for CTS low then high, but it didn't come :( %x", ch);
         break;
       case COM2:
         AwaitEventPut(EVENT_UART2_TX, ch);
