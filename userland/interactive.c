@@ -402,8 +402,6 @@ void SetSwitchAndRender(int sw, int state) {
   }
   index--;
 
-  SetSwitch(sw, state);
-
   if (index >= 0 && index < NUM_SWITCHES) {
     Putstr(COM2, SAVE_CURSOR);
     move_cursor(3+7*(index/6)+(index>=18?1:0), SWITCH_LOCATION+1+index%6);
@@ -416,6 +414,7 @@ void SetSwitchAndRender(int sw, int state) {
     }
     Putstr(COM2, RECOVER_CURSOR);
   }
+  SetSwitch(sw, state);
 }
 
 void initSwitches(int *initSwitches) {
@@ -425,16 +424,15 @@ void initSwitches(int *initSwitches) {
       switchNumber += 134; // 19 -> 153, etc
     }
     SetSwitchAndRender(switchNumber, initSwitches[i]);
-    Delay(15);
+    Delay(30);
   }
 }
 
 void interactive() {
   int tid = MyTid();
-  // int sensor_query_tid = Create(5, &sensor_query);
-  int command_parser_tid = Create(5, &command_parser);
-  int time_keeper_tid = Create(5, &time_keeper);
-  int sensor_reader_tid = Create(5, &sensor_reader);
+  int command_parser_tid = Create(7, &command_parser);
+  int time_keeper_tid = Create(7, &time_keeper);
+  int sensor_reader_tid = Create(7, &sensor_reader);
   int sender;
 
   log_task("interactive initialized time_keeper=%d", tid, time_keeper_tid);
@@ -537,7 +535,7 @@ void interactive() {
                   switchNumber += 134; // 19 -> 153, etc
                 }
                 SetSwitchAndRender(switchNumber, state);
-                Delay(15);
+                Delay(30);
               }
             }
             break;

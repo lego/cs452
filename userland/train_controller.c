@@ -3,6 +3,7 @@
 #include <nameserver.h>
 #include <clock_server.h>
 #include <uart_tx_server.h>
+#include <priorities.h>
 
 static int train_controller_server_tid = -1;
 
@@ -51,7 +52,7 @@ void train_controller_task() {
       } else if (request.value == SWITCH_STRAIGHT) {
         buf[0] = 33; Putcs(COM1, buf, 2);
       }
-      Delay(15);
+      Delay(20);
       Putc(COM1, 32);
     }
   }
@@ -60,7 +61,7 @@ void train_controller_task() {
 void train_controller_server() {
   train_controller_server_tid = MyTid();
   RegisterAs(TRAIN_CONTROLLER_SERVER);
-  const int NUM_WORKERS = 4;
+  const int NUM_WORKERS = 1;
   int workers[NUM_WORKERS];
   bool workerReady[NUM_WORKERS];
 
@@ -68,7 +69,7 @@ void train_controller_server() {
   train_control_request_t request;
 
   for (int i = 0; i < NUM_WORKERS; i++) {
-    workers[i] = Create(3, &train_controller_task);
+    workers[i] = Create(PRIORITY_TRAIN_CONTROLLER_TASK, &train_controller_task);
     workerReady[i] = false;
   }
 

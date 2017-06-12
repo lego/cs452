@@ -42,7 +42,7 @@ void k4_entry_task() {
   Create(PRIORITY_RX_SERVER, &uart_rx_server);
   Create(PRIORITY_IDLE_TASK, &idle_task);
 
-  Create(5, &train_controller_server);
+  Create(PRIORITY_TRAIN_CONTROLLER_SERVER, &train_controller_server);
 
   Create(10, &interactive);
   //Create(11, &print_task);
