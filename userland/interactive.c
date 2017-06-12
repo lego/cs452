@@ -424,7 +424,7 @@ void initSwitches(int *initSwitches) {
       switchNumber += 134; // 19 -> 153, etc
     }
     SetSwitchAndRender(switchNumber, initSwitches[i]);
-    Delay(30);
+    Delay(5);
   }
 }
 
@@ -535,7 +535,7 @@ void interactive() {
                   switchNumber += 134; // 19 -> 153, etc
                 }
                 SetSwitchAndRender(switchNumber, state);
-                Delay(30);
+                Delay(5);
               }
             }
             break;

@@ -31,7 +31,6 @@ void train_controller_task() {
 
   train_control_request_t notify;
   notify.type = TRAIN_TASK_READY;
-  notify.index = MyTid();
 
   train_control_request_t request;
 
@@ -44,7 +43,7 @@ void train_controller_task() {
       buf[0] = 0; Putcs(COM1, buf, 2);
       Delay(300);
       buf[0] = 15; Putcs(COM1, buf, 2);
-      Delay(5);
+      Delay(10);
       buf[0] = request.value; Putcs(COM1, buf, 2);
     } else if (request.command == SWITCH_SET) {
       if (request.value == SWITCH_CURVED) {
@@ -61,7 +60,7 @@ void train_controller_task() {
 void train_controller_server() {
   train_controller_server_tid = MyTid();
   RegisterAs(TRAIN_CONTROLLER_SERVER);
-  const int NUM_WORKERS = 1;
+  const int NUM_WORKERS = 4;
   int workers[NUM_WORKERS];
   bool workerReady[NUM_WORKERS];
 
@@ -77,7 +76,7 @@ void train_controller_server() {
     ReceiveS(&receiver, request);
     if (request.type == TRAIN_TASK_READY) {
       for (int i = 0; i < NUM_WORKERS; i++) {
-        if (request.index == workers[i]) {
+        if (receiver == workers[i]) {
           workerReady[i] = true;
           break;
         }
