@@ -3,6 +3,7 @@
 #include <kernel.h>
 #include <nameserver.h>
 #include <heap.h>
+#include <priorities.h>
 
 static int clock_server_tid = -1;
 
@@ -51,7 +52,7 @@ void clock_server() {
   heap_t delay_queue = heap_create(queue_nodes, MAX_TASKS + 1);
 
   RegisterAs(CLOCK_SERVER);
-  Create(1, clock_notifier);
+  Create(PRIORITY_CLOCK_NOTIFIER, clock_notifier);
 
   log_clock_server("clock_server initialized", tid);
 
