@@ -74,6 +74,7 @@ void cleanup() {
   // TODO: figure out why ^
   // NOTE: others were having this issue too
   interrupts_clear_all();
+  bwputc(COM1, 0x61);
 }
 
 int main() {
@@ -102,6 +103,10 @@ int main() {
   scheduler_requeue_task(first_user_task);
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
+
+  // FIXME: super awesome hacky "let's make the trains go"
+  // this should happen in user code
+  bwputc(COM1, 0x60);
 
   // start executing user tasks
   while (!should_exit) {
