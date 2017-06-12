@@ -6,6 +6,7 @@
 #include <clock_server.h>
 #include <idle_task.h>
 #include <io.h>
+#include <priorities.h>
 
 
 typedef struct {
@@ -53,7 +54,7 @@ void clock_server_test() {
 
   Create(1, &nameserver);
   Create(2, &clock_server);
-  Create(IDLE_TASK_PRIORITY, &idle_task);
+  Create(PRIORITY_IDLE_TASK, &idle_task);
 
   client_data_t data;
   int recv_tid;

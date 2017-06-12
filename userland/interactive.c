@@ -10,6 +10,7 @@
 #include <jstring.h>
 
 // Terminal locations
+#define SWITCH_LOCATION 3
 #define SENSOR_HISTORY_LOCATION 10
 #define COMMAND_LOCATION 23
 
@@ -222,6 +223,51 @@ void command_parser() {
   }
 }
 
+void sensor_reader() {
+  int tid = MyTid();
+  int parent = MyParentTid();
+  interactive_req_t req;
+  req.type = INT_REQ_SENSOR_UPDATE;
+  log_task("sensor_reader initialized parent=%d", tid, parent);
+  int oldSensors[5];
+  int sensors[5];
+  Delay(50); // Wait half a second for old COM1 input to be read
+  while (true) {
+    log_task("sensor_reader sleeping", tid);
+    ClearRx(COM1);
+    Putc(COM1, 0x85);
+    int queueLength = 0;
+    const int maxTries = 5;
+    int i;
+    for (i = 0; i < maxTries && queueLength < 10; i++) {
+      Delay(10);
+      queueLength = GetRxQueueLength(COM1);
+    }
+    // We tried to read but failed to get the correct number of bytes, ABORT
+    if (i == maxTries) {
+      continue;
+    }
+    log_task("sensor_reader reading", tid);
+    for (int i = 0; i < 5; i++) {
+      char high = Getc(COM1);
+      char low = Getc(COM1);
+      sensors[i] = (high << 8) | low;
+    }
+    log_task("sensor_reader read", tid);
+    for (int i = 0; i < 5; i++) {
+      if (sensors[i] != oldSensors[i]) {
+        for (int j = 0; j < 16; j++) {
+          if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
+            req.argc = i*16+(15-j);
+            Send(parent, &req, sizeof(req), NULL, 0);
+          }
+        }
+      }
+      oldSensors[i] = sensors[i];
+    }
+  }
+}
+
 void time_keeper() {
   int tid = MyTid();
   int parent = MyParentTid();
@@ -285,6 +331,7 @@ void DrawInitialScreen() {
   // Change BG colour
   Putstr(COM2, BLACK_FG);
   Putstr(COM2, WHITE_BG);
+  move_cursor(0, SWITCH_LOCATION);
   Putstr(COM2, "Switch status");
 
   Putstr(COM2, RESET_ATTRIBUTES);
@@ -348,11 +395,46 @@ void DrawIdlePercent() {
   Putc(COM2, '%');
 }
 
+void SetSwitchAndRender(int sw, int state) {
+  int index = sw;
+  if (index >= 153 && index <= 156) {
+    index -= 134; // 153 -> 19, etc
+  }
+  index--;
+
+  SetSwitch(sw, state);
+
+  if (index >= 0 && index < NUM_SWITCHES) {
+    Putstr(COM2, SAVE_CURSOR);
+    move_cursor(3+7*(index/6)+(index>=18?1:0), SWITCH_LOCATION+1+index%6);
+    if (state == SWITCH_CURVED) {
+      Putc(COM2, 'C');
+    } else if (state == SWITCH_STRAIGHT) {
+      Putc(COM2, 'S');
+    } else {
+      Putc(COM2, '?');
+    }
+    Putstr(COM2, RECOVER_CURSOR);
+  }
+}
+
+void initSwitches(int *initSwitches) {
+  for (int i = 0; i < NUM_SWITCHES; i++) {
+    int switchNumber = i+1;
+    if (switchNumber >= 19) {
+      switchNumber += 134; // 19 -> 153, etc
+    }
+    SetSwitchAndRender(switchNumber, initSwitches[i]);
+    Delay(15);
+  }
+}
+
 void interactive() {
   int tid = MyTid();
   // int sensor_query_tid = Create(5, &sensor_query);
   int command_parser_tid = Create(5, &command_parser);
   int time_keeper_tid = Create(5, &time_keeper);
+  int sensor_reader_tid = Create(5, &sensor_reader);
   int sender;
 
   log_task("interactive initialized time_keeper=%d", tid, time_keeper_tid);
@@ -360,6 +442,31 @@ void interactive() {
   Putstr(COM2, SAVE_CURSOR);
   DrawTime(Time());
   Putstr(COM2, RECOVER_CURSOR);
+
+  int initialSwitchStates[NUM_SWITCHES];
+  initialSwitchStates[ 0] = SWITCH_CURVED;
+  initialSwitchStates[ 1] = SWITCH_CURVED;
+  initialSwitchStates[ 2] = SWITCH_CURVED;
+  initialSwitchStates[ 3] = SWITCH_CURVED;
+  initialSwitchStates[ 4] = SWITCH_CURVED;
+  initialSwitchStates[ 5] = SWITCH_CURVED;
+  initialSwitchStates[ 6] = SWITCH_CURVED;
+  initialSwitchStates[ 7] = SWITCH_CURVED;
+  initialSwitchStates[ 8] = SWITCH_CURVED;
+  initialSwitchStates[ 9] = SWITCH_CURVED;
+  initialSwitchStates[10] = SWITCH_CURVED;
+  initialSwitchStates[11] = SWITCH_CURVED;
+  initialSwitchStates[12] = SWITCH_CURVED;
+  initialSwitchStates[13] = SWITCH_CURVED;
+  initialSwitchStates[14] = SWITCH_CURVED;
+  initialSwitchStates[15] = SWITCH_CURVED;
+  initialSwitchStates[16] = SWITCH_CURVED;
+  initialSwitchStates[17] = SWITCH_CURVED;
+  initialSwitchStates[18] = SWITCH_STRAIGHT;
+  initialSwitchStates[19] = SWITCH_CURVED;
+  initialSwitchStates[20] = SWITCH_STRAIGHT;
+  initialSwitchStates[21] = SWITCH_CURVED;
+  initSwitches(initialSwitchStates);
 
   interactive_req_t req;
 
@@ -408,9 +515,9 @@ void interactive() {
               Putstr(COM2, req.arg2);
               int sw = ja2i(req.arg1);
               if (jstrcmp(req.arg2, "c")) {
-                SetSwitch(sw, SWITCH_CURVED);
+                SetSwitchAndRender(sw, SWITCH_CURVED);
               } else if (jstrcmp(req.arg2, "s")) {
-                SetSwitch(sw, SWITCH_STRAIGHT);
+                SetSwitchAndRender(sw, SWITCH_STRAIGHT);
               }
             }
             break;
@@ -429,15 +536,7 @@ void interactive() {
                 if (switchNumber >= 19) {
                   switchNumber += 134; // 19 -> 153, etc
                 }
-                char buf[10];
-                move_cursor(0, COMMAND_LOCATION + 1);
-                Putstr(COM2, CLEAR_LINE);
-                Putstr(COM2, "Set switch ");
-                ji2a(switchNumber, buf);
-                Putstr(COM2, buf);
-                Putstr(COM2, " to ");
-                Putstr(COM2, req.arg1);
-                SetSwitch(switchNumber, state);
+                SetSwitchAndRender(switchNumber, state);
                 Delay(15);
               }
             }
@@ -456,7 +555,42 @@ void interactive() {
         Putstr(COM2, SAVE_CURSOR);
         DrawTime(Time());
         DrawIdlePercent();
+        move_cursor(0, COMMAND_LOCATION + 3);
+        Putstr(COM2, CLEAR_LINE);
+        char buf[10];
+        ji2a(GetRxQueueLength(COM1), buf);
         Putstr(COM2, RECOVER_CURSOR);
+        break;
+      case INT_REQ_SENSOR_UPDATE:
+        {
+          Putstr(COM2, SAVE_CURSOR);
+          move_cursor(0, SENSOR_HISTORY_LOCATION + 1);
+          Putstr(COM2, CLEAR_LINE);
+          Putstr(COM2, "Sensors read! ");
+          int bucket = req.argc/16;
+          switch (bucket) {
+            case 0:
+              Putstr(COM2, "A");
+              break;
+            case 1:
+              Putstr(COM2, "B");
+              break;
+            case 2:
+              Putstr(COM2, "C");
+              break;
+            case 3:
+              Putstr(COM2, "D");
+              break;
+            case 4:
+              Putstr(COM2, "E");
+              break;
+          }
+          char buf[10];
+          ji2a((req.argc%16)+1, buf);
+          Putstr(COM2, " ");
+          Putstr(COM2, buf);
+          Putstr(COM2, RECOVER_CURSOR);
+        }
         break;
       default:
         KASSERT(false, "Bad type received: got type=%d", req.type);

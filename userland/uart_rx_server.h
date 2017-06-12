@@ -4,5 +4,7 @@
 void uart_rx_server();
 
 char Getc(int channel );
+int ClearRx(int channel );
+int GetRxQueueLength(int channel );
 
 #endif

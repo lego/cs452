@@ -5,6 +5,7 @@
 #include <nameserver.h>
 #include <heap.h>
 #include <bwio.h>
+#include <priorities.h>
 
 static int uart_tx_server_tid = -1;
 
@@ -89,7 +90,7 @@ void uart_tx_server() {
   char uart2_outputQueue[OUTPUT_QUEUE_MAX];
   int uart2_outputStart = 0;
   int uart2_outputQueueLength = 0;
-  int uart2_notifier_tid = Create(1, uart_tx_notifier);
+  int uart2_notifier_tid = Create(PRIORITY_TX_NOTIFIER, uart_tx_notifier);
   request.channel = COM2;
   Send(uart2_notifier_tid, &request, sizeof(request), NULL, 0);
   int uart2_ready = false;
@@ -98,7 +99,7 @@ void uart_tx_server() {
   char uart1_outputQueue[OUTPUT_QUEUE_MAX];
   int uart1_outputStart = 0;
   int uart1_outputQueueLength = 0;
-  int uart1_notifier_tid = Create(1, uart_tx_notifier);
+  int uart1_notifier_tid = Create(PRIORITY_TX_NOTIFIER, uart_tx_notifier);
   request.channel = COM1;
   Send(uart1_notifier_tid, &request, sizeof(request), NULL, 0);
   int uart1_ready = false;

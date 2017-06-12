@@ -5,12 +5,15 @@
 #include <nameserver.h>
 #include <heap.h>
 #include <bwio.h>
+#include <priorities.h>
 
 static int uart_rx_server_tid = -1;
 
 enum {
   RX_NOTIFIER,
   GET_REQUEST,
+  GET_QUEUE_REQUEST,
+  CLEAR_REQUEST,
 };
 
 typedef struct {
@@ -76,7 +79,7 @@ void uart_rx_server() {
   char uart2_outputQueue[OUTPUT_QUEUE_MAX];
   int uart2_outputStart = 0;
   int uart2_outputQueueLength = 0;
-  int uart2_notifier_tid = Create(1, uart_rx_notifier);
+  int uart2_notifier_tid = Create(PRIORITY_RX_NOTIFIER, uart_rx_notifier);
   request.channel = COM2;
   Send(uart2_notifier_tid, &request, sizeof(request), NULL, 0);
   int uart2_waiting_tid = -1;
@@ -85,7 +88,7 @@ void uart_rx_server() {
   char uart1_outputQueue[OUTPUT_QUEUE_MAX];
   int uart1_outputStart = 0;
   int uart1_outputQueueLength = 0;
-  int uart1_notifier_tid = Create(1, uart_rx_notifier);
+  int uart1_notifier_tid = Create(PRIORITY_RX_NOTIFIER, uart_rx_notifier);
   request.channel = COM1;
   Send(uart1_notifier_tid, &request, sizeof(request), NULL, 0);
   int uart1_waiting_tid = -1;
@@ -110,13 +113,28 @@ void uart_rx_server() {
       }
       ReplyN(requester);
       break;
+    case CLEAR_REQUEST:
+      if (request.channel == COM1) {
+        uart1_outputQueueLength = 0;
+      } else if (request.channel == COM2) {
+        uart2_outputQueueLength = 0;
+      }
+      ReplyN(requester);
+      break;
+    case GET_QUEUE_REQUEST:
+      if (request.channel == COM1) {
+        ReplyS(requester, uart1_outputQueueLength);
+      } else if (request.channel == COM2) {
+        ReplyS(requester, uart2_outputQueueLength);
+      }
+      break;
     case GET_REQUEST:
       c = request.ch;
       if (request.channel == COM1) {
         KASSERT(uart1_waiting_tid == -1, "Already a pending UART1 request!");
         uart1_waiting_tid = requester;
       } else if (request.channel == COM2) {
-        KASSERT(uart1_waiting_tid == -1, "Already a pending UART2 request!");
+        KASSERT(uart2_waiting_tid == -1, "Already a pending UART2 request!");
         uart2_waiting_tid = requester;
       }
       break;
@@ -156,20 +174,39 @@ char Getc( int channel ) {
   req.type = GET_REQUEST;
   req.channel = channel;
   char result;
-  Send(uart_rx_server_tid, &req, sizeof(req), &result, sizeof(char));
+  SendS(uart_rx_server_tid, req, result);
   return result;
 }
 
-//int Putstr( int tid, int channel, char *str ) {
-//  KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
-//  log_task("Putstr tid=%d str=%s", active_task->tid, tid, str);
-//  uart_request_t req;
-//  req.type = PUT_REQUEST;
-//  req.channel = channel;
-//  while (*str != NULL) {
-//    req.ch = *str;
-//    Send(tid, &req, sizeof(req), NULL, 0);
-//    str++;
-//  }
-//  return 0;
-//}
+int ClearRx(int channel ) {
+  KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
+  log_task("ClearRx tid=%d", active_task->tid, uart_rx_server_tid);
+  if (uart_rx_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    KASSERT(false, "UART rx server not initialized");
+    return -1;
+  }
+  uart_request_t req;
+  req.type = CLEAR_REQUEST;
+  req.channel = channel;
+  SendSN(uart_rx_server_tid, req);
+  return 0;
+}
+
+int GetRxQueueLength( int channel ) {
+  KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
+  log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
+  if (uart_rx_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    KASSERT(false, "UART rx server not initialized");
+    return -1;
+  }
+  uart_request_t req;
+  req.type = GET_QUEUE_REQUEST;
+  req.channel = channel;
+  int result;
+  SendS(uart_rx_server_tid, req, result);
+  return result;
+}

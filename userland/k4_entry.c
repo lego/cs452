@@ -7,6 +7,7 @@
 #include <uart_rx_server.h>
 #include <interactive.h>
 #include <train_controller.h>
+#include <priorities.h>
 
 void print_task() {
   int train = 58;
@@ -35,11 +36,11 @@ void print_task() {
 }
 
 void k4_entry_task() {
-  Create(1, &nameserver);
-  Create(2, &clock_server);
-  Create(2, &uart_tx_server);
-  Create(2, &uart_rx_server);
-  Create(IDLE_TASK_PRIORITY, &idle_task);
+  Create(PRIORITY_NAMESERVER, &nameserver);
+  Create(PRIORITY_CLOCK_SERVER, &clock_server);
+  Create(PRIORITY_TX_SERVER, &uart_tx_server);
+  Create(PRIORITY_RX_SERVER, &uart_rx_server);
+  Create(PRIORITY_IDLE_TASK, &idle_task);
 
   Create(5, &train_controller_server);
 
