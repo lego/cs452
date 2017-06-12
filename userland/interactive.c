@@ -441,6 +441,8 @@ void interactive() {
   DrawTime(Time());
   Putstr(COM2, RECOVER_CURSOR);
 
+  Delay(50);
+
   int initialSwitchStates[NUM_SWITCHES];
   initialSwitchStates[ 0] = SWITCH_CURVED;
   initialSwitchStates[ 1] = SWITCH_CURVED;
