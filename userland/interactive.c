@@ -352,7 +352,7 @@ void DrawInitialScreen() {
   // Reset BG colour
   Putstr(COM2, RESET_ATTRIBUTES);
 
-  Putstr(COM2, "\n\r\n\r# ");
+  Putstr(COM2, "\n\rPlease wait, initializing...\n\r# ");
 
 }
 
@@ -487,36 +487,81 @@ void interactive() {
             break;
           case COMMAND_TRAIN_SPEED:
             {
+              int status;
+              int train = jatoui(req.arg1, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid train provided for tr: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+              int speed = jatoui(req.arg2, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid speed provided for tr: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+
+              if (train < 0 || train > 80) {
+                Putstr(COM2, "Invalid speed provided for tr: got ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " expected 1-80");
+                break;
+              }
+
+              if (speed < 0 || speed > 14) {
+                Putstr(COM2, "Invalid speed provided for tr: got ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " expected 0-14");
+                break;
+              }
+
               Putstr(COM2, "Set train ");
               Putstr(COM2, req.arg1);
               Putstr(COM2, " to speed ");
               Putstr(COM2, req.arg2);
-              int train = ja2i(req.arg1);
-              int speed = ja2i(req.arg2);
               SetTrainSpeed(train, speed);
             }
             break;
           case COMMAND_TRAIN_REVERSE:
             {
+              int status;
+              int train = jatoui(req.arg1, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid train provided for tr: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+              if (train < 0 || train > 80) {
+                Putstr(COM2, "Invalid speed provided for tr: got ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " expected 1-80");
+                break;
+              }
+
               Putstr(COM2, "Train ");
               Putstr(COM2, req.arg1);
               Putstr(COM2, " reverse");
-              int train = ja2i(req.arg1);
               ReverseTrain(train, 14);
             }
             break;
           case COMMAND_SWITCH_TOGGLE:
             {
-              Putstr(COM2, "Set switch ");
-              Putstr(COM2, req.arg1);
-              Putstr(COM2, " to ");
-              Putstr(COM2, req.arg2);
               int sw = ja2i(req.arg1);
               if (jstrcmp(req.arg2, "c")) {
                 SetSwitchAndRender(sw, SWITCH_CURVED);
               } else if (jstrcmp(req.arg2, "s")) {
                 SetSwitchAndRender(sw, SWITCH_STRAIGHT);
+              } else {
+                Putstr(COM2, "Invalid switch option provided for sw: got '");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, "' expected 'c' or 's'");
+                break;
               }
+
+              Putstr(COM2, "Set switch ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " to ");
+              Putstr(COM2, req.arg2);
             }
             break;
           case COMMAND_SWITCH_TOGGLE_ALL:
@@ -528,6 +573,11 @@ void interactive() {
                 state = SWITCH_CURVED;
               } else if (jstrcmp(req.arg1, "s")) {
                 state = SWITCH_STRAIGHT;
+              } else {
+                Putstr(COM2, "Invalid switch option provided for sw: got '");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, "' expected 'c' or 's'");
+                break;
               }
               for (int i = 0; i < NUM_SWITCHES; i++) {
                 int switchNumber = i+1;

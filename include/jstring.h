@@ -21,3 +21,6 @@ int jc2i(char c);
 int ja2i(char* str);
 void jui2a(unsigned int num, unsigned int base, char *bf);
 void ji2a(int num, char *bf);
+
+// array to unsigned int, and also produces a status
+unsigned int jatoui( char *str, int *status );

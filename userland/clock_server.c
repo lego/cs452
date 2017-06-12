@@ -3,6 +3,7 @@
 #include <kernel.h>
 #include <nameserver.h>
 #include <heap.h>
+#include <priorities.h>
 
 static int clock_server_tid = -1;
 

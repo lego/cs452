@@ -206,3 +206,27 @@ void ji2a(int num, char *bf) {
   }
   jui2a(num, 10, bf);
 }
+
+unsigned int jatoui(char *str, int *status) {
+  unsigned int res = 0;    // Initialize result
+  unsigned int i = 0;    // Initialize index of first digit
+
+  while (!is_digit(str[i]) && str[i] != '\0') i++;
+  if (str[i] == '\0') {
+    if (status != NULL) *status = -1;
+    return 0;
+  }
+
+  // Iterate through all digits and update the result
+  for (; is_digit(str[i]); ++i) {
+    res = res * 10 + (str[i] - '0');
+  }
+
+  // Check if there are only spaces at the end
+  while (str[i] == ' ') i++;
+  // Status denoting we fully consumed only the number, excluding padding
+  if (str[i] == '\0' && status != NULL) *status = 0;
+  // Status denoting there were more non-number characters
+  else if (status != NULL) *status = 1;
+  return res;
+}
