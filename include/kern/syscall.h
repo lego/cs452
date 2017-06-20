@@ -20,6 +20,7 @@ void syscall_exit_kernel(task_descriptor_t *task, kernel_request_t *arg);
 void hwi(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_uart1_rx(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg);
+void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg);
