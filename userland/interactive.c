@@ -424,7 +424,7 @@ void initSwitches(int *initSwitches) {
       switchNumber += 134; // 19 -> 153, etc
     }
     SetSwitchAndRender(switchNumber, initSwitches[i]);
-    Delay(5);
+    Delay(6);
   }
 }
 
@@ -441,7 +441,7 @@ void interactive() {
   DrawTime(Time());
   Putstr(COM2, RECOVER_CURSOR);
 
-  Delay(50);
+  Delay(25);
 
   int initialSwitchStates[NUM_SWITCHES];
   initialSwitchStates[ 0] = SWITCH_CURVED;
@@ -587,7 +587,7 @@ void interactive() {
                   switchNumber += 134; // 19 -> 153, etc
                 }
                 SetSwitchAndRender(switchNumber, state);
-                Delay(5);
+                Delay(6);
               }
             }
             break;
