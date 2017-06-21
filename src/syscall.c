@@ -246,6 +246,10 @@ void hwi(task_descriptor_t *task, kernel_request_t *arg) {
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1_TX)) {
     hwi_uart1_tx(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
+    // NOTE: this is for any general UART1 interrupt, but at the moment we only
+    // care to observe the modem because it doesn't have it's own VIC bit.
+    // In this we clear the modem bit, so if this is for UART1_TX/RX that
+    // interrupt should happen also (before or after)
     hwi_uart1_modem(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_RX)) {
     hwi_uart2_rx(task, arg);
