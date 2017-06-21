@@ -49,16 +49,6 @@ void uart_tx_notifier() {
         AwaitEventPut(EVENT_UART1_TX, ch);
         // VMEM(UART1_BASE + UART_DATA_OFFSET) = ch;
         log_uart_server("uart_notifer COM1 putc=%c", ch);
-        // TODO: replace this with interrupt based approach
-        int i;
-        const int max = 1000000;
-        int low = false;
-        for (i = 0; i < max && (!low || !(*flags & CTS_MASK)); i++) {
-          if (!(*flags & CTS_MASK)) {
-            low = true;
-          }
-        }
-        //KASSERT(i < max, "Waited for CTS low then high, but it didn't come :( %x", ch);
         break;
       case COM2:
         AwaitEventPut(EVENT_UART2_TX, ch);

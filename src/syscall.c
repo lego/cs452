@@ -224,6 +224,7 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   }
   if (event_type == EVENT_UART1_TX) {
     INTERRUPT_ENABLE(INTERRUPT_UART1_TX);
+    INTERRUPT_ENABLE(INTERRUPT_UART1);
   }
   if (event_type == EVENT_UART2_RX) {
     INTERRUPT_ENABLE(INTERRUPT_UART2_RX);
@@ -244,6 +245,12 @@ void hwi(task_descriptor_t *task, kernel_request_t *arg) {
     hwi_uart1_rx(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1_TX)) {
     hwi_uart1_tx(task, arg);
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
+    // NOTE: this is for any general UART1 interrupt, but at the moment we only
+    // care to observe the modem because it doesn't have it's own VIC bit.
+    // In this we clear the modem bit, so if this is for UART1_TX/RX that
+    // interrupt should happen also (before or after)
+    hwi_uart1_modem(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_RX)) {
     hwi_uart2_rx(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_TX)) {
@@ -286,17 +293,35 @@ void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
   scheduler_requeue_task(task);
 }
 
+static bool uart1_tx_saw_low = false;
+
 void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 1 TX interrupt");
 
   // write character
   task_descriptor_t *event_blocked_task = interrupts_get_waiting_task(EVENT_UART1_TX);
   syscall_await_arg_t *await_arg = event_blocked_task->current_request.arguments;
+  uart1_tx_saw_low = false;
   VMEM(UART1_BASE + UART_DATA_OFFSET) = await_arg->arg;
 
   INTERRUPT_CLEAR(INTERRUPT_UART1_TX);
 
-  hwi_unblock_task_for_event(EVENT_UART1_TX);
+  scheduler_requeue_task(task);
+}
+
+void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg) {
+  log_interrupt("HWI=UART 1 MODEM interrupt");
+
+  bool cts = VMEM(UART1_BASE + UART_FLAG_OFFSET) & CTS_MASK;
+  if (!cts) {
+    uart1_tx_saw_low = true;
+  } else if (uart1_tx_saw_low) {
+    INTERRUPT_CLEAR(INTERRUPT_UART1);
+    hwi_unblock_task_for_event(EVENT_UART1_TX);
+  }
+
+  VMEM(UART1_BASE + UART_INTR_OFFSET) = 0;
+
   scheduler_requeue_task(task);
 }
 
