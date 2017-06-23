@@ -26,6 +26,10 @@ void WhereAmI(int train);
 // Generates a path from A to B
 path_t GetPath(int src, int dest);
 
+// Gets the sum of a distance along a path
+// NOTE: does not account for turn-out reversing, similarly to Move
+int SumDist(path_t *p);
+
 // Navigates a train from A to B
 void Navigate(int train, int dest);
 
@@ -36,7 +40,7 @@ void Move(int train, path_t *p, int speed);
 
 // Calculates the amount of time to get from A to B
 // at a speed, including accelerating and deaccelerating
-// NOTE: does not account for turn-out reversing, similar to Move
+// NOTE: does not account for turn-out reversing, similarly to Move
 int CalcTime(int train, path_t *p, int speed);
 
 // Get the accelerating distance
@@ -44,9 +48,6 @@ int AccelDist(int train, int speed);
 
 // Get the deaccelerating distance (stopping distance)
 int DeaccelDist(int train, int speed);
-
-// Get the top / average velocity
-int Velocity(int train, int speed);
 
 // Get the accelerating time
 int AccelTime(int train, int speed);
@@ -62,3 +63,9 @@ int GetDirection(int train, path_t *p);
 
 // Calculate a distance given a constant velocity and time
 int CalculateDistance(int velocity, int time);
+
+// Calculate the time given a distance and velocity
+int CalculateTime(int distance, int velocity);
+
+// Get the top / avg velocity for a train at a speed level
+int Velocity(int train, int speed);
