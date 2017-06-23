@@ -69,3 +69,25 @@ int CalculateTime(int distance, int velocity);
 
 // Get the top / avg velocity for a train at a speed level
 int Velocity(int train, int speed);
+
+/*
+  High level of how nagivating functions work:
+  Navigate(src, dest):
+    path = GetPath(src, dest)
+    current_node = src
+    for turn-out reversal_node in path:
+      time = Move(current_node, reversal_node)
+      Delay(time)
+      current_node = reversal_node
+    time = Move(current_node, destination)
+    Delay(time)
+
+  Move(src, dest):
+   path = GetPath(src, dest)
+   time = FigureOutTimeToNavigate(train, speed, path)
+   direction = GetDirection(train, path)
+   if direction == REVERSE:
+     ReverseTrain(train)
+   SetTrainSpeed(train, speed)
+   return time
+*/
