@@ -106,6 +106,7 @@ void Move(track_node *src, track_node *dest) {
   }
   SetTrainSpeed(train, speed);
 
+  // TODO: flip turn-outs to match path
   // TODO: inject expected times for all nodes
   return travel_time;
 }
