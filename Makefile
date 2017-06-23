@@ -51,15 +51,15 @@ ARFLAGS = rcs
 #
 # When you add a file it will be in the form of -l<filename>
 # NOTE: If you add an ARM specific file, you also need to add -larm<filename>
-LIBRARIES= -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lgcc
+LIBRARIES= -ltrack -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lgcc
 
 # List of includes for headers that will be linked up in the end
-INCLUDES = -I./include
+INCLUDES = -I./include -I./track
 USERLAND_INCLUDES = -I./userland
 
 
 # Various separate components src files, objs, and bins
-LIB_SRCS := $(wildcard lib/*.c) $(wildcard lib/$(ARCH)/*.c)
+LIB_SRCS := $(wildcard lib/*.c) $(wildcard lib/$(ARCH)/*.c) $(wildcard track/*.c)
 LIB_BINS := $(LIB_SRCS:.c=.a)
 LIB_BINS := $(patsubst lib/$(ARCH)/%.a,lib$(ARCH)%.a,$(LIB_BINS))
 LIB_BINS := $(patsubst lib/%.a,lib%.a,$(LIB_BINS))
