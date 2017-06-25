@@ -17,3 +17,6 @@ void interrupts_disable_irq(await_event_t event_type) {
     // TODO: unset VIC2 13th bit
   }
 }
+
+void interrupts_clear_all() {
+}

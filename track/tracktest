@@ -1,0 +1,42 @@
+function init_tracktest
+
+node MR:
+  merge 1
+  reverse BR
+  ahead EX3
+node BR:
+  branch 1
+  reverse MR
+  straight EX1
+  curved EX2
+
+node EN1:
+  enter
+  reverse EX1
+  ahead MR
+node EX1:
+  exit
+  reverse EN1
+
+node EN2:
+  enter
+  reverse EX2
+  ahead MR
+node EX2:
+  exit
+  reverse EN2
+
+node EN3:
+  enter
+  reverse EX3
+  ahead BR
+node EX3:
+  exit
+  reverse EN3
+
+edge BR EX1:
+  distance 110 mm
+edge BR EX2:
+  distance 90 mm
+edge MR EX3:
+  distance 60 mm

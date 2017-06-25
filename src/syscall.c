@@ -219,6 +219,7 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   syscall_await_arg_t *await_arg = arg->arguments;
   await_event_t event_type = await_arg->event;
 
+  #ifndef DEBUG_MODE
   if (event_type == EVENT_UART1_RX) {
     INTERRUPT_ENABLE(INTERRUPT_UART1_RX);
   }
@@ -232,6 +233,7 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   if (event_type == EVENT_UART2_TX) {
     INTERRUPT_ENABLE(INTERRUPT_UART2_TX);
   }
+  #endif
 
   interrupts_set_waiting_task(event_type, task);
 

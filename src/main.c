@@ -38,7 +38,7 @@
 #error Bad PROJECT value provided to Makefile. Expected "K1-4", "TC1", "BENCHMARK", "CLOCK_SERVER_TEST", "NAVIGATION_TEST"
 #endif
 
-volatile task_descriptor_t volatile *active_task;
+volatile task_descriptor_t *active_task;
 context_t *ctx;
 bool should_exit;
 
@@ -107,9 +107,11 @@ int main() {
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
 
+  #ifndef DEBUG_MODE
   // FIXME: super awesome hacky "let's make the trains go"
   // this should happen in user code
   bwputc(COM1, 0x60);
+  #endif
 
   // start executing user tasks
   while (!should_exit) {
@@ -123,7 +125,9 @@ int main() {
     }
   }
 
+  #ifndef DEBUG_MODE
   cleanup();
+  #endif
 
   // io_disable_caches();
 

@@ -103,7 +103,7 @@ small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
 # NOTE: it just explicitly lists a bunch of folders, this is because the
 # process of .c => .s => .o drops debugging symbols :(
 main.a:
-	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) src/*.c src/x86/*.c lib/*.c lib/x86/*.c userland/*.c -lncurses -lpthread -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) src/*.c src/x86/*.c lib/*.c lib/x86/*.c userland/*.c userland/**/*.c -lncurses -lpthread -o $@
 
 # ASM files from various locations
 %.s: src/%.c
