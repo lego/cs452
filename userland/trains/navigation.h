@@ -21,7 +21,7 @@ typedef struct Path {
 
 
 // Initializes the track and pre-computed routing information
-void InitTrack();
+void InitNavigation();
 
 // Gets where the current train is
 // NOTE: assumes the train is stationary
@@ -35,7 +35,7 @@ void GetPath(path_t *p, int src, int dest);
 int SumDist(path_t *p);
 
 // Navigates a train from A to B
-void Navigate(int train, int dest);
+void Navigate(int train, int speed, int src, int dest);
 
 // Moves a train from A to B. Does not support
 // reversing for turn-outs, but ensures correct turn-out

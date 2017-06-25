@@ -1,15 +1,24 @@
 #include <entry/navigation_test.h>
 #include <basic.h>
-#include <nameserver.h>
-#include <idle_task.h>
-#include <clock_server.h>
-#include <uart_tx_server.h>
-#include <uart_rx_server.h>
-#include <interactive.h>
-#include <train_controller.h>
-#include <priorities.h>
+#include <trains/navigation.h>
+
 
 void navigation_test() {
+  InitNavigation();
+
+  path_t p;
+  // GetPath(&p, 3, 0);
+  // PrintPath(&p);
+
+  GetPath(&p, 3, 6);
+  PrintPath(&p);
+
+  GetPath(&p, 6, 4);
+  PrintPath(&p);
+
+  bwprintf(COM2, "== Initiating navigation ==\n\r");
+  Navigate(1, 1, 3, 4);
+
   ExitKernel();
 }
 

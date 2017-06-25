@@ -117,7 +117,7 @@ void SetTrainSpeedStub(int train, int speed) {
   bwprintf(COM2, "setting speed=%d train=%d\n\r", speed, train);
 }
 
-void Init() {
+void InitNavigation() {
   int i;
 
   #if defined(USE_TRACKA)
@@ -170,19 +170,38 @@ void GetPath(path_t *p, int src, int dest) {
   p->nodes[0] = src_node;
   p->dist = 0;
   p->edge_count = 0;
-  while ((next_edge = route_table[src_node->id][dest_node->id]) != NULL) {
+  p->src = src_node;
+  p->dest = dest_node;
+
+  while ((next_edge = route_table[curr_node->id][dest_node->id]) != NULL) {
     p->dist += next_edge->dist;
     p->edges[p->edge_count++] = next_edge;
-    p->nodes[p->edge_count] = next_edge->dest;
+    curr_node = next_edge->dest;
+    p->nodes[p->edge_count] = curr_node;
   }
 }
 
-void Navigate(int train, int dest) {
-  int src = WhereAmI(train);
+void PrintPath(path_t *p) {
+  bwprintf(COM2, "Path:\n\r");
+  bwprintf(COM2, "   dist=%d edge_count=%d\n\r", p->dist, p->edge_count);
+  bwprintf(COM2, "   src=%s  dest=%s\n\r", p->src->name, p->dest->name);
+  int i;
+  for (i = 0; i < p->edge_count; i++) {
+    bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
+    bwprintf(COM2, "   Edge[%d]=%s-%s dist=%d\n\r", i, p->edges[i]->src->name, p->edges[i]->dest->name, p->edges[i]->dist);
+  }
+  bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
+  bwprintf(COM2, "\n\r");
+}
+
+void Navigate(int train, int speed, int src, int dest) {
+  // int src = WhereAmI(train);
   track_node *src_node = &track[src];
   track_node *dest_node = &track[dest];
   path_t p;
   GetPath(&p, src, dest);
+  bwprintf(COM2, "== Navigating train=%d speed=%d ==\n\r", train, speed);
+  PrintPath(&p);
 
   // This piece of code gets all of the turn-out stops we need to make
   // this is whenever we need to cross a turn-out and flip a switch
@@ -190,10 +209,10 @@ void Navigate(int train, int dest) {
   int break_count = 0;
   int i;
   for (i = 0; i < p.edge_count; i++) {
-    if (p.nodes[i]->type == NODE_BRANCH && p.edges[i]->src == p.nodes[i]) {
+    if (p.nodes[i]->type == NODE_MERGE && p.edges[i]->src->reverse == p.nodes[i]) {
       // We have a break in our pathing!
       // This means we need to move across a switch and reverse
-      breaks[break_count++] = p.nodes[i]->reverse->edge[DIR_AHEAD].dest;
+      breaks[break_count++] = p.nodes[i]->edge[DIR_AHEAD].dest;
     }
   }
 
@@ -205,11 +224,11 @@ void Navigate(int train, int dest) {
   track_node *curr_node = src_node;
   for (i = 0; i < break_count; i++) {
     next_node = breaks[i];
-    travel_time = Move(1, 1, curr_node->id, next_node->id);
+    travel_time = Move(train, speed, curr_node->id, next_node->id);
     Delay((travel_time / 10) + 1);
     curr_node = next_node;
   }
-  travel_time = Move(1, 1, curr_node->id, dest_node->id);
+  travel_time = Move(train, speed, curr_node->id, dest_node->id);
   Delay((travel_time / 10) + 1);
   // DONE!
 }
@@ -217,6 +236,9 @@ void Navigate(int train, int dest) {
 int Move(int train, int speed, int src, int dest) {
   path_t p;
   GetPath(&p, src, dest);
+  bwprintf(COM2, "== Move train=%d speed=%d ==\n\r", train, speed);
+  PrintPath(&p);
+
   int travel_time = CalcTime(train, speed, &p);
   int direction = GetDirection(train, &p);
   if (direction == REVERSE_DIR) {
