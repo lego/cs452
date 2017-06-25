@@ -72,8 +72,8 @@ TEST_SRCS := $(wildcard test/*.c)
 TEST_OBJS := $(patsubst test/%.c,%.o,$(TEST_SRCS))
 TEST_BINS := $(TEST_OBJS:.o=.a)
 
-USERLAND_SRCS := $(wildcard userland/*.c)
-USERLAND_OBJS := $(patsubst userland/%.c,%.o,$(USERLAND_SRCS))
+USERLAND_SRCS := $(wildcard userland/**/*.c)
+USERLAND_OBJS := $(subst /,_,$(USERLAND_SRCS:.c=.o))
 
 ifdef LOCAL
 # If were compiling locally, we care about main.a and test binaries
@@ -108,7 +108,11 @@ main.a:
 %.s: lib/%.c
 	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
 
-%.s: userland/%.c
+userland_%.s: userland/%.c
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+userland_trains_%.s: userland/trains/%.c
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+userland_entry_%.s: userland/entry/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
 
 # architecture specific ASM gets prefixed

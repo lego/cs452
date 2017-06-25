@@ -2,8 +2,6 @@
 #include <trains/track_data.h>
 #include <trains/track_node.h>
 
-#define TRAINS_MAX 80
-
 track_node track[TRACK_MAX];
 
 typedef struct TrainState {

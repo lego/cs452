@@ -1,5 +1,9 @@
 #pragma once
 
+#include <trains/track_node.h>
+
+#define TRAINS_MAX 80
+
 typedef struct Path {
   int dist; /* in millimetres */
   int edge_count;
