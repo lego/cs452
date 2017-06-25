@@ -1,4 +1,4 @@
-#include <k4_entry.h>
+#include <entry/tc1.h>
 #include <basic.h>
 #include <nameserver.h>
 #include <idle_task.h>
@@ -38,12 +38,11 @@ void print_task() {
 void k4_entry_task() {
   Create(PRIORITY_NAMESERVER, &nameserver);
   Create(PRIORITY_CLOCK_SERVER, &clock_server);
-  Create(0, &uart_tx);
-  Create(0, &uart_rx);
+  Create(PRIORITY_TX_SERVER, &uart_tx_server);
+  Create(PRIORITY_RX_SERVER, &uart_rx_server);
   Create(PRIORITY_IDLE_TASK, &idle_task);
 
-  Create(PRIORITY_TRAIN_CONTROLLER_SERVER, &train_controller_server);
+  // Create(PRIORITY_TRAIN_CONTROLLER_SERVER, &train_controller_server);
 
-  Create(10, &interactive);
-  //Create(11, &print_task);
+  Create(11, &navigation_task);
 }

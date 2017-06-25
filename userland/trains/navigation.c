@@ -1,5 +1,6 @@
-#include <track.h>
-#include <track_node.h>
+#include <trains/navigation.h>
+#include <trains/track_data.h>
+#include <trains/track_node.h>
 
 #define TRAINS_MAX 80
 

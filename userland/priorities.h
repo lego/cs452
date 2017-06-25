@@ -3,6 +3,8 @@
 
 // Cool! We can also identify the hierarchy via. indentation
 
+#define PRIORITY_ENTRY_TASK 1
+
 #define PRIORITY_NAMESERVER 1
 
 #define PRIORITY_CLOCK_SERVER 2

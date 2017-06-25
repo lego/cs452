@@ -1,5 +1,5 @@
-#ifndef __BENCHMARK_ENTRY_H__
-#define __BENCHMARK_ENTRY_H__
+#ifndef __BENCHMARK_H__
+#define __BENCHMARK_H__
 
 
 void benchmark_entry_task();

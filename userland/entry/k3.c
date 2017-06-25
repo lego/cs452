@@ -1,6 +1,6 @@
 #include <basic.h>
 #include <bwio.h>
-#include <k3_entry.h>
+#include <entry/k3.h>
 #include <kernel.h>
 #include <nameserver.h>
 #include <clock_server.h>
