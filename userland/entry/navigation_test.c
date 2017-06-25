@@ -13,32 +13,6 @@ void navigation_test() {
 
 }
 
-void print_task() {
-  int train = 58;
-  int sw = 16;
-
-  Putstr(COM2, "Enter Character:\n\r");
-  while (1) {
-    char c = Getc(COM2);
-    if (c == 's') {
-      Putstr(COM2, "Stop!\n\r");
-      SetTrainSpeed(train, 0);
-    } else if (c == 'g') {
-      Putstr(COM2, "Go!\n\r");
-      SetTrainSpeed(train, 14);
-    } else if (c == 'r') {
-      Putstr(COM2, "Reverse!\n\r");
-      ReverseTrain(train, 14);
-    } else if (c == 'o') {
-      Putstr(COM2, "Switch Curved!\n\r");
-      SetSwitch(sw, SWITCH_CURVED);
-    } else if (c == 'p') {
-      Putstr(COM2, "Switch Straight!\n\r");
-      SetSwitch(sw, SWITCH_STRAIGHT);
-    }
-  }
-}
-
 void navigation_test_task() {
   Create(PRIORITY_NAMESERVER, &nameserver);
   Create(PRIORITY_CLOCK_SERVER, &clock_server);

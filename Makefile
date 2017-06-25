@@ -10,6 +10,10 @@ ifndef PROJECT
 PROJECT=K4
 endif
 
+ifndef TRACK
+TRACK=A
+endif
+
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
@@ -17,7 +21,7 @@ CC     = ./armcheck; gcc
 AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -33,7 +37,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT) -finline-functions -Wno-undefined-inline
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -finline-functions -Wno-undefined-inline
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, same as possible on the school ARM GCC
@@ -72,7 +76,7 @@ TEST_SRCS := $(wildcard test/*.c)
 TEST_OBJS := $(patsubst test/%.c,%.o,$(TEST_SRCS))
 TEST_BINS := $(TEST_OBJS:.o=.a)
 
-USERLAND_SRCS := $(wildcard userland/**/*.c)
+USERLAND_SRCS := $(wildcard userland/**/*.c) $(wildcard userland/*.c)
 USERLAND_OBJS := $(subst /,_,$(USERLAND_SRCS:.c=.o))
 
 ifdef LOCAL

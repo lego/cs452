@@ -295,6 +295,8 @@ if errors > 0:
 maxidx = max([len(tracks[function].nodes) for function in tracks])
 fh = open(options.h, 'w')
 fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
+#pragma once
+
 
 #include "track_node.h"
 

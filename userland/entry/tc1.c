@@ -9,7 +9,7 @@
 #include <train_controller.h>
 #include <priorities.h>
 
-void print_task() {
+void tc1_print_task() {
   int train = 58;
   int sw = 16;
 
@@ -45,5 +45,5 @@ void tc1_entry_task() {
   Create(PRIORITY_TRAIN_CONTROLLER_SERVER, &train_controller_server);
 
   Create(10, &interactive);
-  //Create(11, &print_task);
+  //Create(11, &tc1_print_task);
 }

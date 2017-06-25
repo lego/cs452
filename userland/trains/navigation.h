@@ -9,8 +9,8 @@ typedef struct Path {
   int edge_count;
   track_node *src;
   track_node *dest;
-  track_node nodes[TRAINS_MAX];
-  track_edge edges[TRAINS_MAX];
+  track_node *nodes[TRAINS_MAX];
+  track_edge *edges[TRAINS_MAX];
 } path_t;
 
 // Unit macros for our fixed point calculations
@@ -25,10 +25,10 @@ void InitTrack();
 
 // Gets where the current train is
 // NOTE: assumes the train is stationary
-void WhereAmI(int train);
+int WhereAmI(int train);
 
 // Generates a path from A to B
-path_t GetPath(int src, int dest);
+void GetPath(path_t *p, int src, int dest);
 
 // Gets the sum of a distance along a path
 // NOTE: does not account for turn-out reversing, similarly to Move
@@ -40,12 +40,12 @@ void Navigate(int train, int dest);
 // Moves a train from A to B. Does not support
 // reversing for turn-outs, but ensures correct turn-out
 // configuration
-void Move(int train, path_t *p, int speed);
+int Move(int train, int speed, int src, int dest);
 
 // Calculates the amount of time to get from A to B
 // at a speed, including accelerating and deaccelerating
 // NOTE: does not account for turn-out reversing, similarly to Move
-int CalcTime(int train, path_t *p, int speed);
+int CalcTime(int train, int speed, path_t *p);
 
 // Get the accelerating distance
 int AccelDist(int train, int speed);
