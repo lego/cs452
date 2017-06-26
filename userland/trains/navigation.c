@@ -16,6 +16,7 @@ train_state_t state;
 int path_buf[TRACK_MAX];
 
 track_edge *route_table[TRACK_MAX][TRACK_MAX];
+int route_table_dist[TRACK_MAX][TRACK_MAX];
 
 void init_tracktest_route_table() {
   // MR, BR => MR, BR
@@ -108,6 +109,233 @@ void init_tracktest_route_table() {
   route_table[7][3] = &track[6].edge[DIR_AHEAD];
 }
 
+int minDistance(int dist[], bool sptSet[]) {
+   // Initialize min value
+   int min = INT_MAX, min_index;
+
+   for (int v = 0; v < V; v++)
+     if (sptSet[v] == false && dist[v] <= min)
+         min = dist[v], min_index = v;
+
+   return min_index;
+}
+
+// Funtion that implements Dijkstra's single source shortest path algorithm
+// for a graph represented using adjacency matrix representation
+void dijkstra(int graph[V][V], int src) {
+     int dist[V];     // The output array.  dist[i] will hold the shortest
+                      // distance from src to i
+
+     bool sptSet[V]; // sptSet[i] will true if vertex i is included in shortest
+                     // path tree or shortest distance from src to i is finalized
+
+     // Initialize all distances as INFINITE and stpSet[] as false
+     for (int i = 0; i < V; i++)
+        dist[i] = INT_MAX, sptSet[i] = false;
+
+     // Distance of source vertex from itself is always 0
+     dist[src] = 0;
+
+     // Find shortest path for all vertices
+     for (int count = 0; count < V-1; count++)
+     {
+       // Pick the minimum distance vertex from the set of vertices not
+       // yet processed. u is always equal to src in first iteration.
+       int u = minDistance(dist, sptSet);
+
+       // Mark the picked vertex as processed
+       sptSet[u] = true;
+
+       // Update dist value of the adjacent vertices of the picked vertex.
+       for (int v = 0; v < V; v++)
+
+         // Update dist[v] only if is not in sptSet, there is an edge from
+         // u to v, and total weight of path from src to  v through u is
+         // smaller than current value of dist[v]
+         if (!sptSet[v] && graph[u][v] && dist[u] != INT_MAX
+                                       && dist[u]+graph[u][v] < dist[v])
+            dist[v] = dist[u] + graph[u][v];
+     }
+
+     // print the constructed distance array
+     printSolution(dist, V);
+}
+
+int min_distance_node(int src, bool *unprocessed_nodes) {
+  int i;
+  int min = INT_MAX;
+  int min_idx;
+  for (i = 0; i < TRACK_MAX; i++) {
+    if (unprocessed_nodes[i]) {
+
+    }
+  }
+}
+
+void route_from_src(int src) {
+  int i;
+  int j;
+  track_node *src_node = &track[src];
+  track_node *rev_node = src_node->reverse;
+  int rev = rev_node->id;
+  bool processed_node[TRACK_MAX];
+  heapnode_t heap_nodes[TRACK_MAX+1];
+  heap_t processing = heap_create(&heap_nodes, TRACK_MAX+1);
+
+  for (i = 0; i < TRACK_MAX; i++) {
+    processed_node[i] = false;
+  }
+
+  // fill default routes for src
+  processed_node[src] = true;
+  processed_node[rev] = true;
+
+  track_edge *edge;
+
+  // start the routing for each node type
+  switch (node->type) {
+    case NODE_EXIT:
+      node = node->reverse;
+    case NODE_ENTER:
+      // add ahead
+      edge = node->edges[DIR_AHEAD];
+      heap_push(&processing, edge->dist, edge->dest);
+      break;
+    case NODE_SENSOR:
+      // add ahead
+      edge = node->edges[DIR_AHEAD];
+      heap_push(&processing, edge->dist, edge->dest);
+      // add reverse-ahead
+      edge = node->reverse->edges[DIR_AHEAD];
+      heap_push(&processing, edge->dist, edge->dest);
+      break;
+    case NODE_MERGE:
+      node = node->reverse;
+    case NODE_BRANCH:
+      // add curve
+      edge = node->edges[DIR_CURVE];
+      heap_push(&processing, edge->dist, edge->dest);
+      // add straight
+      edge = node->edges[DIR_STRAIGHT];
+      heap_push(&processing, edge->dist, edge->dest);
+      // add reverse-ahead
+      edge = node->reverse->edges[DIR_AHEAD];
+      heap_push(&processing, edge->dist, edge->dest);
+      break;
+    default:
+      KASSERT(false, "Unhandled node type: node_id=%d type=%d", node->id, node->type);
+  }
+
+  while(heap_size(&processing) > 0) {
+    int node_dist = heap_peek_priority(&processing);
+    track_node *node = heap_pop(&processing);
+    if (processed_node[node->id]) continue;
+
+    route_table_dist[src][node->id] = node_dist;
+
+    switch (node->type) {
+      case NODE_SENSOR:
+      case NODE_ENTER:
+      case NODE_MERGE:
+        // add ahead, with current cost + edge
+        int dist = route_table_dist[src][node->id] + node->edges[DIR_AHEAD]->dist;
+        track_node *dest_node = node->edges[DIR_AHEAD]->dest;
+        heap_push(&processing, dist, dest_node);
+        break;
+      case NODE_BRANCH:
+        // add both switch directions, with current cost + edge
+        int dist;
+        track_node *dest_node;
+        dist = route_table_dist[src][node->id] + node->edges[DIR_STRAIGHT]->dist;
+        dest_node = node->edges[DIR_STRAIGHT]->dest;
+        heap_push(&processing, dist, dest_node);
+
+        dist = route_table_dist[src][node->id] + node->edges[DIR_CURVED]->dist;
+        dest_node = node->edges[DIR_CURVED]->dest;
+        heap_push(&processing, dist, dest_node);
+        break;
+      case NODE_EXIT:
+        break
+      default:
+        KASSERT(false, "Unhandled node type: node_id=%d type=%d", node->id, node->type);
+    }
+
+    // add reverse, same cost as current node
+    heap_push(&processing, route_table_dist[src][node->id], node->reverse);
+  }
+}
+
+void init_route_table() {
+  int i;
+  int j;
+  for (i = 0; i < TRACK_MAX; i++) {
+    for (j = 0; j < TRACK_MAX; j++) {
+      route_table[i][j] = -1;
+      route_table_dist[i][j] = -1;
+    }
+  }
+
+  for (i = 0; i < TRACK_MAX; i++) {
+    route_table[i][i] = NULL;
+    route_table_dist[i][i] = 0;
+    track_node *node = track[i];
+    track_edge *edge;
+
+    switch (node->type) {
+      case NODE_EXIT:
+        node = node->reverse;
+      case NODE_ENTER:
+        edge = node->edges[DIR_AHEAD];
+        // add ahead, with current cost + edge
+        track_node *dest_node = edge->dest;
+        route_table[i][dest_node->id] = edge;
+        route_table_dist[i][edge->dest->id] = edge->dist;
+        break;
+      case NODE_SENSOR:
+        // add ahead
+        edge = node->edges[DIR_AHEAD];
+        track_node *dest_node = edge->dest;
+        route_table[i][dest_node->id] = edge;
+        route_table_dist[i][edge->dest->id] = edge->dist;
+
+        // add reverse ahead
+        edge = node->reverse->edges[DIR_AHEAD];
+        track_node *dest_node = edge->dest;
+        route_table[i][dest_node->id] = edge;
+        route_table_dist[i][edge->dest->id] = edge->dist;
+        break;
+      case NODE_MERGE:
+        node = node->reverse;
+      case NODE_BRANCH:
+        // add curve
+        edge = node->edges[DIR_STRAIGHT];
+        track_node *dest_node = edge->dest;
+        route_table[i][dest_node->id] = edge;
+        route_table_dist[i][edge->dest->id] = edge->dist;
+
+        // add straight
+        edge = node->edges[DIR_CURVE];
+        track_node *dest_node = edge->dest;
+        route_table[i][dest_node->id] = edge;
+        route_table_dist[i][edge->dest->id] = edge->dist;
+
+        // add reverse ahead
+        edge = node->reverse->edges[DIR_AHEAD];
+        track_node *dest_node = edge->dest;
+        route_table[i][dest_node->id] = edge;
+        route_table_dist[i][edge->dest->id] = edge->dist;
+        break;
+      default:
+        KASSERT(false, "Unhandled node type: node_id=%d type=%d", node->id, node->type);
+    }
+  }
+
+
+  for (i = 0; i < TRACK_MAX; i++) {
+    route_from_src(i);
+  }
+}
+
 // FIXME: fixtures while testing
 void ReverseTrainStub(int train) {
   bwprintf(COM2, "reversing train=%d\n\r", train);
@@ -147,7 +375,7 @@ void InitNavigation() {
   #if defined(USE_TRACKTEST)
   init_tracktest_route_table();
   #else
-  #error No route table generation implemented.
+  init_route_table();
   #endif
 
 
