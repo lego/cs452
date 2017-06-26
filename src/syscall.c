@@ -220,17 +220,16 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   await_event_t event_type = await_arg->event;
 
   if (event_type == EVENT_UART1_RX) {
-    INTERRUPT_ENABLE(INTERRUPT_UART1_RX);
+    VMEM(UART1_BASE + UART_CTLR_OFFSET) |= RIEN_MASK;
   }
   if (event_type == EVENT_UART1_TX) {
-    INTERRUPT_ENABLE(INTERRUPT_UART1_TX);
-    INTERRUPT_ENABLE(INTERRUPT_UART1);
+    VMEM(UART1_BASE + UART_CTLR_OFFSET) |= TIEN_MASK | MSIEN_MASK;
   }
   if (event_type == EVENT_UART2_RX) {
-    INTERRUPT_ENABLE(INTERRUPT_UART2_RX);
+    VMEM(UART2_BASE + UART_CTLR_OFFSET) |= RIEN_MASK;
   }
   if (event_type == EVENT_UART2_TX) {
-    INTERRUPT_ENABLE(INTERRUPT_UART2_TX);
+    VMEM(UART2_BASE + UART_CTLR_OFFSET) |= TIEN_MASK;
   }
 
   interrupts_set_waiting_task(event_type, task);
@@ -241,20 +240,24 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
 void hwi(task_descriptor_t *task, kernel_request_t *arg) {
   if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
     hwi_timer2(task, arg);
-  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1_RX)) {
-    hwi_uart1_rx(task, arg);
-  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1_TX)) {
-    hwi_uart1_tx(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
-    // NOTE: this is for any general UART1 interrupt, but at the moment we only
-    // care to observe the modem because it doesn't have it's own VIC bit.
-    // In this we clear the modem bit, so if this is for UART1_TX/RX that
-    // interrupt should happen also (before or after)
-    hwi_uart1_modem(task, arg);
-  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_RX)) {
-    hwi_uart2_rx(task, arg);
-  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2_TX)) {
-    hwi_uart2_tx(task, arg);
+    if (VMEM(UART1_BASE + UART_INTR_OFFSET) & UART_INTR_RX) {
+      hwi_uart1_rx(task, arg);
+    }
+    if (VMEM(UART1_BASE + UART_INTR_OFFSET) & UART_INTR_TX) {
+      hwi_uart1_tx(task, arg);
+    }
+    if (VMEM(UART1_BASE + UART_INTR_OFFSET) & UART_INTR_MS) {
+      hwi_uart1_modem(task, arg);
+    }
+    scheduler_requeue_task(task);
+  } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART2)) {
+    if (VMEM(UART2_BASE + UART_INTR_OFFSET) & UART_INTR_RX) {
+      hwi_uart2_rx(task, arg);
+    } else if (VMEM(UART2_BASE + UART_INTR_OFFSET) & UART_INTR_TX) {
+      hwi_uart2_tx(task, arg);
+    }
+    scheduler_requeue_task(task);
   } else {
     log_interrupt("HWI=Unknown interrupt");
     scheduler_requeue_task(task);
@@ -280,17 +283,15 @@ void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg) {
   VMEM(UART2_BASE + UART_DATA_OFFSET) = await_arg->arg;
 
   // disable interrupt
-  INTERRUPT_CLEAR(INTERRUPT_UART2_TX);
+  VMEM(UART2_BASE + UART_CTLR_OFFSET) &= ~TIEN_MASK;
 
   hwi_unblock_task_for_event(EVENT_UART2_TX);
-  scheduler_requeue_task(task);
 }
 
 void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 2 RX interrupt");
   hwi_unblock_task_for_event(EVENT_UART2_RX);
-  INTERRUPT_CLEAR(INTERRUPT_UART2_RX);
-  scheduler_requeue_task(task);
+  VMEM(UART2_BASE + UART_CTLR_OFFSET) &= ~RIEN_MASK;
 }
 
 static bool uart1_tx_saw_low = false;
@@ -304,9 +305,7 @@ void hwi_uart1_tx(task_descriptor_t *task, kernel_request_t *arg) {
   uart1_tx_saw_low = false;
   VMEM(UART1_BASE + UART_DATA_OFFSET) = await_arg->arg;
 
-  INTERRUPT_CLEAR(INTERRUPT_UART1_TX);
-
-  scheduler_requeue_task(task);
+  VMEM(UART1_BASE + UART_CTLR_OFFSET) &= ~TIEN_MASK;
 }
 
 void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg) {
@@ -316,20 +315,17 @@ void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg) {
   if (!cts) {
     uart1_tx_saw_low = true;
   } else if (uart1_tx_saw_low) {
-    INTERRUPT_CLEAR(INTERRUPT_UART1);
     hwi_unblock_task_for_event(EVENT_UART1_TX);
   }
 
-  VMEM(UART1_BASE + UART_INTR_OFFSET) = 0;
-
-  scheduler_requeue_task(task);
+  // Clear the modem interrupt;
+  VMEM(UART1_BASE + UART_INTR_OFFSET) = 0x0;
 }
 
 void hwi_uart1_rx(task_descriptor_t *task, kernel_request_t *arg) {
   log_interrupt("HWI=UART 1 RX interrupt");
   hwi_unblock_task_for_event(EVENT_UART1_RX);
-  INTERRUPT_CLEAR(INTERRUPT_UART1_RX);
-  scheduler_requeue_task(task);
+  VMEM(UART1_BASE + UART_CTLR_OFFSET) &= ~RIEN_MASK;
 }
 
 void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg) {

@@ -23,15 +23,13 @@ void ts7200_timer3_init() {
 
 void ts7200_timer2_init() {
     // set timer2 to start to 10ms in 508khz clock cycles
-    int *timer2_load = (int *)(TIMER2_BASE + LDR_OFFSET);
     // this constant is 10 / ((1/508468.9) * 1000) in hex
     // 10 is the desired MS per tick, and ((1/508468.9) * 1000) is the amount of MS per clock cycle
     // NOTE: this will have a skew of a few us every tick, as the constant is 5084.689 (rational)
-    *timer2_load = 5085;
+    VMEM(TIMER2_BASE + LDR_OFFSET) = 5085;
 
     // set timer2 frequency to 508khz and enable it
-    int *timer2_flags = (int *)(TIMER2_BASE + CRTL_OFFSET);
-    *timer2_flags = *timer2_flags | CLKSEL_MASK | MODE_MASK | ENABLE_MASK;
+    VMEM(TIMER2_BASE + CRTL_OFFSET) |= CLKSEL_MASK | MODE_MASK | ENABLE_MASK;
 }
 
 
@@ -39,18 +37,15 @@ void ts7200_uart1_init() {
   // FIXME: we probably want to hard set the flags in case they were messed up
   bwsetspeed(COM1, 2400);
   bwsetfifo(COM1, OFF);
-  int *uart1_flags = (int *)(UART1_BASE + UART_LCRH_OFFSET);
-  *uart1_flags |= STP2_MASK;
-  int *uart1_ctlr = (int *)(UART1_BASE + UART_CTLR_OFFSET);
-  *uart1_ctlr |= TIEN_MASK | RIEN_MASK;
+  VMEM(UART1_BASE + UART_LCRH_OFFSET) |= STP2_MASK;
+  VMEM(UART1_BASE + UART_CTLR_OFFSET) &= ~(TIEN_MASK | RIEN_MASK | MSIEN_MASK);
 }
 
 void ts7200_uart2_init() {
   // FIXME: we probably want to hard set the flags in case they were messed up
   bwsetfifo(COM2, OFF);
   bwsetspeed(COM2, 115200);
-  int *uart2_ctlr = (int *)(UART2_BASE + UART_CTLR_OFFSET);
-  *uart2_ctlr |= TIEN_MASK | RIEN_MASK;
+  VMEM(UART2_BASE + UART_CTLR_OFFSET) &= ~(TIEN_MASK | RIEN_MASK);
 }
 
 void io_init() {
