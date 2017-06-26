@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+from collections import defaultdict
 from optparse import OptionParser
 
 ########################################################################
@@ -63,6 +64,7 @@ class ParserState:
 class Track:
 
     def __init__(self):
+        self.routing_table = {}
         pass
 
     @staticmethod
@@ -157,6 +159,9 @@ class Node:
         self.ahead_edge = None
         self.straight_edge = None
         self.curved_edge = None
+
+    def __repr__(self):
+        return "<Node name=%s type=%s>" % (self.name, self.nodetype)
 
     @staticmethod
     def parse(state):
@@ -264,6 +269,9 @@ class Edge:
     def __init__(self):
         self.dist = None
 
+    def __repr__(self):
+        return "<Edge from=%s to=%s dist=%d>" % (self.node1.name, self.node2.name, self.dist)
+
     @staticmethod
     def parse(state):
         self = Edge()
@@ -316,9 +324,102 @@ if errors > 0:
     exit(1)
 
 ## By Joey
-## Do dijstra to generate a routing table.
+## Do Dijkstra's to generate a routing table.
 ## This table is src,dest => next edge to traverse from src
-import pdb; pdb.set_trace()
+class Graph:
+    def __init__(self):
+        self.nodes = set()
+        self.edges = defaultdict(list)
+        self.distances = {}
+        self.edge_names = {}
+
+    def add_node(self, value):
+        self.nodes.add(value)
+
+    def add_edge(self, from_node, to_node, distance, name):
+        self.edges[from_node].append(to_node)
+        # self.edges[to_node].append(from_node)
+        self.distances[(from_node, to_node)] = distance
+        # self.distances[(to_node, from_node)] = distance
+        # self.edge_names[(to_node, from_node)] = name
+        self.edge_names[(from_node, to_node)] = name
+
+    def __repr__(self):
+        return "<Graph\n nodes=%s\n edges=%s\n dists=%s>" % (self.nodes, self.edges, self.distances)
+
+def dijsktra(graph, initial):
+  visited = {initial: 0}
+  path = {}
+
+  nodes = set(graph.nodes)
+
+  while nodes:
+    min_node = None
+    for node in nodes:
+      if node in visited:
+        if min_node is None:
+          min_node = node
+        elif visited[node] < visited[min_node]:
+          min_node = node
+
+    if min_node is None:
+      break
+
+    nodes.remove(min_node)
+    current_weight = visited[min_node]
+
+    for edge in graph.edges[min_node]:
+      weight = current_weight + graph.distances[(min_node, edge)]
+      if edge not in visited or weight < visited[edge]:
+        visited[edge] = weight
+        edge_name = graph.edge_names[(min_node, edge)]
+        path[edge] = (min_node, edge_name)
+
+  return visited, path
+
+for track in tracks.itervalues():
+    # Translate data into graph
+    g = Graph()
+    for idx, node in enumerate(track.nodes):
+        g.add_node(node.name)
+        g.add_edge(node.name, node.reverse.name, 0, 'rev')
+
+        for dir in ['ahead', 'straight', 'curved']:
+          if node.__dict__[dir] != None:
+            idx2 = node.__dict__[dir].index
+            dest_node = track.nodes[idx2]
+            dist = node.__dict__[dir+"_edge"].dist
+            for rev_dir in ['ahead', 'straight', 'curved']:
+              if node.__dict__[dir].reverse.__dict__[rev_dir] == node.reverse:
+                  rev_idx = node.__dict__[dir].reverse.index
+                  rev_dir.upper()
+                  g.add_edge(dest_node.name, node.name, dist, (node.name, dir, dest_node.name, rev_idx, "DIR_%s" % rev_dir.upper()))
+            g.add_edge(node.name, dest_node.name, dist, (node.name, dir, dest_node.name, idx, "DIR_%s" % dir.upper()))
+    #
+    # for idx, edge in enumerate(track.edges):
+    #     g.add_edge(edge.node1.name, edge.node2.name, edge.dist, idx)
+    #     g.add_edge(edge.node1.reverse.name, edge.node2.reverse.name, edge.dist, idx)
+
+    # Route with example
+    source = 'EX1'
+    results = dijsktra(g, source)
+    path = results[1]
+    # Create a path list which we will reduce in order to find the ideal initial edge to follow
+    # reducing_path = path.copy()
+    # reverse_path = defaultdict(set)
+    # for key, val in path.iteritems():
+    #     reverse_path[val].add(key)
+    # while len(reducing_path) > 0:
+    #     for key, val in reducing_path.iteritems():
+    #         if key not in reverse_path:
+    #             reverse_path[val].remove(key)
+    #             if len(reverse_path) == 0:
+    #                 del reverse_path[val]
+
+    print("Routes\n")
+    print(results)
+    # import pdb; pdb.set_trace()
+    # exit(0)
 
 
 ########################################################################
@@ -340,6 +441,7 @@ fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 ''' % maxidx)
 for fun in tracks:
     fh.write("void %s(track_node *track);\n" % fun)
+    fh.write("void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRACK_MAX]);\n" % fun)
 fh.close()
 
 ########################################################################
@@ -348,6 +450,7 @@ fh = open(options.c, 'w')
 fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
 #include "%s"
+#include <null.h>
 
 static void *memset(void *s, int c, unsigned int n) {
   unsigned char *p = s;
@@ -356,6 +459,7 @@ static void *memset(void *s, int c, unsigned int n) {
 }
 ''' % options.h)
 for fun in tracks:
+  track = tracks[fun]
   fh.write('''
 void %s(track_node *track) {
   memset(track, 0, TRACK_MAX*sizeof(track_node));
@@ -363,6 +467,7 @@ void %s(track_node *track) {
   for nd in tracks[fun].nodes:
     idx = nd.index
     fh.write("  track[%d].name = \"%s\";\n" % (idx, nd.name))
+    fh.write("  track[%d].id = %d;\n" % (idx, idx))
     nodetype = 'NODE_' + nd.nodetype.upper()
     fh.write("  track[%d].type = %s;\n" % (idx, nodetype))
     if nd.num != None:
@@ -386,4 +491,34 @@ void %s(track_node *track) {
         fh.write("  track[%d].edge[DIR_%s].dist = %s;\n" % \
           (idx, dir.upper(), dist))
   fh.write("}\n")
+
+
+  ## By Joey
+  ## Write route table
+  fh.write('''
+void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRACK_MAX]) {
+''' % fun)
+  for idx, nd in enumerate(tracks[fun].nodes):
+    fh.write("\n  // SECTION for %s\n" % (nd.name))
+
+    source = nd.name
+    routes = dijsktra(g, source)
+    path = routes[1]
+
+    for to_node_name, edge_path in path.iteritems():
+        to_node = track.name2node[to_node_name]
+        edge_from = edge_path[0]
+        edge = edge_path[1]
+        if edge == "rev":
+            # No edge, same node (simply reverse node)
+            fh.write("  (*route_table)[%d][%d] = NULL; // %s to %s\n" % (idx, to_node.index, source, to_node_name))
+        # elif to_node_name == edge[0]:
+            # Edge is backwords, we need edge.reverse
+            # fh.write("  (*route_table)[%d][%d] = track[%d].edge[%s].reverse; // %s to %s\n" % (idx, to_node.index, edge[-2], edge[-1], source, to_node_name))
+        else:
+            # Edge is forward (y)
+            fh.write("  (*route_table)[%d][%d] = &track[%d].edge[%s]; // %s to %s\n" % (idx, to_node.index, edge[-2], edge[-1], source, to_node_name))
+  fh.write("}\n")
+
+
 fh.close()

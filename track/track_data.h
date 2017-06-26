@@ -8,3 +8,4 @@
 #define TRACK_MAX 8
 
 void init_tracktest(track_node *track);
+void init_tracktest_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRACK_MAX]);
