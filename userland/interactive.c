@@ -41,6 +41,7 @@ enum command_t {
   COMMAND_UPTIME,
   COMMAND_STATUS,
   COMMAND_MOVE,
+  COMMAND_PATH,
 }; typedef int command_t;
 
 typedef struct {
@@ -73,6 +74,8 @@ command_t get_command_type(char *command) {
     return COMMAND_SWITCH_TOGGLE_ALL;
   } else if (jstrcmp(command, "mov")) {
     return COMMAND_MOVE;
+  } else if (jstrcmp(command, "path")) {
+    return COMMAND_PATH;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -670,6 +673,46 @@ void interactive() {
               ji2a(p.len, buf);
               Putstr(COM2, buf);
               Putstr(COM2, " path=");
+              int k;
+              for (k = 0; k < p.len; k++) {
+                Putstr(COM2, p.nodes[k]->name);
+                if (k < p.len - 1) {
+                  Putstr(COM2, ",");
+                }
+              }
+            }
+            break;
+          case COMMAND_PATH:
+            {
+              int src_node_id = Name2Node(req.arg1);
+              if (src_node_id == -1) {
+                Putstr(COM2, "Invalid src node: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+
+              int dest_node_id = Name2Node(req.arg2);
+              if (dest_node_id == -1) {
+                Putstr(COM2, "Invalid dest node: got ");
+                Putstr(COM2, req.arg2);
+                break;
+              }
+
+              path_t p;
+              GetPath(&p, src_node_id, dest_node_id);
+
+              Putstr(COM2, "Path ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " ~> ");
+              Putstr(COM2, req.arg3);
+              Putstr(COM2, ". dist=");
+              char buf[10];
+              ji2a(p.dist, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " len=");
+              ji2a(p.len, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " route=");
               int k;
               for (k = 0; k < p.len; k++) {
                 Putstr(COM2, p.nodes[k]->name);
