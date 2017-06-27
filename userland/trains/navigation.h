@@ -21,6 +21,9 @@ typedef struct Path {
 #define SECONDS(amt) MILLISECONDS(amt * 1000)
 #define MILLISECONDS(amt) amt
 
+void set_location(int train, int location);
+
+int StoppingDistance(int train, int speed);
 
 // Initializes the track and pre-computed routing information
 void InitNavigation();
@@ -34,15 +37,8 @@ void GetPath(path_t *p, int src, int dest);
 
 void PrintPath(path_t *p);
 
-// Gets the sum of a distance along a path
-int SumDist(path_t *p);
-
 // Navigates a train from A to B
 void Navigate(int train, int speed, int src, int dest);
-
-// Calculates the amount of time to get from A to B
-// at a speed, including accelerating and deaccelerating
-int CalcTime(int train, int speed, track_node **path, int path_len);
 
 // Get the accelerating distance
 int AccelDist(int train, int speed);
@@ -76,6 +72,11 @@ int Velocity(int train, int speed);
 void dijkstra(int src, int dest);
 
 int get_path(int src, int dest, track_node **path, int path_buf_size);
+
+void set_velocity(int train, int speed, int velocity);
+
+void set_stopping_distance(int train, int speed, int distance);
+
 
 /*
   High level of how nagivating functions work:

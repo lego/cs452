@@ -211,3 +211,26 @@ int Putstr(int channel, const char *str ) {
   str++;
   return 0;
 }
+
+int Puti(int channel, int i) {
+  char bf[12];
+  ui2a(i, 10, bf);
+  return Putstr(channel, bf);
+}
+
+
+void move_cursor(unsigned int x, unsigned int y) {
+  char bf[12];
+  Putc(COM2, ESCAPE_CH);
+  Putc(COM2, '[');
+
+  ui2a(y, 10, bf);
+  Putstr(COM2, bf);
+
+  Putc(COM2, ';');
+
+  ui2a(x, 10, bf);
+  Putstr(COM2, bf);
+
+  Putc(COM2, 'H');
+}

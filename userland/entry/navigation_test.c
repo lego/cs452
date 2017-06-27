@@ -70,6 +70,19 @@ void navigation_test() {
   PrintPath(&p);
   GetPath(&p, Name2Node("E6"), Name2Node("D4"));
   PrintPath(&p);
+
+
+  GetPath(&p, Name2Node("C14"), Name2Node("E8"));
+  PrintPath(&p);
+
+
+  GetPath(&p, Name2Node("C12"), Name2Node("E8"));
+  PrintPath(&p);
+
+  GetPath(&p, Name2Node("E8"), Name2Node("C12"));
+  PrintPath(&p);
+
+
   #endif
 
   ExitKernel();

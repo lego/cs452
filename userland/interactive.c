@@ -12,11 +12,6 @@
 #include <jstring.h>
 #include <priorities.h>
 
-// Terminal locations
-#define SWITCH_LOCATION 3
-#define SENSOR_HISTORY_LOCATION 10
-#define COMMAND_LOCATION 23
-
 #define NUM_SWITCHES 22
 
 // use for command parsing
@@ -43,9 +38,12 @@ enum command_t {
   COMMAND_PRINT_SENSOR_SAMPLES,
   COMMAND_PRINT_SENSOR_MULTIPLIERS,
   COMMAND_HELP,
+  COMMAND_SET_LOCATION,
+  COMMAND_SET_VELOCITY,
+  COMMAND_SET_STOPPING_DISTANCE,
   COMMAND_UPTIME,
   COMMAND_STATUS,
-  COMMAND_MOVE,
+  COMMAND_NAVIGATE,
   COMMAND_PATH,
 }; typedef int command_t;
 
@@ -85,10 +83,16 @@ command_t get_command_type(char *command) {
     return COMMAND_PRINT_SENSOR_SAMPLES;
   } else if (jstrcmp(command, "psm")) {
     return COMMAND_PRINT_SENSOR_MULTIPLIERS;
-  } else if (jstrcmp(command, "mov")) {
-    return COMMAND_MOVE;
+  } else if (jstrcmp(command, "nav")) {
+    return COMMAND_NAVIGATE;
   } else if (jstrcmp(command, "path")) {
     return COMMAND_PATH;
+  } else if (jstrcmp(command, "velo")) {
+    return COMMAND_SET_VELOCITY;
+  } else if (jstrcmp(command, "loc")) {
+    return COMMAND_SET_LOCATION;
+  } else if (jstrcmp(command, "stop")) {
+    return COMMAND_SET_STOPPING_DISTANCE;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -334,22 +338,6 @@ void ticks2a(int ticks, char *buf, int buf_size) {
   insert_two_char_int(ticks % 100, buf + 6);
   buf[8] = '0';
   buf[9] = '\0';
-}
-
-void move_cursor(unsigned int x, unsigned int y) {
-  char bf[12];
-  Putc(COM2, ESCAPE_CH);
-  Putc(COM2, '[');
-
-  ui2a(y, 10, bf);
-  Putstr(COM2, bf);
-
-  Putc(COM2, ';');
-
-  ui2a(x, 10, bf);
-  Putstr(COM2, bf);
-
-  Putc(COM2, 'H');
 }
 
 void DrawInitialScreen() {
@@ -823,7 +811,7 @@ void interactive() {
               Putstr(COM2, RECOVER_CURSOR);
             }
             break;
-          case COMMAND_MOVE:
+          case COMMAND_NAVIGATE:
             {
               int status;
               int train = jatoui(req.arg1, &status);
@@ -840,28 +828,19 @@ void interactive() {
                 break;
               }
 
-              // int speed = jatoui(req.arg2, &status);
-              // if (status != 0) {
-              //   Putstr(COM2, "Invalid speed provided: got ");
-              //   Putstr(COM2, req.arg2);
-              //   break;
-              // }
-              //
-              // if (speed < 0 || speed > 14) {
-              //   Putstr(COM2, "Invalid speed provided: got ");
-              //   Putstr(COM2, req.arg2);
-              //   Putstr(COM2, " expected 0-14");
-              //   break;
-              // }
-
-              // Temporarily force src while we don't have it
-              int src_node_id = Name2Node(req.arg2);
-              if (src_node_id == -1) {
-                Putstr(COM2, "Invalid src node: got ");
+              int speed = jatoui(req.arg2, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid speed provided: got ");
                 Putstr(COM2, req.arg2);
                 break;
               }
 
+              if (speed < 0 || speed > 14) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg2);
+                Putstr(COM2, " expected 0-14");
+                break;
+              }
               int dest_node_id = Name2Node(req.arg3);
               if (dest_node_id == -1) {
                 Putstr(COM2, "Invalid dest node: got ");
@@ -870,10 +849,9 @@ void interactive() {
               }
 
               path_t p;
-              GetPath(&p, src_node_id, dest_node_id);
-              // MoveTrain(train, speed, dest_node_id);
+              GetPath(&p, WhereAmI(train), dest_node_id);
 
-              Putstr(COM2, "Moving train ");
+              Putstr(COM2, "Navigating train ");
               Putstr(COM2, req.arg1);
               Putstr(COM2, " at speed ");
               Putstr(COM2, req.arg2);
@@ -894,6 +872,7 @@ void interactive() {
                   Putstr(COM2, ",");
                 }
               }
+              Navigate(train, speed, WhereAmI(train), dest_node_id);
             }
             break;
           case COMMAND_PATH:
@@ -936,6 +915,129 @@ void interactive() {
               }
             }
             break;
+          case COMMAND_SET_VELOCITY:
+            {
+              int status;
+              int train = jatoui(req.arg1, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid train provided: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+
+              if (train < 0 || train > 80) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " expected 1-80");
+                break;
+              }
+
+              int speed = jatoui(req.arg2, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg2);
+                break;
+              }
+
+              if (speed < 0 || speed > 14) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg2);
+                Putstr(COM2, " expected 0-14");
+                break;
+              }
+
+              int velocity = jatoui(req.arg3, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid velocity provided: got ");
+                Putstr(COM2, req.arg3);
+                break;
+              }
+
+              Putstr(COM2, "Set velocity of ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " speed ");
+              Putstr(COM2, req.arg2);
+              Putstr(COM2, " to ");
+              Putstr(COM2, req.arg3);
+              Putstr(COM2, " mm/s ");
+
+              set_velocity(train, speed, velocity);
+              }
+              break;
+          case COMMAND_SET_LOCATION:
+            {
+              int status;
+              int train = jatoui(req.arg1, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid train provided: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+
+              if (train < 0 || train > 80) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " expected 1-80");
+                break;
+              }
+
+              int node = Name2Node(req.arg2);
+              if (node == -1) {
+                Putstr(COM2, "Invalid location.");
+                break;
+              }
+
+              set_location(train, node);
+            }
+            break;
+          case COMMAND_SET_STOPPING_DISTANCE:
+            {
+                int status;
+                int train = jatoui(req.arg1, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid train provided: got ");
+                  Putstr(COM2, req.arg1);
+                  break;
+                }
+
+                if (train < 0 || train > 80) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg1);
+                  Putstr(COM2, " expected 1-80");
+                  break;
+                }
+
+                int speed = jatoui(req.arg2, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg2);
+                  break;
+                }
+
+                if (speed < 0 || speed > 14) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg2);
+                  Putstr(COM2, " expected 0-14");
+                  break;
+                }
+
+                int stopping_distance = jatoui(req.arg3, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid stopping distance provided: got ");
+                  Putstr(COM2, req.arg3);
+                  break;
+                }
+
+                Putstr(COM2, "Set stopping distance of ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " speed ");
+                Putstr(COM2, req.arg2);
+                Putstr(COM2, " to ");
+                Putstr(COM2, req.arg3);
+                Putstr(COM2, " mm ");
+                set_stopping_distance(train, speed, stopping_distance);
+              }
+              break;
           default:
             Putstr(COM2, "Got invalid command=");
             Putstr(COM2, global_command_buffer + global_command_buffer[0]);

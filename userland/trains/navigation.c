@@ -4,8 +4,10 @@
 #include <trains/track_node.h>
 #include <clock_server.h>
 #include <bwio.h>
+#include <uart_tx_server.h>
 #include <jstring.h>
 #include <heap.h>
+#include <train_controller.h>
 
 track_node track[TRACK_MAX];
 
@@ -17,18 +19,8 @@ train_state_t state;
 
 int path_buf[TRACK_MAX];
 
-// FIXME: fixtures while testing
-void ReverseTrainStub(int train) {
-  bwprintf(COM2, "reversing train=%d\n\r", train);
-}
-
-void SetTrainSpeedStub(int train, int speed) {
-  bwprintf(COM2, "setting train=%d speed=%d \n\r", train, speed);
-}
-
-void SetSwitchStub(int switch_no, char dir) {
-  bwprintf(COM2, "setting switch=%d dir=%d\n\r", switch_no, dir);
-}
+int velocity[TRAINS_MAX][15];
+int stopping_distance[TRAINS_MAX][15];
 
 int Name2Node(char *name) {
   for (int i = 0; i < TRACK_MAX; i++) {
@@ -42,6 +34,17 @@ int Name2Node(char *name) {
 void InitNavigation() {
   int i;
 
+  for (i = 0; i < TRAINS_MAX; i++) {
+      int j;
+      for (j = 0; j < 14; j++) {
+        velocity[i][j] = -1;
+        stopping_distance[i][j] = -1;
+      }
+  }
+
+  velocity[58][14] = MILLIMETRES(580);
+  stopping_distance[58][14] = MILLIMETRES(700);
+
   #if defined(USE_TRACKA)
   init_tracka(track);
   #elif defined(USE_TRACKB)
@@ -52,20 +55,15 @@ void InitNavigation() {
   #error Bad TRACK value provided to Makefile. Expected "A", "B", or "TEST"
   #endif
 
-  // TODO: pre-compute routing table
-  // This can be in the form of:
-  // src,dest => edge with edge.dest == next_node
-  // (so only ~800kb of table data)
-  // NOTE: this table will have a NULL value if src,dest has
-  // no edges between them (e.g. reverse)
-  // NOTE: key assumptions
-  //  - if a <reverse> b <e1> c, then routes[a][c] = e1
-  //     i.e. we transparently compress reverse direction transitions
-
-
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;
   }
+
+  state.train_locations[58] = Name2Node("C12");
+}
+
+void set_location(int train, int location) {
+  state.train_locations[train] = location;
 }
 
 int WhereAmI(int train) {
@@ -93,26 +91,26 @@ void GetPath(path_t *p, int src, int dest) {
   p->src = &track[src];
   p->dest = &track[dest];
 
-  // check for more optimal normal src, reverse dest
-  dijkstra(src, reverse_dest);
-  if (track[reverse_dest].dist < p->dist) {
-    p->len = get_path(src, reverse_dest, nodes, TRACK_MAX);
-    p->dist = nodes[p->len - 1]->dist;
-  }
-
-  // check for more optimal reverse src, normal dest
-  dijkstra(reverse_src, dest);
-  if (track[dest].dist < p->dist) {
-    p->len = get_path(reverse_src, dest, nodes, TRACK_MAX);
-    p->dist = nodes[p->len - 1]->dist;
-  }
-
-  // check for more optimal reverse src, reverse dest
-  dijkstra(reverse_src, reverse_dest);
-  if (track[reverse_dest].dist < p->dist) {
-    p->len = get_path(reverse_src, reverse_dest, nodes, TRACK_MAX);
-    p->dist = nodes[p->len - 1]->dist;
-  }
+  // // check for more optimal normal src, reverse dest
+  // dijkstra(src, reverse_dest);
+  // if (track[reverse_dest].dist < p->dist) {
+  //   p->len = get_path(src, reverse_dest, nodes, TRACK_MAX);
+  //   p->dist = nodes[p->len - 1]->dist;
+  // }
+  //
+  // // check for more optimal reverse src, normal dest
+  // dijkstra(reverse_src, dest);
+  // if (track[dest].dist < p->dist) {
+  //   p->len = get_path(reverse_src, dest, nodes, TRACK_MAX);
+  //   p->dist = nodes[p->len - 1]->dist;
+  // }
+  //
+  // // check for more optimal reverse src, reverse dest
+  // dijkstra(reverse_src, reverse_dest);
+  // if (track[reverse_dest].dist < p->dist) {
+  //   p->len = get_path(reverse_src, reverse_dest, nodes, TRACK_MAX);
+  //   p->dist = nodes[p->len - 1]->dist;
+  // }
 
   int i;
   for (i = 0; i < p->len; i++) {
@@ -143,6 +141,10 @@ void PrintPath(path_t *p) {
 }
 
 void Navigate(int train, int speed, int src, int dest) {
+  if (velocity[train][speed] == -1 || stopping_distance[train][speed] == -1) {
+    KASSERT(false, "Train speed / stopping distance not yet calibrated");
+  }
+
   int i;
   // int src = WhereAmI(train);
   track_node *src_node = &track[src];
@@ -152,50 +154,47 @@ void Navigate(int train, int speed, int src, int dest) {
   path_t *p = &path;
   GetPath(p, src, dest);
 
-  bwprintf(COM2, "== Navigating train=%d speed=%d ==\n\r", train, speed);
-
-  PrintPath(p);
-
   for (i = 0; i < p->len; i++) {
     if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
       if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
-        SetSwitchStub(p->nodes[i-1]->num, 'C');
+        SetSwitch(p->nodes[i-1]->num, SWITCH_CURVED);
       } else {
-        SetSwitchStub(p->nodes[i-1]->num, 'S');
+        SetSwitch(p->nodes[i-1]->num, SWITCH_STRAIGHT);
       }
     }
   }
 
-  SetTrainSpeedStub(train, speed);
-
-  int travel_time = CalcTime(train, speed, p->nodes, p->len);
-  Delay((travel_time / 10) + 1);
-  // DONE!
-}
-
-int CalcTime(int train, int speed, track_node **path, int path_len) {
   // FIXME: does not handle where the distance is too short to fully accelerate
-  int remainingDist = path[path_len - 1]->dist - AccelDist(train, speed) - DeaccelDist(train, speed);
+  int remainingDist = p->dist - StoppingDistance(train, speed);
   int remainingTime = CalculateTime(remainingDist, Velocity(train, speed));
-  int totalTime = remainingTime + AccelTime(train, speed) + DeaccelTime(train, speed);
-  // TODO: also account for time to first byte for the train to start moving
-  // otherwise we're off
-  return totalTime;
+
+  Putstr(COM2, SAVE_CURSOR);
+  move_cursor(0, COMMAND_LOCATION + 5);
+  Putstr(COM2, "Setting train=");
+  Puti(COM2, train);
+  Putstr(COM2, " speed=");
+  Puti(COM2, speed);
+  Putstr(COM2, " for remaining_time=");
+  Puti(COM2, remainingTime);
+  Putstr(COM2, "\n\r");
+
+  SetTrainSpeed(train, speed);
+  Delay((remainingTime / 10));
+
+  move_cursor(0, COMMAND_LOCATION + 6);
+  Putstr(COM2, "Stopping train=");
+  Puti(COM2, train);
+  Putstr(COM2, "\n\r");
+  Putstr(COM2, RECOVER_CURSOR);
+
+  SetTrainSpeed(train, 0);
+  state.train_locations[train] = dest;
 }
 
 int GetDirection(int train, path_t *p) {
   // FIXME: handle orientation of train
   return FORWARD_DIR;
 }
-
-// int SumDist(path_t *p) {
-//   int i;
-//   int sum = 0;
-//   for (i = 0; i < p->edge_count - 1; i++) {
-//     sum += p->edges[i]->dist;
-//   }
-//   return sum;
-// }
 
 int AccelDist(int train, int speed) {
   return CENTIMETRES(20);
@@ -221,6 +220,10 @@ int DeaccelTime(int train, int speed) {
 // 10 * 10 / (10 * 10)
 // => 1000
 
+int StoppingDistance(int train, int speed) {
+  return stopping_distance[train][speed];
+}
+
 int CalculateDistance(int velocity, int t) {
   // NOTE: assumes our fixed point time is 1 => 1 millisecond
   return (velocity * t) / 1000;
@@ -232,7 +235,7 @@ int CalculateTime(int distance, int velocity) {
 }
 
 int Velocity(int train, int speed) {
-  return CENTIMETRES(10);
+  return velocity[train][speed];
 }
 
 #define INT_MAX 999999 // FIXME: proper INT_MAX
@@ -309,8 +312,13 @@ int get_path(int src, int dest, track_node **path, int path_buf_size) {
     path[n - i - 2] = &track[u->prev];
   }
   return n;
-  bwprintf(COM2, "Path %s ~> %s dist=%d\n\r", track[src].name, track[dest].name, v->dist);
-  for (i = 0; i < n; i++) {
-    bwprintf(COM2, "  node=%s\n\r", path[i]->name);
-  }
+}
+
+
+void set_velocity(int train, int speed, int velo) {
+  velocity[train][speed] = MILLIMETRES(velo);
+}
+
+void set_stopping_distance(int train, int speed, int distance) {
+  stopping_distance[train][speed] = MILLIMETRES(distance);
 }
