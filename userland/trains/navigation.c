@@ -1,10 +1,11 @@
+#include <basic.h>
 #include <trains/navigation.h>
 #include <trains/track_data.h>
 #include <trains/track_node.h>
 #include <clock_server.h>
 #include <bwio.h>
 #include <jstring.h>
-#include <basic.h>
+#include <heap.h>
 
 track_node track[TRACK_MAX];
 
@@ -15,9 +16,6 @@ typedef struct TrainState {
 train_state_t state;
 
 int path_buf[TRACK_MAX];
-
-track_edge *route_table[TRACK_MAX][TRACK_MAX];
-int route_table_dist[TRACK_MAX][TRACK_MAX];
 
 // FIXME: fixtures while testing
 void ReverseTrainStub(int train) {
@@ -30,7 +28,7 @@ void SetTrainSpeedStub(int train, int speed) {
 
 int Name2Node(char *name) {
   for (int i = 0; i < TRACK_MAX; i++) {
-    if (jstrcmp(track[i].name, name) == 0) {
+    if (jstrcmp(track[i].name, name)) {
       return i;
     }
   }
@@ -42,13 +40,10 @@ void InitNavigation() {
 
   #if defined(USE_TRACKA)
   init_tracka(track);
-  init_tracka_route_table(track, &route_table);
   #elif defined(USE_TRACKB)
   init_trackb(track);
-  init_trackb_route_table(track, &route_table);
   #elif defined(USE_TRACKTEST)
   init_tracktest(track);
-  init_tracktest_route_table(track, &route_table);
   #else
   #error Bad TRACK value provided to Makefile. Expected "A", "B", or "TEST"
   #endif
@@ -73,46 +68,8 @@ int WhereAmI(int train) {
   return state.train_locations[train];
 }
 
-void reverse_array(void **arr, int start, int end) {
-  void *temp;
-  while (start < end) {
-    temp = arr[start];
-    arr[start] = arr[end];
-    arr[end] = temp;
-    start++;
-    end--;
-  }
-}
-
 void GetPath(path_t *p, int src, int dest) {
-  track_edge *next_edge = NULL;
-  track_node *src_node = &track[src];
-  track_node *dest_node = &track[dest];
-  track_node *curr_node = dest_node;
-
-  p->nodes[0] = dest_node;
-  p->dist = 0;
-  p->edge_count = 0;
-  p->src = src_node;
-  p->dest = dest_node;
-
-  next_edge = route_table[src_node->id][curr_node->id];
-  while (src_node != curr_node) {
-    if (next_edge == NULL && curr_node->reverse == src_node) {
-      break;
-    } else if (next_edge == NULL) {
-      next_edge = route_table[src_node->id][curr_node->reverse->id];
-    }
-    curr_node = next_edge->src;
-    p->dist += next_edge->dist;
-    p->edges[p->edge_count++] = next_edge;
-    p->nodes[p->edge_count] = curr_node;
-    next_edge = route_table[src_node->id][curr_node->id];
-  }
-
-  // reverse path and node lists, since they were generated in reverse order
-  reverse_array((void **) p->nodes, 0, p->edge_count);
-  reverse_array((void **) p->edges, 0, p->edge_count - 1);
+  return;
 }
 
 void PrintPath(path_t *p) {
@@ -245,4 +202,84 @@ int CalculateTime(int distance, int velocity) {
 
 int Velocity(int train, int speed) {
   return CENTIMETRES(10);
+}
+
+#define INT_MAX 999999 // FIXME: proper INT_MAX
+
+void dijkstra(int src, int dest) {
+    #define HEAP_SIZE TRACK_MAX + 1
+    heapnode_t heap_nodes[HEAP_SIZE];
+    heap_t heap = heap_create(heap_nodes, HEAP_SIZE);
+    heap_t *h = &heap;
+
+    int i, j;
+    for (i = 0; i < TRACK_MAX; i++) {
+        track_node *v = &track[i];
+        v->dist = INT_MAX;
+        v->prev = 0;
+        v->visited = false;
+    }
+    track_node *v = &track[src];
+    v->dist = 0;
+    heap_push(h, v->dist, (void *) src);
+    while (heap_size(h)) {
+        i = (int) heap_pop(h);
+        if (i == dest)
+            break;
+        v = &track[i];
+        v->visited = true;
+        int edges_len = 0;
+        track_edge *edges[2];
+        switch (v->type) {
+          case NODE_EXIT:
+            break;
+          case NODE_ENTER:
+          case NODE_SENSOR:
+          case NODE_MERGE:
+            edges[edges_len++] = &v->edge[DIR_AHEAD];
+            break;
+          case NODE_BRANCH:
+            edges[edges_len++] = &v->edge[DIR_STRAIGHT];
+            edges[edges_len++] = &v->edge[DIR_CURVED];
+            break;
+          default:
+            KASSERT(false, "Node type not handled. node_id=%d type=%d", v->id, v->type);
+            break;
+        }
+        for (j = 0; j < edges_len; j++) {
+            track_edge *e = edges[j];
+            track_node *u = e->dest;
+            if (!u->visited && v->dist + e->dist <= u->dist) {
+                u->prev = i;
+                u->dist = v->dist + e->dist;
+                heap_push(h, u->dist, (void *) u->id);
+            }
+        }
+    }
+}
+
+int get_path(int src, int dest, track_node **path, int path_buf_size) {
+  int n;
+  int i;
+  track_node *v, *u;
+  v = &track[dest];
+
+  if (v->dist == INT_MAX) {
+    return -1;
+  }
+
+  // Get n, the length of the path
+  for (n = 1, u = v; u->dist; u = &track[u->prev], n++);
+  KASSERT(path_buf_size >= n, "Path buffer wasn't large enough. Would overflowing. src=%s dest=%s dist=%d n=%d", track[src].name, track[dest].name, track[dest].dist, n);
+
+  // follow the path backwards
+  path[n - 1] = &track[dest];
+  for (i = 0, u = v; u->dist; u = &track[u->prev], i++) {
+    path[n - i - 2] = &track[u->prev];
+  }
+  return n;
+  bwprintf(COM2, "Path %s ~> %s dist=%d\n\r", track[src].name, track[dest].name, v->dist);
+  for (i = 0; i < n; i++) {
+    bwprintf(COM2, "  node=%s\n\r", path[i]->name);
+  }
 }

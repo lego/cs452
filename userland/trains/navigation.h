@@ -1,8 +1,11 @@
 #pragma once
 
 #include <trains/track_node.h>
+#include <trains/track_data.h>
 
 #define TRAINS_MAX 80
+
+extern track_node track[TRACK_MAX];
 
 typedef struct Path {
   int dist; /* in millimetres */
@@ -75,6 +78,10 @@ int Name2Node(char *name);
 
 // Get the top / avg velocity for a train at a speed level
 int Velocity(int train, int speed);
+
+void dijkstra(int src, int dest);
+
+int get_path(int src, int dest, track_node **path, int path_buf_size);
 
 /*
   High level of how nagivating functions work:

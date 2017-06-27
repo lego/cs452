@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 typedef enum {
   NODE_NONE,
   NODE_SENSOR,
@@ -30,4 +32,10 @@ struct track_node {
   int num;              /* sensor or switch number */
   track_node *reverse;  /* same location, but opposite direction */
   track_edge edge[2];
+
+  // Pathing data, reset on each use of pathing.
+  // NOTE: this is not mutually exclusive, and will fail for 2 trains
+  int dist;
+  int prev;
+  bool visited;
 };
