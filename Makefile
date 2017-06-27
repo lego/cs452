@@ -141,8 +141,7 @@ lib%.a: %.o
 
 # clean all files in the top-level, the only place we have temp files
 clean:
-	# Excludes track data because it takes a long ass time to compile
-	find . -maxdepth 0 -type f \(  -regex '.*\.\(a\|map\|elf\|o\|s\)' ! -iname  "userland_trains_track_data.php" \) -exec rm {} +
+	rm -rf *.o *.s *.elf *.a *.a.dSYM/ *.map
 
 # always run clean (it doesn't produce files)
 # also always run main.a because it implicitly depends on all C files
