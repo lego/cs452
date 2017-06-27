@@ -32,8 +32,10 @@ void InitNavigation() {
 
   #if defined(USE_TRACKA)
   init_tracka(track);
+  init_tracka_route_table(track, &route_table);
   #elif defined(USE_TRACKB)
   init_trackb(track);
+  init_trackb_route_table(track, &route_table);
   #elif defined(USE_TRACKTEST)
   init_tracktest(track);
   init_tracktest_route_table(track, &route_table);
