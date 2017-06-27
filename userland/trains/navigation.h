@@ -40,15 +40,10 @@ int SumDist(path_t *p);
 // Navigates a train from A to B
 void Navigate(int train, int speed, int src, int dest);
 
-// Moves a train from A to B. Does not support
-// reversing for turn-outs, but ensures correct turn-out
-// configuration
-int Move(int train, int speed, int src, int dest);
-
 // Calculates the amount of time to get from A to B
 // at a speed, including accelerating and deaccelerating
 // NOTE: does not account for turn-out reversing, similarly to Move
-int CalcTime(int train, int speed, path_t *p);
+int CalcTime(int train, int speed, track_node **path, int path_len);
 
 // Get the accelerating distance
 int AccelDist(int train, int speed);
@@ -82,6 +77,8 @@ int Velocity(int train, int speed);
 void dijkstra(int src, int dest);
 
 int get_path(int src, int dest, track_node **path, int path_buf_size);
+
+void print_path(int src, int dest, track_node **path, int path_len);
 
 /*
   High level of how nagivating functions work:

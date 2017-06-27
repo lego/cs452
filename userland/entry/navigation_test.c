@@ -3,23 +3,10 @@
 #include <bwio.h>
 #include <trains/navigation.h>
 
-
-void print_path(int src, int dest, track_node **path, int path_len) {
-  int i;
-  if (path_len == -1) {
-    bwprintf(COM2, "Path %s ~> %s does not exist.\n\r", track[src].name, track[dest].name);
-    return;
-  }
-
-  bwprintf(COM2, "Path %s ~> %s dist=%d len=%d\n\r", track[src].name, track[dest].name, track[dest].dist, path_len);
-  for (i = 0; i < path_len; i++) {
-    bwprintf(COM2, "  node=%s\n\r", path[i]->name);
-  }
-}
-
 void navigation_test() {
   InitNavigation();
 
+  #if defined(USE_TRACKTEST)
   int EN1 = Name2Node("EN1");
   int EN2 = Name2Node("EN2");
   int EN3 = Name2Node("EN3");
@@ -55,26 +42,31 @@ void navigation_test() {
   dijkstra(EN3, EX2);
   path_len = get_path(EN3, EX2, path, PATH_BUF_SIZE);
   print_path(EN3, EX2, path, path_len);
+  #elif defined(USE_TRACKA)
 
+  int BR17 = Name2Node("BR17");
+  int MR13 = Name2Node("MR13");
+  int BR13 = Name2Node("BR13");
 
-  // path_t p;
-  // GetPath(&p, 3, 0);
-  // PrintPath(&p);
+  bwprintf(COM2, "Name2Node BR17=%d\n\r", BR17);
+  bwprintf(COM2, "Name2Node MR13=%d\n\r", MR13);
+  bwprintf(COM2, "Name2Node BR13=%d\n\r", BR13);
 
-  // GetPath(&p, 3, 6);
-  // PrintPath(&p);
-  //
-  // GetPath(&p, 6, 4);
-  // PrintPath(&p);
-  //
-  // bwprintf(COM2, "== Initiating navigation ==\n\r");
-  // Navigate(1, 1, 3, 4);
+  #define PATH_BUF_SIZE 40
+  track_node *path[PATH_BUF_SIZE];
+  int path_len;
 
-  // Navigate(1, 1, 3, 4);
+  dijkstra(BR17, MR13);
+  path_len = get_path(BR17, MR13, path, PATH_BUF_SIZE);
+  print_path(BR17, MR13, path, path_len);
 
-  // bwprintf(COM2, "Name2Node A1=%d\n\r", Name2Node("A1"));
-  // bwprintf(COM2, "Name2Node A2=%d\n\r", Name2Node("A2"));
-  // bwprintf(COM2, "Name2Node BR1=%d\n\r", Name2Node("BR1"));
+  dijkstra(BR17, BR13);
+  path_len = get_path(BR17, BR13, path, PATH_BUF_SIZE);
+  print_path(BR17, BR13, path, path_len);
+
+  #elif defined(USE_TRACKB)
+  #error No tests defined for track B
+  #endif
 
   ExitKernel();
 }

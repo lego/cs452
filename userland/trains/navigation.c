@@ -23,7 +23,11 @@ void ReverseTrainStub(int train) {
 }
 
 void SetTrainSpeedStub(int train, int speed) {
-  bwprintf(COM2, "setting speed=%d train=%d\n\r", speed, train);
+  bwprintf(COM2, "setting train=%d speed=%d \n\r", train, speed);
+}
+
+void SetSwitchStub(int switch_no, char dir) {
+  bwprintf(COM2, "setting switch=%d dir=%d\n\r", switch_no, dir);
 }
 
 int Name2Node(char *name) {
@@ -85,66 +89,67 @@ void PrintPath(path_t *p) {
   bwprintf(COM2, "\n\r");
 }
 
+void print_path(int src, int dest, track_node **path, int path_len) {
+  int i;
+  if (path_len == -1) {
+    bwprintf(COM2, "Path %s ~> %s does not exist.\n\r", track[src].name, track[dest].name);
+    return;
+  }
+
+  bwprintf(COM2, "Path %s ~> %s dist=%d len=%d\n\r", track[src].name, track[dest].name, track[dest].dist, path_len);
+  for (i = 0; i < path_len; i++) {
+    if (i > 0 && path[i-1]->type == NODE_BRANCH) {
+      char dir;
+      if (path[i-1]->edge[DIR_CURVED].dest == path[i]) {
+        dir = 'C';
+      } else {
+        dir = 'S';
+      }
+      bwprintf(COM2, "    switch=%d set to %c\n\r", path[i-1]->num, dir);
+    }
+    bwprintf(COM2, "  node=%s\n\r", path[i]->name);
+  }
+}
+
 void Navigate(int train, int speed, int src, int dest) {
+  int i;
   // int src = WhereAmI(train);
   track_node *src_node = &track[src];
   track_node *dest_node = &track[dest];
-  path_t p;
-  GetPath(&p, src, dest);
-  bwprintf(COM2, "== Navigating train=%d speed=%d ==\n\r", train, speed);
-  PrintPath(&p);
 
-  // This piece of code gets all of the turn-out stops we need to make
-  // this is whenever we need to cross a turn-out and flip a switch
-  track_node *breaks[TRACK_MAX]; // FIXME: come up with a reasonable upper bound
-  int break_count = 0;
-  int i;
-  for (i = 1; i < p.edge_count + 1; i++) {
-    if (p.nodes[i]->type == NODE_BRANCH && p.edges[i - 1]->dest == p.nodes[i]->reverse) {
-      // We have a break in our pathing!
-      // This means we need to move across a switch and reverse
-      breaks[break_count++] = p.nodes[i]->reverse->edge[DIR_AHEAD].dest;
+  #define PATH_BUF_SIZE 40
+  track_node *path[PATH_BUF_SIZE];
+  int path_len;
+  // FIXME: need to flip the trains source if it's on a dead end
+  // FIXME: need to take dest_node->reverse->id if no path is found after
+  //  an extension of this may be to find the shortest path out of reverse start and/or reversed end.
+  dijkstra(src, dest);
+  path_len = get_path(src, dest, path, PATH_BUF_SIZE);
+
+  bwprintf(COM2, "== Navigating train=%d speed=%d ==\n\r", train, speed);
+
+  print_path(src, dest, path, path_len);
+
+  for (i = 0; i < path_len; i++) {
+    if (i > 0 && path[i-1]->type == NODE_BRANCH) {
+      if (path[i-1]->edge[DIR_CURVED].dest == path[i]) {
+        SetSwitchStub(path[i-1]->num, 'C');
+      } else {
+        SetSwitchStub(path[i-1]->num, 'S');
+      }
     }
   }
 
+  SetTrainSpeedStub(train, speed);
 
-  // TODO: improvement, only navigate enough to clear the switch
-  // then move as opposed to the next landmark
-  int travel_time;
-  track_node *next_node;
-  track_node *curr_node = src_node;
-  for (i = 0; i < break_count; i++) {
-    next_node = breaks[i];
-    travel_time = Move(train, speed, curr_node->id, next_node->id);
-    Delay((travel_time / 10) + 1);
-    curr_node = next_node;
-  }
-  travel_time = Move(train, speed, curr_node->id, dest_node->id);
+  int travel_time = CalcTime(train, speed, path, path_len);
   Delay((travel_time / 10) + 1);
   // DONE!
 }
 
-int Move(int train, int speed, int src, int dest) {
-  path_t p;
-  GetPath(&p, src, dest);
-  bwprintf(COM2, "== Move train=%d speed=%d ==\n\r", train, speed);
-  PrintPath(&p);
-
-  int travel_time = CalcTime(train, speed, &p);
-  int direction = GetDirection(train, &p);
-  if (direction == REVERSE_DIR) {
-    ReverseTrainStub(train);
-  }
-  SetTrainSpeedStub(train, speed);
-
-  // TODO: flip turn-outs to match path
-  // TODO: inject expected times for all nodes
-  return travel_time;
-}
-
-int CalcTime(int train, int speed, path_t *p) {
+int CalcTime(int train, int speed, track_node **path, int path_len) {
   // FIXME: does not handle where the distance is too short to fully accelerate
-  int remainingDist = p->dist - AccelDist(train, speed) - DeaccelDist(train, speed);
+  int remainingDist = path[path_len - 1]->dist - AccelDist(train, speed) - DeaccelDist(train, speed);
   int remainingTime = CalculateTime(remainingDist, Velocity(train, speed));
   int totalTime = remainingTime + AccelTime(train, speed) + DeaccelTime(train, speed);
   // TODO: also account for time to first byte for the train to start moving
