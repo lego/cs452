@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <bwio.h>
 #include <kern/context.h>
 #include <kern/context_switch.h>
 #include <kern/scheduler.h>
@@ -28,7 +29,7 @@ kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
   // extend into other task stacks
   // NOTE: casted to char * so we get the byte size count
   if ((_TaskStackStart - (char *) task->stack_pointer) > _TaskStackSize) {
-    bwprintf(COM2, "WARNING: TASK STACK OVERFLOWED. tid=%d", task->tid);
+    KASSERT(false, "WARNING: TASK STACK OVERFLOWED. tid=%d", task->tid);
   }
   log_scheduler_kern("activating task tid=%d", task->tid);
   active_task = task;
