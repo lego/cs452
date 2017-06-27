@@ -45,7 +45,31 @@ void navigation_test() {
   GetPath(&p, Name2Node("E6"), Name2Node("MR14"));
   PrintPath(&p);
   #elif defined(USE_TRACKB)
-  #error No tests defined for track B
+  path_t p;
+  GetPath(&p, Name2Node("D4"), Name2Node("B6"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("B6"), Name2Node("C12"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("C12"), Name2Node("A4"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("A4"), Name2Node("B16"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("B16"), Name2Node("C5"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("C5"), Name2Node("C15"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("C15"), Name2Node("D12"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("D12"), Name2Node("E11"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("E11"), Name2Node("D10"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("D10"), Name2Node("D5"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("D5"), Name2Node("E6"));
+  PrintPath(&p);
+  GetPath(&p, Name2Node("E6"), Name2Node("D4"));
+  PrintPath(&p);
   #endif
 
   ExitKernel();
