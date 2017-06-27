@@ -3,6 +3,7 @@
 #include <trains/track_node.h>
 #include <clock_server.h>
 #include <bwio.h>
+#include <jstring.h>
 #include <basic.h>
 
 track_node track[TRACK_MAX];
@@ -28,13 +29,12 @@ void SetTrainSpeedStub(int train, int speed) {
 }
 
 int Name2Node(char *name) {
-  #if defined(USE_TRACKA)
-  return init_tracka_name_to_node(name);
-  #elif defined(USE_TRACKB)
-  return init_trackb_name_to_node(name);
-  #elif defined(USE_TRACKTEST)
-  return init_tracktest_name_to_node(name);
-  #endif
+  for (int i = 0; i < TRACK_MAX; i++) {
+    if (jstrcmp(track[i].name, name) == 0) {
+      return i;
+    }
+  }
+  return -1;
 }
 
 void InitNavigation() {

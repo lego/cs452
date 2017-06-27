@@ -2,7 +2,7 @@
 
 unsigned int jstrlen(char *c);
 
-bool jstrcmp(char *str1, char *str2);
+bool jstrcmp(const char *str1, const char *str2);
 void jstrappend(char *str1, char *str2, char *buf);
 void jstrappendc(char *str1, char c, char *buf);
 

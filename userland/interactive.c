@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <bwio.h>
 #include <interactive.h>
 #include <nameserver.h>
 #include <clock_server.h>

@@ -416,8 +416,8 @@ for track in tracks.itervalues():
     #             if len(reverse_path) == 0:
     #                 del reverse_path[val]
 
-    print("Routes\n")
-    print(results)
+    # print("Routes\n")
+    # print(results)
     track.graph = g
     # import pdb; pdb.set_trace()
     # exit(0)
@@ -554,13 +554,13 @@ void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRA
             fh.write("  (*route_table)[%d][%d] = &track[%d].edge[%s]; // %s to %s\n" % (idx, to_node.index, edge[-2], edge[-1], source, to_node_name))
   fh.write("}\n")
 
-  ## By Joey
-  ## Write node name => node number switch case (yikes)
-  fh.write('''
-int %s_name_to_node(char *name) {
-''' % fun)
-  trie = make_trie([node.name for node in track.nodes])
-  fh.write(trie_to_switches(trie, {node.name: node.index for node in track.nodes}))
-  fh.write("}\n")
+#   ## By Joey
+#   ## Write node name => node number switch case (yikes)
+#   fh.write('''
+# int %s_name_to_node(char *name) {
+# ''' % fun)
+#   trie = make_trie([node.name for node in track.nodes])
+#   fh.write(trie_to_switches(trie, {node.name: node.index for node in track.nodes}))
+#   fh.write("}\n")
 
 fh.close()
