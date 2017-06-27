@@ -55,6 +55,7 @@ volatile io_time_t idle_time_total;
 io_time_t idle_time_start;
 volatile io_time_t time_since_idle_totalled;
 
+// TODO: we should track the timing for all tasks, not just the idle task
 static inline void idle_task_pre_activate(task_descriptor_t *task) {
   if (task->priority == 31) {
     idle_time_start = io_get_time();

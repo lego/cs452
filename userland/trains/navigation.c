@@ -73,21 +73,25 @@ int WhereAmI(int train) {
 }
 
 void GetPath(path_t *p, int src, int dest) {
-  return;
+  dijkstra(src, dest);
+  p->len = get_path(src, dest, p->nodes, TRACK_MAX);
+  p->dist = p->nodes[p->len - 1]->dist;
+  p->src = &track[src];
+  p->dest = &track[dest];
 }
 
-void PrintPath(path_t *p) {
-  bwprintf(COM2, "Path:\n\r");
-  bwprintf(COM2, "   dist=%d edge_count=%d\n\r", p->dist, p->edge_count);
-  bwprintf(COM2, "   src=%s  dest=%s\n\r", p->src->name, p->dest->name);
-  int i;
-  for (i = 0; i < p->edge_count; i++) {
-    bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
-    bwprintf(COM2, "   Edge[%d]=%s-%s dist=%d\n\r", i, p->edges[i]->src->name, p->edges[i]->dest->name, p->edges[i]->dist);
-  }
-  bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
-  bwprintf(COM2, "\n\r");
-}
+// void PrintPath(path_t *p) {
+//   bwprintf(COM2, "Path:\n\r");
+//   bwprintf(COM2, "   dist=%d edge_count=%d\n\r", p->dist, p->edge_count);
+//   bwprintf(COM2, "   src=%s  dest=%s\n\r", p->src->name, p->dest->name);
+//   int i;
+//   for (i = 0; i < p->edge_count; i++) {
+//     bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
+//     bwprintf(COM2, "   Edge[%d]=%s-%s dist=%d\n\r", i, p->edges[i]->src->name, p->edges[i]->dest->name, p->edges[i]->dist);
+//   }
+//   bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
+//   bwprintf(COM2, "\n\r");
+// }
 
 void print_path(int src, int dest, track_node **path, int path_len) {
   int i;
@@ -162,14 +166,14 @@ int GetDirection(int train, path_t *p) {
   return FORWARD_DIR;
 }
 
-int SumDist(path_t *p) {
-  int i;
-  int sum = 0;
-  for (i = 0; i < p->edge_count - 1; i++) {
-    sum += p->edges[i]->dist;
-  }
-  return sum;
-}
+// int SumDist(path_t *p) {
+//   int i;
+//   int sum = 0;
+//   for (i = 0; i < p->edge_count - 1; i++) {
+//     sum += p->edges[i]->dist;
+//   }
+//   return sum;
+// }
 
 int AccelDist(int train, int speed) {
   return CENTIMETRES(20);

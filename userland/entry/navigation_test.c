@@ -44,25 +44,22 @@ void navigation_test() {
   print_path(EN3, EX2, path, path_len);
   #elif defined(USE_TRACKA)
 
-  int BR17 = Name2Node("BR17");
-  int MR13 = Name2Node("MR13");
-  int BR13 = Name2Node("BR13");
-
-  bwprintf(COM2, "Name2Node BR17=%d\n\r", BR17);
-  bwprintf(COM2, "Name2Node MR13=%d\n\r", MR13);
-  bwprintf(COM2, "Name2Node BR13=%d\n\r", BR13);
+  int B6 = Name2Node("B6");
+  int B16 = Name2Node("B16");
+  int E6 = Name2Node("E6");
+  int MR14 = Name2Node("MR14");
 
   #define PATH_BUF_SIZE 40
   track_node *path[PATH_BUF_SIZE];
   int path_len;
 
-  dijkstra(BR17, MR13);
-  path_len = get_path(BR17, MR13, path, PATH_BUF_SIZE);
-  print_path(BR17, MR13, path, path_len);
+  dijkstra(B6, B16);
+  path_len = get_path(B6, B16, path, PATH_BUF_SIZE);
+  print_path(B6, B16, path, path_len);
 
-  dijkstra(BR17, BR13);
-  path_len = get_path(BR17, BR13, path, PATH_BUF_SIZE);
-  print_path(BR17, BR13, path, path_len);
+  dijkstra(E6, MR14);
+  path_len = get_path(E6, MR14, path, PATH_BUF_SIZE);
+  print_path(E6, MR14, path, path_len);
 
   #elif defined(USE_TRACKB)
   #error No tests defined for track B

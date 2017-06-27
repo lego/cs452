@@ -9,11 +9,10 @@ extern track_node track[TRACK_MAX];
 
 typedef struct Path {
   int dist; /* in millimetres */
-  int edge_count;
+  int len;
   track_node *src;
   track_node *dest;
   track_node *nodes[TRAINS_MAX];
-  track_edge *edges[TRAINS_MAX];
 } path_t;
 
 // Unit macros for our fixed point calculations

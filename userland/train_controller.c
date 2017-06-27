@@ -112,6 +112,16 @@ int SetTrainSpeed(int train, int speed) {
   return 0;
 }
 
+int MoveTrain(int train, int speed, int node_id) {
+  log_task("MoveTrain train=%d speed=%d node_id=%d", active_task->tid, train, speed, node_id);
+  if (train_controller_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    KASSERT(false, "Train Controller server not initialized");
+    return -1;
+  }
+  return 0;
+}
+
 int ReverseTrain(int train, int currentSpeed) {
   log_task("ReverseTrain train=%d currentSpeed=%d", active_task->tid, train, currentSpeed);
   if (train_controller_server_tid == -1) {
