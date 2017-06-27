@@ -9,3 +9,4 @@
 
 void init_tracktest(track_node *track);
 void init_tracktest_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRACK_MAX]);
+int init_tracktest_name_to_node(char *name);

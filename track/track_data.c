@@ -2,6 +2,7 @@
 
 #include "track_data.h"
 #include <null.h>
+#include <debug.h>
 
 static void *memset(void *s, int c, unsigned int n) {
   unsigned char *p = s;
@@ -145,3 +146,125 @@ void init_tracktest_route_table(track_node *track, track_edge *(*route_table)[TR
   (*route_table)[7][1] = &track[6].edge[DIR_AHEAD]; // EX3 to BR
   (*route_table)[7][3] = &track[1].edge[DIR_STRAIGHT]; // EX3 to EX1
 }
+
+int init_tracktest_name_to_node(char *name) {
+switch (name[0]) {
+        case 'E':
+      switch (name[1]) {
+        case 'X':
+      switch (name[2]) {
+        case '1':
+      switch (name[3]) {
+        case '\0':
+          return 3;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+case '3':
+      switch (name[3]) {
+        case '\0':
+          return 7;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+case '2':
+      switch (name[3]) {
+        case '\0':
+          return 5;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+case 'N':
+      switch (name[2]) {
+        case '1':
+      switch (name[3]) {
+        case '\0':
+          return 2;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+case '3':
+      switch (name[3]) {
+        case '\0':
+          return 6;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+case '2':
+      switch (name[3]) {
+        case '\0':
+          return 4;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+case 'B':
+      switch (name[1]) {
+        case 'R':
+      switch (name[2]) {
+        case '\0':
+          return 1;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+case 'M':
+      switch (name[1]) {
+        case 'R':
+      switch (name[2]) {
+        case '\0':
+          return 0;
+          break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+        default:
+          return -1;
+          break;
+    }
+      break;
+        default:
+          return -1;
+          break;
+    }}

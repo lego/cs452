@@ -442,20 +442,16 @@ def trie_to_switches(current_trie, name2node, depth=0, name=""):
     ]
 
     if _end in current_trie:
-        cases.append("""
-        case '\\0':
-          return {index}
-          break;
-        """.format(index=name2node[name]))
+        cases.append("""case '\\0':
+          return {index};
+          break;""".format(index=name2node[name]))
 
-    return """
-    switch (name[{depth}]) {{
+    return """switch (name[{depth}]) {{
         {cases}
         default:
-          KASSERT(false, "Name not in trie: got name=%s and failed at depth=%d", name, {depth})
+          return -1;
           break;
-    }}
-    """.format(depth=depth, cases='\n'.join(cases))
+    }}""".format(depth=depth, cases='\n'.join(cases))
 
 
 ########################################################################
@@ -488,6 +484,7 @@ fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 
 #include "%s"
 #include <null.h>
+#include <debug.h>
 
 static void *memset(void *s, int c, unsigned int n) {
   unsigned char *p = s;

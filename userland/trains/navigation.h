@@ -71,6 +71,8 @@ int CalculateDistance(int velocity, int time);
 // Calculate the time given a distance and velocity
 int CalculateTime(int distance, int velocity);
 
+int Name2Node(char *name);
+
 // Get the top / avg velocity for a train at a speed level
 int Velocity(int train, int speed);
 

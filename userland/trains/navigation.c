@@ -27,6 +27,16 @@ void SetTrainSpeedStub(int train, int speed) {
   bwprintf(COM2, "setting speed=%d train=%d\n\r", speed, train);
 }
 
+int Name2Node(char *name) {
+  #if defined(USE_TRACKA)
+  return init_tracka_name_to_node(name);
+  #elif defined(USE_TRACKB)
+  return init_trackb_name_to_node(name);
+  #elif defined(USE_TRACKTEST)
+  return init_tracktest_name_to_node(name);
+  #endif
+}
+
 void InitNavigation() {
   int i;
 
