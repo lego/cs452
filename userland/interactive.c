@@ -474,16 +474,18 @@ const int bucketSensors[BUCKETS] = {
 };
 
 const int sensorDistances[BUCKETS] = {
-  785,
-  589,
+  297,
+  405,
+  354,
+  376,
   440,
-  485,
-  293,
-  404,
+  481,
+  302,
+  405,
+  285,
   284,
-  277,
-  774,
-  375
+  697,
+  275
 };
 
 int bucketSamples[BUCKETS*SAMPLES];
