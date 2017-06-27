@@ -12,6 +12,7 @@ enum {
   TRAIN_TASK_READY,
   TRAIN_SET_SPEED,
   TRAIN_REVERSE,
+  TRAIN_INSTANT_STOP,
   SWITCH_SET,
 };
 
@@ -45,6 +46,9 @@ void train_controller_task() {
       buf[0] = 15; Putcs(COM1, buf, 2);
       Delay(10);
       buf[0] = request.value; Putcs(COM1, buf, 2);
+    } else if (request.command == TRAIN_INSTANT_STOP) {
+      buf[0] = 15; Putcs(COM1, buf, 2);
+      buf[0] = 15; Putcs(COM1, buf, 2);
     } else if (request.command == SWITCH_SET) {
       if (request.value == SWITCH_CURVED) {
         buf[0] = 34; Putcs(COM1, buf, 2);
@@ -124,6 +128,22 @@ int ReverseTrain(int train, int currentSpeed) {
   request.index = train;
   request.value = currentSpeed;
   request.command = TRAIN_REVERSE;
+  SendSN(train_controller_server_tid, request);
+  return 0;
+}
+
+int InstantStop(int train) {
+  log_task("InstantStop train=%d", active_task->tid, train);
+  if (train_controller_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    KASSERT(false, "Train Controller server not initialized");
+    return -1;
+  }
+  train_control_request_t request;
+  request.type = TRAIN_COMMAND;
+  request.index = train;
+  request.command = TRAIN_INSTANT_STOP;
   SendSN(train_controller_server_tid, request);
   return 0;
 }

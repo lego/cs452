@@ -10,6 +10,7 @@ void train_controller_server();
 
 int SetTrainSpeed(int train, int speed);
 int ReverseTrain(int train, int currentSpeed);
+int InstantStop(int train);
 int SetSwitch(int sw, int state);
 
 #endif

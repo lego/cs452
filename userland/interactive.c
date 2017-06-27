@@ -8,6 +8,7 @@
 #include <train_controller.h>
 #include <kernel.h>
 #include <jstring.h>
+#include <priorities.h>
 
 // Terminal locations
 #define SWITCH_LOCATION 3
@@ -35,6 +36,8 @@ enum command_t {
   COMMAND_TRAIN_REVERSE,
   COMMAND_SWITCH_TOGGLE,
   COMMAND_SWITCH_TOGGLE_ALL,
+  COMMAND_CLEAR_SENSOR_SAMPLES,
+  COMMAND_PRINT_SENSOR_SAMPLES,
   COMMAND_HELP,
   COMMAND_UPTIME,
   COMMAND_STATUS,
@@ -67,6 +70,10 @@ command_t get_command_type(char *command) {
     return COMMAND_SWITCH_TOGGLE;
   } else if (jstrcmp(command, "swa")) {
     return COMMAND_SWITCH_TOGGLE_ALL;
+  } else if (jstrcmp(command, "clss")) {
+    return COMMAND_CLEAR_SENSOR_SAMPLES;
+  } else if (jstrcmp(command, "pss")) {
+    return COMMAND_PRINT_SENSOR_SAMPLES;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -226,6 +233,7 @@ void command_parser() {
 void sensor_reader() {
   int tid = MyTid();
   int parent = MyParentTid();
+  int sensor_saver_tid = WhoIs(SENSOR_SAVER);
   interactive_req_t req;
   req.type = INT_REQ_SENSOR_UPDATE;
   log_task("sensor_reader initialized parent=%d", tid, parent);
@@ -237,10 +245,10 @@ void sensor_reader() {
     ClearRx(COM1);
     Putc(COM1, 0x85);
     int queueLength = 0;
-    const int maxTries = 5;
+    const int maxTries = 100;
     int i;
     for (i = 0; i < maxTries && queueLength < 10; i++) {
-      Delay(10);
+      Delay(1);
       queueLength = GetRxQueueLength(COM1);
     }
     // We tried to read but failed to get the correct number of bytes, ABORT
@@ -259,7 +267,7 @@ void sensor_reader() {
         for (int j = 0; j < 16; j++) {
           if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
             req.argc = i*16+(15-j);
-            Send(parent, &req, sizeof(req), NULL, 0);
+            Send(sensor_saver_tid, &req, sizeof(req), NULL, 0);
           }
         }
       }
@@ -428,11 +436,101 @@ void initSwitches(int *initSwitches) {
   }
 }
 
+#define BUCKETS 12
+#define SAMPLES 20
+
+const int bucketSensors[BUCKETS] = {
+  16*(4-1)+( 4-1), // D 4
+  16*(2-1)+( 6-1), // B 6
+  16*(3-1)+(12-1), // C12
+  16*(1-1)+( 4-1), // A 4
+  16*(2-1)+(16-1), // B16
+  16*(3-1)+( 5-1), // C 5
+  16*(3-1)+(15-1), // C15
+  16*(4-1)+(12-1), // D12
+  16*(5-1)+(11-1), // E11
+  16*(4-1)+(10-1), // D10
+  16*(4-1)+( 5-1), // D 5
+  16*(5-1)+( 6-1)  // E 6
+};
+
+const int sensorDistances[BUCKETS] = {
+  282,
+  412,
+  355,
+  375,
+  440,
+  485,
+  293,
+  404,
+  284,
+  277,
+  697,
+  285
+};
+
+int bucketSamples[BUCKETS*SAMPLES];
+int bucketSize[BUCKETS];
+int lastTrain = 58;
+
+void clearBuckets() {
+  for (int i = 0; i < BUCKETS; i++) {
+    bucketSize[i] = 0;
+    for (int j = 0; j < SAMPLES; j++) {
+      bucketSamples[i*SAMPLES+j] = 0;
+    }
+  }
+}
+
+void registerSample(int sensor, int prevSensor, int sample) {
+  for (int i = 0; i < BUCKETS; i++) {
+    if (bucketSensors[i] == sensor && bucketSize[i] < SAMPLES) {
+      if (i == 0) {
+        InstantStop(lastTrain);
+      }
+      int j = (i == 0 ? BUCKETS : i) - 1;
+      if (bucketSensors[j] == prevSensor) {
+        bucketSamples[i*SAMPLES+bucketSize[i]] = sample;
+        bucketSize[i]++;
+      }
+    }
+  }
+}
+
+void sensor_saver() {
+  RegisterAs(SENSOR_SAVER);
+  interactive_req_t req;
+
+  int lastSensor = -1;
+  int lastSensorTime = -1;
+
+  int sender;
+
+  while (true) {
+    //KASSERT(false, "Sensor Saver! %d", MyTid());
+    ReceiveS(&sender, req);
+    switch (req.type) {
+      case INT_REQ_SENSOR_UPDATE: {
+          int time = Time();
+          int diffTime = time - lastSensorTime;
+          if (lastSensor > 0) {
+            registerSample(req.argc, lastSensor, diffTime);
+          }
+          lastSensor = req.argc;
+          lastSensorTime = time;
+        }
+      break;
+    }
+    ReplyN(sender);
+  }
+}
+
 void interactive() {
   int tid = MyTid();
   int command_parser_tid = Create(7, &command_parser);
   int time_keeper_tid = Create(7, &time_keeper);
-  int sensor_reader_tid = Create(7, &sensor_reader);
+  int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, &sensor_saver);
+  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER, &sensor_reader);
   int sender;
 
   log_task("interactive initialized time_keeper=%d", tid, time_keeper_tid);
@@ -446,21 +544,21 @@ void interactive() {
   int initialSwitchStates[NUM_SWITCHES];
   initialSwitchStates[ 0] = SWITCH_CURVED;
   initialSwitchStates[ 1] = SWITCH_CURVED;
-  initialSwitchStates[ 2] = SWITCH_CURVED;
+  initialSwitchStates[ 2] = SWITCH_STRAIGHT;
   initialSwitchStates[ 3] = SWITCH_CURVED;
   initialSwitchStates[ 4] = SWITCH_CURVED;
-  initialSwitchStates[ 5] = SWITCH_CURVED;
-  initialSwitchStates[ 6] = SWITCH_CURVED;
-  initialSwitchStates[ 7] = SWITCH_CURVED;
+  initialSwitchStates[ 5] = SWITCH_STRAIGHT;
+  initialSwitchStates[ 6] = SWITCH_STRAIGHT;
+  initialSwitchStates[ 7] = SWITCH_STRAIGHT;
   initialSwitchStates[ 8] = SWITCH_CURVED;
-  initialSwitchStates[ 9] = SWITCH_CURVED;
+  initialSwitchStates[ 9] = SWITCH_STRAIGHT;
   initialSwitchStates[10] = SWITCH_CURVED;
-  initialSwitchStates[11] = SWITCH_CURVED;
+  initialSwitchStates[11] = SWITCH_STRAIGHT;
   initialSwitchStates[12] = SWITCH_CURVED;
   initialSwitchStates[13] = SWITCH_CURVED;
-  initialSwitchStates[14] = SWITCH_CURVED;
-  initialSwitchStates[15] = SWITCH_CURVED;
-  initialSwitchStates[16] = SWITCH_CURVED;
+  initialSwitchStates[14] = SWITCH_STRAIGHT;
+  initialSwitchStates[15] = SWITCH_STRAIGHT;
+  initialSwitchStates[16] = SWITCH_STRAIGHT;
   initialSwitchStates[17] = SWITCH_CURVED;
   initialSwitchStates[18] = SWITCH_STRAIGHT;
   initialSwitchStates[19] = SWITCH_CURVED;
@@ -469,6 +567,10 @@ void interactive() {
   initSwitches(initialSwitchStates);
 
   interactive_req_t req;
+
+  int lastSensor = -1;
+  int lastSensorTime = -1;
+  clearBuckets();
 
   while (true) {
     ReceiveS(&sender, req);
@@ -521,6 +623,7 @@ void interactive() {
               Putstr(COM2, req.arg1);
               Putstr(COM2, " to speed ");
               Putstr(COM2, req.arg2);
+              lastTrain = train;
               SetTrainSpeed(train, speed);
             }
             break;
@@ -591,6 +694,42 @@ void interactive() {
               }
             }
             break;
+          case COMMAND_CLEAR_SENSOR_SAMPLES:
+            clearBuckets();
+            break;
+          case COMMAND_PRINT_SENSOR_SAMPLES: {
+              Putstr(COM2, SAVE_CURSOR);
+              char buf[10];
+              int speedTotal = 0;
+              int n = 0;
+              for (int i = 0; i < BUCKETS; i++) {
+                move_cursor(0, COMMAND_LOCATION + 5 + i);
+                Putstr(COM2, CLEAR_LINE);
+                int total = 0;
+                for (int j = 0; j < bucketSize[i]; j++) {
+                  total += bucketSamples[i*SAMPLES+j];
+                }
+                int avg = (sensorDistances[i]*1000)/(total/bucketSize[i]);
+                if (avg > 0) {
+                  speedTotal += avg;
+                  n++;
+                }
+                ji2a(avg, buf);
+                Putstr(COM2, buf);
+
+                //for (int j = 0; j < bucketSize[i]; j++) {
+                //  move_cursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
+                //  char buf[10];
+                //  ji2a(bucketSamples[i*SAMPLES+j], buf);
+                //  Putstr(COM2, buf);
+                //}
+              }
+              move_cursor(0, COMMAND_LOCATION + 3);
+              ji2a(speedTotal/n, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, RECOVER_CURSOR);
+            }
+            break;
           default:
             Putstr(COM2, "Got invalid command=");
             Putstr(COM2, global_command_buffer + global_command_buffer[0]);
@@ -605,10 +744,6 @@ void interactive() {
         Putstr(COM2, SAVE_CURSOR);
         DrawTime(Time());
         DrawIdlePercent();
-        move_cursor(0, COMMAND_LOCATION + 3);
-        Putstr(COM2, CLEAR_LINE);
-        char buf[10];
-        ji2a(GetRxQueueLength(COM1), buf);
         Putstr(COM2, RECOVER_CURSOR);
         break;
       case INT_REQ_SENSOR_UPDATE:
@@ -617,29 +752,67 @@ void interactive() {
           move_cursor(0, SENSOR_HISTORY_LOCATION + 1);
           Putstr(COM2, CLEAR_LINE);
           Putstr(COM2, "Sensors read! ");
-          int bucket = req.argc/16;
-          switch (bucket) {
-            case 0:
-              Putstr(COM2, "A");
-              break;
-            case 1:
-              Putstr(COM2, "B");
-              break;
-            case 2:
-              Putstr(COM2, "C");
-              break;
-            case 3:
-              Putstr(COM2, "D");
-              break;
-            case 4:
-              Putstr(COM2, "E");
-              break;
+          int time = Time();
+          int diffTime = time - lastSensorTime;
+          if (lastSensor > 0) {
+            registerSample(req.argc, lastSensor, diffTime);
           }
+          {
+            int bucket = lastSensor/16;
+            switch (bucket) {
+              case 0:
+                Putstr(COM2, "A");
+                break;
+              case 1:
+                Putstr(COM2, "B");
+                break;
+              case 2:
+                Putstr(COM2, "C");
+                break;
+              case 3:
+                Putstr(COM2, "D");
+                break;
+              case 4:
+                Putstr(COM2, "E");
+                break;
+            }
+            char buf[10];
+            ji2a((lastSensor%16)+1, buf);
+            Putstr(COM2, " ");
+            Putstr(COM2, buf);
+          }
+          Putstr(COM2, " -> ");
+          {
+            int bucket = req.argc/16;
+            switch (bucket) {
+              case 0:
+                Putstr(COM2, "A");
+                break;
+              case 1:
+                Putstr(COM2, "B");
+                break;
+              case 2:
+                Putstr(COM2, "C");
+                break;
+              case 3:
+                Putstr(COM2, "D");
+                break;
+              case 4:
+                Putstr(COM2, "E");
+                break;
+            }
+            char buf[10];
+            ji2a((req.argc%16)+1, buf);
+            Putstr(COM2, " ");
+            Putstr(COM2, buf);
+          }
+          Putstr(COM2, " : ");
           char buf[10];
-          ji2a((req.argc%16)+1, buf);
-          Putstr(COM2, " ");
+          ji2a(diffTime, buf);
           Putstr(COM2, buf);
           Putstr(COM2, RECOVER_CURSOR);
+          lastSensor = req.argc;
+          lastSensorTime = time;
         }
         break;
       default:

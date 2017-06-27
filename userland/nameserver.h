@@ -15,6 +15,7 @@ enum task_name_t {
   UART2_RX_SERVER,
   TRAIN_CONTROLLER_SERVER,
   IDLE_TASK,
+  SENSOR_SAVER,
 
   // NOTE: leave this at the end, OR ELSE!
   NUM_TASK_NAMES,
