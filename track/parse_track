@@ -422,6 +422,41 @@ for track in tracks.itervalues():
     # import pdb; pdb.set_trace()
     # exit(0)
 
+_end = '_end_'
+
+def make_trie(words):
+    root = dict()
+    for word in words:
+        current_dict = root
+        for letter in word:
+            current_dict = current_dict.setdefault(letter, {})
+        current_dict[_end] = _end
+    return root
+
+def trie_to_switches(current_trie, name2node, depth=0, name=""):
+    cases = [
+    """case '{key}':
+      {next_level}
+      break;""".format(key=key, next_level=trie_to_switches(subdict, name2node, depth+1, name + key))
+    for key, subdict in current_trie.iteritems() if key != _end
+    ]
+
+    if _end in current_trie:
+        cases.append("""
+        case '\\0':
+          return {index}
+          break;
+        """.format(index=name2node[name]))
+
+    return """
+    switch (name[{depth}]) {{
+        {cases}
+        default:
+          KASSERT(false, "Name not in trie: got name=%s and failed at depth=%d", name, {depth})
+          break;
+    }}
+    """.format(depth=depth, cases='\n'.join(cases))
+
 
 ########################################################################
 #### Output the .h code.
@@ -443,6 +478,7 @@ fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
 for fun in tracks:
     fh.write("void %s(track_node *track);\n" % fun)
     fh.write("void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRACK_MAX]);\n" % fun)
+    fh.write("int %s_name_to_node(char *name);\n" % fun)
 fh.close()
 
 ########################################################################
@@ -521,5 +557,13 @@ void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRA
             fh.write("  (*route_table)[%d][%d] = &track[%d].edge[%s]; // %s to %s\n" % (idx, to_node.index, edge[-2], edge[-1], source, to_node_name))
   fh.write("}\n")
 
+  ## By Joey
+  ## Write node name => node number switch case (yikes)
+  fh.write('''
+int %s_name_to_node(char *name) {
+''' % fun)
+  trie = make_trie([node.name for node in track.nodes])
+  fh.write(trie_to_switches(trie, {node.name: node.index for node in track.nodes}))
+  fh.write("}\n")
 
 fh.close()
