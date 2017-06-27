@@ -75,6 +75,7 @@ void cleanup() {
   // NOTE: others were having this issue too
   interrupts_clear_all();
   bwputc(COM1, 0x61);
+  bwsetfifo(COM2, ON);
 }
 
 int main() {

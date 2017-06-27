@@ -38,6 +38,7 @@ enum command_t {
   COMMAND_SWITCH_TOGGLE_ALL,
   COMMAND_CLEAR_SENSOR_SAMPLES,
   COMMAND_PRINT_SENSOR_SAMPLES,
+  COMMAND_PRINT_SENSOR_MULTIPLIERS,
   COMMAND_HELP,
   COMMAND_UPTIME,
   COMMAND_STATUS,
@@ -74,6 +75,8 @@ command_t get_command_type(char *command) {
     return COMMAND_CLEAR_SENSOR_SAMPLES;
   } else if (jstrcmp(command, "pss")) {
     return COMMAND_PRINT_SENSOR_SAMPLES;
+  } else if (jstrcmp(command, "psm")) {
+    return COMMAND_PRINT_SENSOR_MULTIPLIERS;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -471,28 +474,66 @@ const int sensorDistances[BUCKETS] = {
 
 int bucketSamples[BUCKETS*SAMPLES];
 int bucketSize[BUCKETS];
+float bucketAvg[BUCKETS];
+float speedMultipliers[BUCKETS*SAMPLES];
+int speedMultSize[BUCKETS];
 int lastTrain = 58;
 
+float predictions[BUCKETS*SAMPLES];
+int predictionSize[BUCKETS];
+
+int count = 0;
+float prediction = 0;
+float offset = 0;
+float predictionAccuracy = 0;
+
 void clearBuckets() {
+  count = 0;
   for (int i = 0; i < BUCKETS; i++) {
     bucketSize[i] = 0;
+    speedMultSize[i] = 0;
+    predictionSize[i] = 0;
+    prediction = 0.0f;
     for (int j = 0; j < SAMPLES; j++) {
       bucketSamples[i*SAMPLES+j] = 0;
+      speedMultipliers[i*SAMPLES+j] = 1.0f;
+      predictions[i*SAMPLES+j] = 1.0f;
     }
   }
 }
 
-void registerSample(int sensor, int prevSensor, int sample) {
+void registerSample(int sensor, int prevSensor, int sample, int time) {
   for (int i = 0; i < BUCKETS; i++) {
     if (bucketSensors[i] == sensor && bucketSize[i] < SAMPLES) {
-      if (i == 0) {
-        InstantStop(lastTrain);
-      }
       int j = (i == 0 ? BUCKETS : i) - 1;
       if (bucketSensors[j] == prevSensor) {
         bucketSamples[i*SAMPLES+bucketSize[i]] = sample;
         bucketSize[i]++;
       }
+      if (count > 1) {
+        int total = 0;
+        for (int j = 0; j < bucketSize[i]; j++) {
+          total += bucketSamples[i*SAMPLES+j];
+        }
+        bucketAvg[i] = total/(float)bucketSize[i];
+        speedMultipliers[i*SAMPLES+speedMultSize[i]] = ((float)sample)/(float)bucketAvg[i];
+        speedMultSize[i]++;
+        int sampleWithLastOffset = sample - offset;
+        int predictedSample = prediction - (time-sampleWithLastOffset);
+        offset = ((float)sample - predictedSample);
+        if (prediction != 0.0f) {
+          predictionAccuracy = ((float)predictedSample) / ((float)sample);
+        }
+        prediction = (float)time + bucketAvg[(i+1)%BUCKETS] + offset;
+      }
+      if (i == 10) {
+        if (count > 3) {
+          DelayUntil(prediction);
+          SetTrainSpeed(lastTrain, 0);
+        }
+        count++;
+      }
+      break;
     }
   }
 }
@@ -514,7 +555,7 @@ void sensor_saver() {
           int time = Time();
           int diffTime = time - lastSensorTime;
           if (lastSensor > 0) {
-            registerSample(req.argc, lastSensor, diffTime);
+            registerSample(req.argc, lastSensor, diffTime, time);
           }
           lastSensor = req.argc;
           lastSensorTime = time;
@@ -530,7 +571,7 @@ void interactive() {
   int command_parser_tid = Create(7, &command_parser);
   int time_keeper_tid = Create(7, &time_keeper);
   int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, &sensor_saver);
-  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER, &sensor_reader);
+  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, &sensor_reader);
   int sender;
 
   log_task("interactive initialized time_keeper=%d", tid, time_keeper_tid);
@@ -730,6 +771,23 @@ void interactive() {
               Putstr(COM2, RECOVER_CURSOR);
             }
             break;
+          case COMMAND_PRINT_SENSOR_MULTIPLIERS: {
+              Putstr(COM2, SAVE_CURSOR);
+              char buf[10];
+              for (int i = 0; i < BUCKETS; i++) {
+                move_cursor(0, COMMAND_LOCATION + 5 + i);
+                Putstr(COM2, CLEAR_LINE);
+                float total = 0;
+                for (int j = 0; j < speedMultSize[i]; j++) {
+                  total += speedMultipliers[i*SAMPLES+j];
+                }
+                float avg = total/speedMultSize[i];
+                ji2a((int)(avg*1000), buf);
+                Putstr(COM2, buf);
+              }
+              Putstr(COM2, RECOVER_CURSOR);
+            }
+            break;
           default:
             Putstr(COM2, "Got invalid command=");
             Putstr(COM2, global_command_buffer + global_command_buffer[0]);
@@ -744,6 +802,14 @@ void interactive() {
         Putstr(COM2, SAVE_CURSOR);
         DrawTime(Time());
         DrawIdlePercent();
+        move_cursor(20, COMMAND_LOCATION + 4);
+        Putstr(COM2, CLEAR_LINE);
+        char buf[12];
+        ji2a((1000*predictionAccuracy), buf);
+        Putstr(COM2, buf);
+        move_cursor(30, COMMAND_LOCATION + 4);
+        ji2a((1000*offset), buf);
+        Putstr(COM2, buf);
         Putstr(COM2, RECOVER_CURSOR);
         break;
       case INT_REQ_SENSOR_UPDATE:
@@ -755,7 +821,7 @@ void interactive() {
           int time = Time();
           int diffTime = time - lastSensorTime;
           if (lastSensor > 0) {
-            registerSample(req.argc, lastSensor, diffTime);
+            registerSample(req.argc, lastSensor, diffTime, time);
           }
           {
             int bucket = lastSensor/16;

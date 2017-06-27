@@ -48,6 +48,7 @@ void train_controller_task() {
       buf[0] = request.value; Putcs(COM1, buf, 2);
     } else if (request.command == TRAIN_INSTANT_STOP) {
       buf[0] = 15; Putcs(COM1, buf, 2);
+      Delay(10);
       buf[0] = 15; Putcs(COM1, buf, 2);
     } else if (request.command == SWITCH_SET) {
       if (request.value == SWITCH_CURVED) {
