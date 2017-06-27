@@ -1,6 +1,5 @@
 #include <basic.h>
 #include <bwio.h>
-#include <k2_entry.h>
 #include <nameserver.h>
 #include <kernel.h>
 #include <ts7200.h>

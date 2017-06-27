@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <bwio.h>
 #include <interactive.h>
 #include <nameserver.h>
 #include <clock_server.h>
@@ -7,6 +8,7 @@
 #include <uart_tx_server.h>
 #include <train_controller.h>
 #include <kernel.h>
+#include <trains/navigation.h>
 #include <jstring.h>
 #include <priorities.h>
 
@@ -42,6 +44,8 @@ enum command_t {
   COMMAND_HELP,
   COMMAND_UPTIME,
   COMMAND_STATUS,
+  COMMAND_MOVE,
+  COMMAND_PATH,
 }; typedef int command_t;
 
 typedef struct {
@@ -55,6 +59,7 @@ typedef struct {
   int argc;
   char *arg1;
   char *arg2;
+  char *arg3;
 
   // INT_REQ_ECHO data
   char echo[4];
@@ -77,6 +82,10 @@ command_t get_command_type(char *command) {
     return COMMAND_PRINT_SENSOR_SAMPLES;
   } else if (jstrcmp(command, "psm")) {
     return COMMAND_PRINT_SENSOR_MULTIPLIERS;
+  } else if (jstrcmp(command, "mov")) {
+    return COMMAND_MOVE;
+  } else if (jstrcmp(command, "path")) {
+    return COMMAND_PATH;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -110,6 +119,7 @@ interactive_req_t figure_out_command(char *command_buffer) {
   cmd.type = INT_REQ_COMMAND;
   cmd.command_type = get_command_type(first_command);
   cmd.argc = argc;
+  // FIXME: this is very hardcoded and could be fixed.
   if (argc >= 1) {
     cmd.arg1 = global_command_buffer + global_command_buffer[1];
   } else {
@@ -119,6 +129,11 @@ interactive_req_t figure_out_command(char *command_buffer) {
     cmd.arg2 = global_command_buffer + global_command_buffer[2];
   } else {
     cmd.arg2 = NULL;
+  }
+  if (argc >= 3) {
+    cmd.arg3 = global_command_buffer + global_command_buffer[3];
+  } else {
+    cmd.arg3 = NULL;
   }
   return cmd;
 }
@@ -607,6 +622,8 @@ void interactive() {
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
 
+  InitNavigation();
+
   interactive_req_t req;
 
   int lastSensor = -1;
@@ -622,6 +639,7 @@ void interactive() {
         Putstr(COM2, req.echo);
         break;
       case INT_REQ_COMMAND:
+        // TODO: this switch statement of commands should be yanked out, it's very long and messy
         move_cursor(0, COMMAND_LOCATION + 1);
         Putstr(COM2, CLEAR_LINE);
         switch (req.command_type) {
@@ -786,6 +804,119 @@ void interactive() {
                 Putstr(COM2, buf);
               }
               Putstr(COM2, RECOVER_CURSOR);
+            }
+            break;
+          case COMMAND_MOVE:
+            {
+              int status;
+              int train = jatoui(req.arg1, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid train provided: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+
+              if (train < 0 || train > 80) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " expected 1-80");
+                break;
+              }
+
+              // int speed = jatoui(req.arg2, &status);
+              // if (status != 0) {
+              //   Putstr(COM2, "Invalid speed provided: got ");
+              //   Putstr(COM2, req.arg2);
+              //   break;
+              // }
+              //
+              // if (speed < 0 || speed > 14) {
+              //   Putstr(COM2, "Invalid speed provided: got ");
+              //   Putstr(COM2, req.arg2);
+              //   Putstr(COM2, " expected 0-14");
+              //   break;
+              // }
+
+              // Temporarily force src while we don't have it
+              int src_node_id = Name2Node(req.arg2);
+              if (src_node_id == -1) {
+                Putstr(COM2, "Invalid src node: got ");
+                Putstr(COM2, req.arg2);
+                break;
+              }
+
+              int dest_node_id = Name2Node(req.arg3);
+              if (dest_node_id == -1) {
+                Putstr(COM2, "Invalid dest node: got ");
+                Putstr(COM2, req.arg3);
+                break;
+              }
+
+              path_t p;
+              GetPath(&p, src_node_id, dest_node_id);
+              // MoveTrain(train, speed, dest_node_id);
+
+              Putstr(COM2, "Moving train ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " at speed ");
+              Putstr(COM2, req.arg2);
+              Putstr(COM2, " to ");
+              Putstr(COM2, req.arg3);
+              Putstr(COM2, ". dist=");
+              char buf[10];
+              ji2a(p.dist, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " len=");
+              ji2a(p.len, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " path=");
+              int k;
+              for (k = 0; k < p.len; k++) {
+                Putstr(COM2, p.nodes[k]->name);
+                if (k < p.len - 1) {
+                  Putstr(COM2, ",");
+                }
+              }
+            }
+            break;
+          case COMMAND_PATH:
+            {
+              int src_node_id = Name2Node(req.arg1);
+              if (src_node_id == -1) {
+                Putstr(COM2, "Invalid src node: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+
+              int dest_node_id = Name2Node(req.arg2);
+              if (dest_node_id == -1) {
+                Putstr(COM2, "Invalid dest node: got ");
+                Putstr(COM2, req.arg2);
+                break;
+              }
+
+              path_t p;
+              GetPath(&p, src_node_id, dest_node_id);
+
+              Putstr(COM2, "Path ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " ~> ");
+              Putstr(COM2, req.arg3);
+              Putstr(COM2, ". dist=");
+              char buf[10];
+              ji2a(p.dist, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " len=");
+              ji2a(p.len, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " route=");
+              int k;
+              for (k = 0; k < p.len; k++) {
+                Putstr(COM2, p.nodes[k]->name);
+                if (k < p.len - 1) {
+                  Putstr(COM2, ",");
+                }
+              }
             }
             break;
           default:

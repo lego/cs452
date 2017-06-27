@@ -1,5 +1,6 @@
 #include <train_controller.h>
 #include <basic.h>
+#include <bwio.h>
 #include <nameserver.h>
 #include <clock_server.h>
 #include <uart_tx_server.h>
@@ -113,6 +114,16 @@ int SetTrainSpeed(int train, int speed) {
   request.value = speed;
   request.command = TRAIN_SET_SPEED;
   SendSN(train_controller_server_tid, request);
+  return 0;
+}
+
+int MoveTrain(int train, int speed, int node_id) {
+  log_task("MoveTrain train=%d speed=%d node_id=%d", active_task->tid, train, speed, node_id);
+  if (train_controller_server_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    KASSERT(false, "Train Controller server not initialized");
+    return -1;
+  }
   return 0;
 }
 

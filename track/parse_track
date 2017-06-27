@@ -1,0 +1,566 @@
+#!/usr/bin/env python
+
+import sys
+from collections import defaultdict
+from optparse import OptionParser
+
+########################################################################
+#### Usage and Options.
+
+usage = '''%prog [OPTIONS] TRACK-FILE...
+e.g. %prog tracka trackb'''
+parser = OptionParser(usage=usage)
+parser.add_option('-C', dest='c', default='track_data.c',
+  help='output .c file (default is track_data.c)',
+  metavar='OUTPUT-C-FILE')
+parser.add_option('-H', dest='h', default='track_data.h',
+  help='output .h file (default is track_data.h)',
+  metavar='OUTPUT-H-FILE')
+(options, args) = parser.parse_args()
+
+if len(args) == 0 or not options.c or not options.h:
+    parser.print_help()
+    exit(0)
+
+########################################################################
+#### Parsers for the track data files.
+# Unfortunately, this ended up being more code than I was hoping, since
+# we want to check for errors, and also since we want provide a useful
+# message if one is detected.
+
+def remove_junk(line):
+    # Remove comments and the trailing newlines.
+    line = line.rstrip('\n')
+    idx = line.find('#')
+    if idx != -1:
+        line = line[:idx]
+    return line
+
+class ParserState:
+
+    def __init__(self, fname):
+        self.fname = fname
+        fh = open(fname)
+        self.lines = [remove_junk(line) for line in fh.readlines()]
+        fh.close()
+        self.y = 0
+        self.errors = 0
+
+    def line(self):
+        if self.y >= len(self.lines):
+            return None
+        return self.lines[self.y]
+
+    def next_line(self):
+        self.y += 1
+
+    def error(self, msg, y=None):
+        if y == None:
+            y = self.y
+        print('%s:%d: %s' % (self.fname, y+1, msg))
+        sys.stdout.flush()
+        self.errors += 1
+
+class Track:
+
+    def __init__(self):
+        self.routing_table = {}
+        pass
+
+    @staticmethod
+    def parse(state):
+        self = Track()
+        # Read the global properties.
+        self.function = None
+        while state.line() != None and not state.line().endswith(':'):
+          line = state.line().split()
+          if len(line) == 0:
+            # Empty line, do nothing.
+            pass
+          elif line[0] == 'function':
+            # function <FUNCTION_NAME>
+            if self.function != None:
+              state.error("duplicate 'function'")
+            if len(line) != 2:
+              state.error("expected 'function <FUNCTION_NAME>'")
+            else:
+              self.function = line[1]
+          else:
+            # Unknown property.
+            state.error("unknown property '%s'" % line[0])
+          state.next_line()
+        if self.function == None:
+          state.error("missing property 'function <FUNCTION_NAME>'")
+        # Read the nodes and edges.
+        self.nodes = []
+        self.name2node = {}
+        self.edges = []
+        while state.line() != None:
+          line = state.line()
+          assert line.endswith(':')
+          line = line[:-1].split()
+          if line[0] == 'node':
+            n = Node.parse(state)
+            n.index = len(self.nodes)
+            self.nodes.append(n)
+            if n.name in self.name2node:
+              state.error("duplicate node '%s'" % n.name)
+            self.name2node[n.name] = n
+          elif line[0] == 'edge':
+            self.edges.append(Edge.parse(state))
+          else:
+            state.error("unknown type '%s'" % line[0])
+            state.next_line()
+            while  state.line() != None and not state.line().endswith(':'):
+              state.next_line()
+        assert state.line() == None
+        # Convert node names to the actual nodes.
+        for nd in self.nodes:
+          for dir in ['reverse', 'ahead', 'straight', 'curved']:
+            name = nd.__dict__[dir]
+            if name != None:
+              nd.__dict__[dir] = self.name2node.get(name)
+              if nd.__dict__[dir] == None:
+                state.error("no node with name '%s'" % name, \
+                  nd.__dict__[dir+'_y'])
+        # Add the edge data to the nodes.
+        for e in self.edges:
+          good = True
+          for end in ['node1', 'node2']:
+            name = e.__dict__[end]
+            e.__dict__[end] = self.name2node.get(name)
+            if e.__dict__[end] == None:
+              state.error("no node with name '%s'" % name, e.y)
+              good = False
+          if good:
+            e.node1.add_edge(state, e.node2, e)
+            if e.node1.reverse and e.node2.reverse:
+              e.node2.reverse.add_edge(state, e.node1.reverse, e)
+        # Check for missing edge data.
+        for nd in self.nodes:
+          for dir in ['ahead', 'straight', 'curved']:
+            dest = nd.__dict__[dir]
+            if dest != None:
+              if nd.__dict__[dir+"_edge"] == None:
+                state.error("missing edge from '%s' to '%s'" % \
+                  (nd.name, dest.name))
+        return self
+
+class Node:
+
+    def __init__(self, name):
+        self.name = name
+        self.nodetype = None
+        self.num = None
+        self.reverse = None
+        self.ahead = None
+        self.straight = None
+        self.curved = None
+        self.ahead_edge = None
+        self.straight_edge = None
+        self.curved_edge = None
+
+    def __repr__(self):
+        return "<Node name=%s type=%s>" % (self.name, self.nodetype)
+
+    @staticmethod
+    def parse(state):
+        line = state.line()[:-1].split()
+        if len(line) != 2:
+            state.error("expected 'node <NAME>'")
+        name = line[1]
+        self = Node(name=name)
+
+        state.next_line()
+        while state.line() != None and not state.line().endswith(':'):
+          line = state.line().split()
+          if len(line) == 0:
+            # Empty line, do nothing.
+            pass
+          elif line[0] == 'sensor':
+            # sensor <SENSOR_NUM>
+            if self.nodetype != None:
+              state.error("duplicate node type")
+            self.nodetype = line[0]
+            try:
+              assert len(line) == 2
+              self.num = int(line[1])
+            except (AssertionError, ValueError):
+              state.error("expected 'sensor <SENSOR_NUM>'")
+          elif line[0] in ['branch', 'merge']:
+            # branch/merge <SWITCH_NUM>
+            if self.nodetype != None:
+              state.error("duplicate node type")
+            self.nodetype = line[0]
+            try:
+              assert len(line) == 2
+              self.num = int(line[1])
+            except (AssertionError, ValueError):
+              state.error("expected '%s <SWITCH_NUM>'" % line[0])
+          elif line[0] in ['enter', 'exit']:
+            # enter/exit
+            if self.nodetype != None:
+              state.error("duplicate node type")
+            self.nodetype = line[0]
+            try:
+              assert len(line) == 1
+            except (AssertionError, ValueError):
+              state.error("expected '%s'" % line[0])
+          elif line[0] in ['reverse', 'ahead', 'straight', 'curved']:
+            # reverse/ahead/straight/curved <NODE>
+            if self.__dict__[line[0]] != None:
+              state.error("duplicate '%s'" % line[0])
+            if len(line) != 2:
+              state.error("expected '%s <NODE>'" % line[0])
+            else:
+              self.__dict__[line[0]] = line[1]
+              self.__dict__[line[0]+'_y'] = state.y
+          else:
+            # Unknown property.
+            state.error("unknown property '%s'" % line[0])
+          state.next_line()
+        # Make sure that we have all the required data.
+        if self.nodetype == None:
+          state.error("missing node type")
+        if self.reverse == None:
+          state.error("missing property 'reverse <NODE>'")
+        if self.nodetype in ['sensor', 'enter', 'merge']:
+          try:
+            assert self.ahead    != None
+            assert self.straight == None
+            assert self.curved   == None
+          except (AssertionError):
+            state.error("%s node expects 'ahead' edge" % self.nodetype)
+        elif self.nodetype in ['exit']:
+          try:
+            assert self.ahead    == None
+            assert self.straight == None
+            assert self.curved   == None
+          except (AssertionError):
+            state.error("%s node expects NO edges" % self.nodetype)
+        elif self.nodetype in ['branch']:
+          try:
+            assert self.ahead    == None
+            assert self.straight != None
+            assert self.curved   != None
+          except (AssertionError):
+            state.error("%s node expects 'straight' and 'curved' edges" \
+              % self.nodetype)
+        return self
+
+    def add_edge(self, state, dest, e):
+        count = 0
+        for dir in ['ahead', 'straight', 'curved']:
+          if self.__dict__[dir] == dest:
+            if self.__dict__[dir+"_edge"] != None:
+              state.error("duplicate edge from '%s' to '%s'" % \
+                (self.name, dest.name), e.y)
+            self.__dict__[dir+"_edge"] = e
+            count += 1
+        if count == 0:
+          state.error("there is no edge from '%s' to '%s' in the node data"\
+            % (self.name, dest.name), e.y)
+        elif count > 1:
+          state.error("too many edges from '%s' to '%s' in the node data" \
+            % (self.name, dest.name), e.y)
+
+class Edge:
+
+    def __init__(self):
+        self.dist = None
+
+    def __repr__(self):
+        return "<Edge from=%s to=%s dist=%d>" % (self.node1.name, self.node2.name, self.dist)
+
+    @staticmethod
+    def parse(state):
+        self = Edge()
+        self.y = state.y
+        line = state.line()[:-1].split()
+        self.node1 = self.node2 = ''
+        if len(line) != 3:
+          state.error("expected 'edge <NODE1> <NODE2>'")
+        self.node1 = line[1]
+        self.node2 = line[2]
+
+        # Read the edge properties.
+        state.next_line()
+        while state.line() != None and not state.line().endswith(':'):
+          line = state.line().split()
+          if len(line) == 0:
+            # Empty line, do nothing.
+            pass
+          elif line[0] == 'distance':
+            # distance <INTEGER> mm
+            if self.dist != None:
+              state.error("duplicate 'distance'")
+            try:
+              assert len(line) == 3
+              assert line[2] == 'mm'
+              self.dist = int(line[1])
+            except (AssertionError, ValueError):
+              state.error("expected 'distance <INTEGER> mm'")
+          else:
+            # Unknown property.
+            state.error("unknown property '%s'" % line[0])
+          state.next_line()
+        # Make sure that we have all the required data.
+        if self.dist == None:
+          state.error("missing property 'distance <INTEGER> mm'")
+        return self
+
+########################################################################
+#### Parse each of the input files.
+tracks = {}
+errors = 0
+for fname in args:
+    state = ParserState(fname)
+    tr = Track.parse(state)
+    if state.errors > 0:
+        errors += 1
+    else:
+        tracks[tr.function] = tr
+if errors > 0:
+    exit(1)
+
+## By Joey
+## Do Dijkstra's to generate a routing table.
+## This table is src,dest => next edge to traverse from src
+class Graph:
+    def __init__(self):
+        self.nodes = set()
+        self.edges = defaultdict(list)
+        self.distances = {}
+        self.edge_names = {}
+
+    def add_node(self, value):
+        self.nodes.add(value)
+
+    def add_edge(self, from_node, to_node, distance, name):
+        self.edges[from_node].append(to_node)
+        # self.edges[to_node].append(from_node)
+        self.distances[(from_node, to_node)] = distance
+        # self.distances[(to_node, from_node)] = distance
+        # self.edge_names[(to_node, from_node)] = name
+        self.edge_names[(from_node, to_node)] = name
+
+    def __repr__(self):
+        return "<Graph\n nodes=%s\n edges=%s\n dists=%s>" % (self.nodes, self.edges, self.distances)
+
+def dijsktra(graph, initial):
+  visited = {initial: 0}
+  path = {}
+
+  nodes = set(graph.nodes)
+
+  while nodes:
+    min_node = None
+    for node in nodes:
+      if node in visited:
+        if min_node is None:
+          min_node = node
+        elif visited[node] < visited[min_node]:
+          min_node = node
+
+    if min_node is None:
+      break
+
+    nodes.remove(min_node)
+    current_weight = visited[min_node]
+
+    for edge in graph.edges[min_node]:
+      weight = current_weight + graph.distances[(min_node, edge)]
+      if edge not in visited or weight < visited[edge]:
+        visited[edge] = weight
+        edge_name = graph.edge_names[(min_node, edge)]
+        path[edge] = (min_node, edge_name)
+
+  return visited, path
+
+for track in tracks.itervalues():
+    # Translate data into graph
+    g = Graph()
+    for idx, node in enumerate(track.nodes):
+        g.add_node(node.name)
+        g.add_edge(node.name, node.reverse.name, 0, 'rev')
+
+        for dir in ['ahead', 'straight', 'curved']:
+          if node.__dict__[dir] != None:
+            idx2 = node.__dict__[dir].index
+            dest_node = track.nodes[idx2]
+            dist = node.__dict__[dir+"_edge"].dist
+            for rev_dir in ['ahead', 'straight', 'curved']:
+              if node.__dict__[dir].reverse.__dict__[rev_dir] == node.reverse:
+                  rev_idx = node.__dict__[dir].reverse.index
+                  rev_dir.upper()
+                  g.add_edge(dest_node.name, node.name, dist, (node.name, dir, dest_node.name, rev_idx, "DIR_%s" % rev_dir.upper()))
+            g.add_edge(node.name, dest_node.name, dist, (node.name, dir, dest_node.name, idx, "DIR_%s" % dir.upper()))
+    #
+    # for idx, edge in enumerate(track.edges):
+    #     g.add_edge(edge.node1.name, edge.node2.name, edge.dist, idx)
+    #     g.add_edge(edge.node1.reverse.name, edge.node2.reverse.name, edge.dist, idx)
+
+    # Route with example
+    source = 'EX1'
+    results = dijsktra(g, source)
+    path = results[1]
+    # Create a path list which we will reduce in order to find the ideal initial edge to follow
+    # reducing_path = path.copy()
+    # reverse_path = defaultdict(set)
+    # for key, val in path.iteritems():
+    #     reverse_path[val].add(key)
+    # while len(reducing_path) > 0:
+    #     for key, val in reducing_path.iteritems():
+    #         if key not in reverse_path:
+    #             reverse_path[val].remove(key)
+    #             if len(reverse_path) == 0:
+    #                 del reverse_path[val]
+
+    # print("Routes\n")
+    # print(results)
+    track.graph = g
+    # import pdb; pdb.set_trace()
+    # exit(0)
+
+_end = '_end_'
+
+def make_trie(words):
+    root = dict()
+    for word in words:
+        current_dict = root
+        for letter in word:
+            current_dict = current_dict.setdefault(letter, {})
+        current_dict[_end] = _end
+    return root
+
+def trie_to_switches(current_trie, name2node, depth=0, name=""):
+    cases = [
+    """case '{key}':
+      {next_level}
+      break;""".format(key=key, next_level=trie_to_switches(subdict, name2node, depth+1, name + key))
+    for key, subdict in current_trie.iteritems() if key != _end
+    ]
+
+    if _end in current_trie:
+        cases.append("""case '\\0':
+          return {index};
+          break;""".format(index=name2node[name]))
+
+    return """switch (name[{depth}]) {{
+        {cases}
+        default:
+          return -1;
+          break;
+    }}""".format(depth=depth, cases='\n'.join(cases))
+
+
+########################################################################
+#### Output the .h code.
+# This is the right place to make changes that you want to appear in
+# the generated file (as opposed to in the file itself, since it will
+# be overwritten when this script is run again).
+maxidx = max([len(tracks[function].nodes) for function in tracks])
+fh = open(options.h, 'w')
+fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
+#pragma once
+
+
+#include "track_node.h"
+
+// The track initialization functions expect an array of this size.
+#define TRACK_MAX %d
+
+''' % maxidx)
+for fun in tracks:
+    fh.write("void %s(track_node *track);\n" % fun)
+    # fh.write("void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRACK_MAX]);\n" % fun)
+    # fh.write("int %s_name_to_node(char *name);\n" % fun)
+fh.close()
+
+########################################################################
+#### Output the .c code.
+fh = open(options.c, 'w')
+fh.write('''/* THIS FILE IS GENERATED CODE -- DO NOT EDIT */
+
+#include "%s"
+#include <null.h>
+#include <debug.h>
+
+static void *memset(void *s, int c, unsigned int n) {
+  unsigned char *p = s;
+  while(n --> 0) { *p++ = (unsigned char)c; }
+  return s;
+}
+''' % options.h)
+for fun in tracks:
+  track = tracks[fun]
+  fh.write('''
+void %s(track_node *track) {
+  memset(track, 0, TRACK_MAX*sizeof(track_node));
+''' % fun)
+  for nd in tracks[fun].nodes:
+    idx = nd.index
+    fh.write("  track[%d].name = \"%s\";\n" % (idx, nd.name))
+    fh.write("  track[%d].id = %d;\n" % (idx, idx))
+    nodetype = 'NODE_' + nd.nodetype.upper()
+    fh.write("  track[%d].type = %s;\n" % (idx, nodetype))
+    if nd.num != None:
+      fh.write("  track[%d].num = %s;\n" % (idx, nd.num))
+    fh.write("  track[%d].reverse = &track[%d];\n" % \
+      (idx, nd.reverse.index))
+    for dir in ['ahead', 'straight', 'curved']:
+      if nd.__dict__[dir] != None:
+        idx2 = nd.__dict__[dir].index
+        dist = nd.__dict__[dir+"_edge"].dist
+        for dir2 in ['ahead', 'straight', 'curved']:
+          if nd.__dict__[dir].reverse.__dict__[dir2] == nd.reverse:
+            fh.write(("  track[%d].edge[DIR_%s].reverse =" + \
+                      " &track[%d].edge[DIR_%s];\n") % \
+              (idx, dir.upper(), nd.__dict__[dir].reverse.index, \
+               dir2.upper()))
+        fh.write("  track[%d].edge[DIR_%s].src = &track[%d];\n" % \
+          (idx, dir.upper(), idx))
+        fh.write("  track[%d].edge[DIR_%s].dest = &track[%d];\n" % \
+          (idx, dir.upper(), idx2))
+        fh.write("  track[%d].edge[DIR_%s].dist = %s;\n" % \
+          (idx, dir.upper(), dist))
+  fh.write("}\n")
+
+#
+#   ## By Joey
+#   ## Write route table
+#   fh.write('''
+# void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRACK_MAX]) {
+# ''' % fun)
+#   for idx, nd in enumerate(tracks[fun].nodes):
+#     fh.write("\n  // SECTION for %s\n" % (nd.name))
+#
+#     source = nd.name
+#     routes = dijsktra(track.graph, source)
+#     path = routes[1]
+#
+#     for to_node_name, edge_path in path.iteritems():
+#         to_node = track.name2node[to_node_name]
+#         edge_from = edge_path[0]
+#         edge = edge_path[1]
+#         if edge == "rev":
+#             # No edge, same node (simply reverse node)
+#             fh.write("  (*route_table)[%d][%d] = NULL; // %s to %s\n" % (idx, to_node.index, source, to_node_name))
+#         # elif to_node_name == edge[0]:
+#             # Edge is backwords, we need edge.reverse
+#             # fh.write("  (*route_table)[%d][%d] = track[%d].edge[%s].reverse; // %s to %s\n" % (idx, to_node.index, edge[-2], edge[-1], source, to_node_name))
+#         else:
+#             # Edge is forward (y)
+#             fh.write("  (*route_table)[%d][%d] = &track[%d].edge[%s]; // %s to %s\n" % (idx, to_node.index, edge[-2], edge[-1], source, to_node_name))
+#   fh.write("}\n")
+
+#   ## By Joey
+#   ## Write node name => node number switch case (yikes)
+#   fh.write('''
+# int %s_name_to_node(char *name) {
+# ''' % fun)
+#   trie = make_trie([node.name for node in track.nodes])
+#   fh.write(trie_to_switches(trie, {node.name: node.index for node in track.nodes}))
+#   fh.write("}\n")
+
+fh.close()

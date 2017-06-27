@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <ts7200.h>
 #include <kern/interrupts.h>
 
 typedef int (*interrupt_handler)(int);

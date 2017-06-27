@@ -18,7 +18,7 @@ enum {
 typedef struct {
   int type;
   int channel;
-  char *ch;
+  const char *ch;
   int len;
 } uart_request_t;
 
@@ -152,7 +152,7 @@ void uart_tx() {
   SendSN(uart2_tx_server_tid, request);
 }
 
-int Putcs( int channel, char* c, int len ) {
+int Putcs( int channel, const char* c, int len ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Putc c=%c", active_task->tid, c);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
@@ -172,7 +172,7 @@ int Putcs( int channel, char* c, int len ) {
   return 0;
 }
 
-int Putc( int channel, char c ) {
+int Putc( int channel, const char c ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Putc tid=%d char=%c", active_task->tid, uart_tx_server_tid, c);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
@@ -191,7 +191,7 @@ int Putc( int channel, char c ) {
   return 0;
 }
 
-int Putstr(int channel, char *str ) {
+int Putstr(int channel, const char *str ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Putstr str=%s", active_task->tid, str);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);

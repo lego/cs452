@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <bwio.h>
 #include <kern/context.h>
 #include <kern/context_switch.h>
 #include <kern/kernel_request.h>

@@ -25,6 +25,6 @@ void *alloc(unsigned int size);
  *
  * Currently does nothing (not easy to implement)
  */
-int free(void * ptr);
+int jfree(void * ptr);
 
 #endif

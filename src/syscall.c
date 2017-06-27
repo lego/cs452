@@ -1,4 +1,6 @@
 #include <basic.h>
+#include <debug.h>
+#include <bwio.h>
 #include <kern/syscall.h>
 #include <kern/kernel_request.h>
 #include <kern/scheduler.h>
@@ -44,7 +46,7 @@ void syscall_handle(kernel_request_t *arg) {
     hwi(task, arg);
     break;
   default:
-    bwprintf(COM2, "WARNING: syscall not handled. tid=%d syscall_no=%d\n\r", task->tid, arg->syscall);
+    KASSERT(false, "syscall not handled. tid=%d syscall_no=%d\n\r", task->tid, arg->syscall);
     break;
   }
 }
@@ -219,6 +221,7 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   syscall_await_arg_t *await_arg = arg->arguments;
   await_event_t event_type = await_arg->event;
 
+  #ifndef DEBUG_MODE
   if (event_type == EVENT_UART1_RX) {
     VMEM(UART1_BASE + UART_CTLR_OFFSET) |= RIEN_MASK;
   }
@@ -231,6 +234,7 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
   if (event_type == EVENT_UART2_TX) {
     VMEM(UART2_BASE + UART_CTLR_OFFSET) |= TIEN_MASK;
   }
+  #endif
 
   interrupts_set_waiting_task(event_type, task);
 

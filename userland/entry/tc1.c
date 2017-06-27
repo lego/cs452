@@ -1,5 +1,6 @@
-#include <k4_entry.h>
+#include <entry/tc1.h>
 #include <basic.h>
+#include <bwio.h>
 #include <nameserver.h>
 #include <idle_task.h>
 #include <clock_server.h>
@@ -9,7 +10,7 @@
 #include <train_controller.h>
 #include <priorities.h>
 
-void print_task() {
+void tc1_print_task() {
   int train = 58;
   int sw = 16;
 
@@ -35,7 +36,7 @@ void print_task() {
   }
 }
 
-void k4_entry_task() {
+void tc1_entry_task() {
   Create(PRIORITY_NAMESERVER, &nameserver);
   Create(PRIORITY_CLOCK_SERVER, &clock_server);
   Create(0, &uart_tx);
@@ -45,5 +46,5 @@ void k4_entry_task() {
   Create(PRIORITY_TRAIN_CONTROLLER_SERVER, &train_controller_server);
 
   Create(10, &interactive);
-  //Create(11, &print_task);
+  //Create(11, &tc1_print_task);
 }

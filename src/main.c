@@ -16,26 +16,29 @@
 #include <kern/interrupts.h>
 #include <kern/syscall.h>
 #include <kernel.h>
+#include <priorities.h>
 
 #if defined(USE_K1)
-#include <k1_entry.h>
+#include <entry/k1.h>
 #elif defined(USE_K2)
-#include <k2_entry.h>
+#include <entry/k2.h>
 #elif defined(USE_K3)
-#include <k3_entry.h>
+#include <entry/k3.h>
 #elif defined(USE_K4)
-#include <k4_entry.h>
+#include <entry/k4.h>
+#elif defined(USE_TC1)
+#include <entry/tc1.h>
+#elif defined(USE_NAVIGATION_TEST)
+#include <entry/navigation_test.h>
 #elif defined(USE_CLOCK_SERVER_TEST)
-#include <clock_server_test.h>
+#include <entry/clock_server_test.h>
 #elif defined(USE_BENCHMARK)
-#include <benchmark_entry.h>
+#include <entry/benchmark.h>
 #else
-#error Bad PROJECT value provided to Makefile. Expected "K1", "K2" or "BENCHMARK"
+#error Bad PROJECT value provided to Makefile. Expected "K1-4", "TC1", "BENCHMARK", "CLOCK_SERVER_TEST", "NAVIGATION_TEST"
 #endif
 
-#define ENTRY_TASK_PRIORITY 1
-
-volatile task_descriptor_t volatile *active_task;
+volatile task_descriptor_t *active_task;
 context_t *ctx;
 bool should_exit;
 
@@ -52,6 +55,7 @@ volatile io_time_t idle_time_total;
 io_time_t idle_time_start;
 volatile io_time_t time_since_idle_totalled;
 
+// TODO: we should track the timing for all tasks, not just the idle task
 static inline void idle_task_pre_activate(task_descriptor_t *task) {
   if (task->priority == 31) {
     idle_time_start = io_get_time();
@@ -100,14 +104,16 @@ int main() {
   io_enable_caches();
 
   /* create first user task */
-  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, ENTRY_TASK_PRIORITY, ENTRY_FUNC);
+  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_ENTRY_TASK, ENTRY_FUNC);
   scheduler_requeue_task(first_user_task);
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
 
+  #ifndef DEBUG_MODE
   // FIXME: super awesome hacky "let's make the trains go"
   // this should happen in user code
   bwputc(COM1, 0x60);
+  #endif
 
   // start executing user tasks
   while (!should_exit) {
@@ -121,7 +127,9 @@ int main() {
     }
   }
 
+  #ifndef DEBUG_MODE
   cleanup();
+  #endif
 
   // io_disable_caches();
 

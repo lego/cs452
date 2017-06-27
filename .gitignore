@@ -1,4 +1,6 @@
 # General compilation output
+*.i
+*.bak
 *.o
 *.s
 *.a

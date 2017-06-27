@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <bwio.h>
 #include <kern/context.h>
 #include <kern/scheduler.h>
 

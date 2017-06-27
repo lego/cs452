@@ -9,7 +9,7 @@ void *alloc(unsigned int size) {
   return (void *) memory + current_location - size;
 }
 
-int free(void *ptr) {
+int jfree(void *ptr) {
   // Herp derp, do nothing
   return 0;
 }

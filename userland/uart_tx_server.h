@@ -3,8 +3,8 @@
 
 void uart_tx();
 
-int Putc(int channel, char c );
-int Putstr(int channel, char *str );
-int Putcs( int channel, char *c, int len );
+int Putc(int channel, const char c );
+int Putstr(int channel, const char *str );
+int Putcs( int channel, const char *c, int len );
 
 #endif

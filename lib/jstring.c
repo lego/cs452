@@ -7,7 +7,7 @@ unsigned int jstrlen(char *c) {
   return len;
 }
 
-bool jstrcmp(char *str1, char *str2) {
+bool jstrcmp(const char *str1, const char *str2) {
   int i = 0;
   while (true) {
     if (str1[i] == '\0' && str2[i] == '\0') return true;
