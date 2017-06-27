@@ -73,45 +73,72 @@ int WhereAmI(int train) {
 }
 
 void GetPath(path_t *p, int src, int dest) {
+  track_node *nodes[TRACK_MAX];
+
+  int reverse_src = track[src].reverse->id;
+  int reverse_dest = track[dest].reverse->id;
+
+  if (src == reverse_dest) {
+    p->len = 0;
+    p->src = &track[src];
+    p->dest = &track[dest];
+    p->dist = 0;
+  }
+
   dijkstra(src, dest);
-  p->len = get_path(src, dest, p->nodes, TRACK_MAX);
-  p->dist = p->nodes[p->len - 1]->dist;
+  p->len = get_path(src, dest, nodes, TRACK_MAX);
+
+
+  p->dist = nodes[p->len - 1]->dist;
   p->src = &track[src];
   p->dest = &track[dest];
+
+  // check for more optimal normal src, reverse dest
+  dijkstra(src, reverse_dest);
+  if (track[reverse_dest].dist < p->dist) {
+    p->len = get_path(src, reverse_dest, nodes, TRACK_MAX);
+    p->dist = nodes[p->len - 1]->dist;
+  }
+
+  // check for more optimal reverse src, normal dest
+  dijkstra(reverse_src, dest);
+  if (track[dest].dist < p->dist) {
+    p->len = get_path(reverse_src, dest, nodes, TRACK_MAX);
+    p->dist = nodes[p->len - 1]->dist;
+  }
+
+  // check for more optimal reverse src, reverse dest
+  dijkstra(reverse_src, reverse_dest);
+  if (track[reverse_dest].dist < p->dist) {
+    p->len = get_path(reverse_src, reverse_dest, nodes, TRACK_MAX);
+    p->dist = nodes[p->len - 1]->dist;
+  }
+
+  int i;
+  for (i = 0; i < p->len; i++) {
+    p->nodes[i] = nodes[i];
+  }
 }
 
-// void PrintPath(path_t *p) {
-//   bwprintf(COM2, "Path:\n\r");
-//   bwprintf(COM2, "   dist=%d edge_count=%d\n\r", p->dist, p->edge_count);
-//   bwprintf(COM2, "   src=%s  dest=%s\n\r", p->src->name, p->dest->name);
-//   int i;
-//   for (i = 0; i < p->edge_count; i++) {
-//     bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
-//     bwprintf(COM2, "   Edge[%d]=%s-%s dist=%d\n\r", i, p->edges[i]->src->name, p->edges[i]->dest->name, p->edges[i]->dist);
-//   }
-//   bwprintf(COM2, "   Node[%d]=%s\n\r", i, p->nodes[i]->name);
-//   bwprintf(COM2, "\n\r");
-// }
-
-void print_path(int src, int dest, track_node **path, int path_len) {
+void PrintPath(path_t *p) {
   int i;
-  if (path_len == -1) {
-    bwprintf(COM2, "Path %s ~> %s does not exist.\n\r", track[src].name, track[dest].name);
+  if (p->len == -1) {
+    bwprintf(COM2, "Path %s ~> %s does not exist.\n\r", p->src->name, p->dest->name);
     return;
   }
 
-  bwprintf(COM2, "Path %s ~> %s dist=%d len=%d\n\r", track[src].name, track[dest].name, track[dest].dist, path_len);
-  for (i = 0; i < path_len; i++) {
-    if (i > 0 && path[i-1]->type == NODE_BRANCH) {
+  bwprintf(COM2, "Path %s ~> %s dist=%d len=%d\n\r", p->src->name, p->dest->name, p->dist, p->len);
+  for (i = 0; i < p->len; i++) {
+    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
       char dir;
-      if (path[i-1]->edge[DIR_CURVED].dest == path[i]) {
+      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
         dir = 'C';
       } else {
         dir = 'S';
       }
-      bwprintf(COM2, "    switch=%d set to %c\n\r", path[i-1]->num, dir);
+      bwprintf(COM2, "    switch=%d set to %c\n\r", p->nodes[i-1]->num, dir);
     }
-    bwprintf(COM2, "  node=%s\n\r", path[i]->name);
+    bwprintf(COM2, "  node=%s\n\r", p->nodes[i]->name);
   }
 }
 
@@ -121,32 +148,27 @@ void Navigate(int train, int speed, int src, int dest) {
   track_node *src_node = &track[src];
   track_node *dest_node = &track[dest];
 
-  #define PATH_BUF_SIZE 40
-  track_node *path[PATH_BUF_SIZE];
-  int path_len;
-  // FIXME: need to flip the trains source if it's on a dead end
-  // FIXME: need to take dest_node->reverse->id if no path is found after
-  //  an extension of this may be to find the shortest path out of reverse start and/or reversed end.
-  dijkstra(src, dest);
-  path_len = get_path(src, dest, path, PATH_BUF_SIZE);
+  path_t path;
+  path_t *p = &path;
+  GetPath(p, src, dest);
 
   bwprintf(COM2, "== Navigating train=%d speed=%d ==\n\r", train, speed);
 
-  print_path(src, dest, path, path_len);
+  PrintPath(p);
 
-  for (i = 0; i < path_len; i++) {
-    if (i > 0 && path[i-1]->type == NODE_BRANCH) {
-      if (path[i-1]->edge[DIR_CURVED].dest == path[i]) {
-        SetSwitchStub(path[i-1]->num, 'C');
+  for (i = 0; i < p->len; i++) {
+    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
+      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+        SetSwitchStub(p->nodes[i-1]->num, 'C');
       } else {
-        SetSwitchStub(path[i-1]->num, 'S');
+        SetSwitchStub(p->nodes[i-1]->num, 'S');
       }
     }
   }
 
   SetTrainSpeedStub(train, speed);
 
-  int travel_time = CalcTime(train, speed, path, path_len);
+  int travel_time = CalcTime(train, speed, p->nodes, p->len);
   Delay((travel_time / 10) + 1);
   // DONE!
 }

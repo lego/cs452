@@ -38,7 +38,7 @@ void uart_tx_notifier() {
 
   log_uart_server("uart_tx_notifier initialized tid=%d channel=%d", tid, channel);
 
-  volatile int volatile *flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
+  volatile int *flags = (int *)( UART1_BASE + UART_FLAG_OFFSET );
 
   req.type = TX_NOTIFIER;
   while (true) {

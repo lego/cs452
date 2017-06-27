@@ -32,8 +32,9 @@ int WhereAmI(int train);
 // Generates a path from A to B
 void GetPath(path_t *p, int src, int dest);
 
+void PrintPath(path_t *p);
+
 // Gets the sum of a distance along a path
-// NOTE: does not account for turn-out reversing, similarly to Move
 int SumDist(path_t *p);
 
 // Navigates a train from A to B
@@ -41,7 +42,6 @@ void Navigate(int train, int speed, int src, int dest);
 
 // Calculates the amount of time to get from A to B
 // at a speed, including accelerating and deaccelerating
-// NOTE: does not account for turn-out reversing, similarly to Move
 int CalcTime(int train, int speed, track_node **path, int path_len);
 
 // Get the accelerating distance
@@ -77,21 +77,9 @@ void dijkstra(int src, int dest);
 
 int get_path(int src, int dest, track_node **path, int path_buf_size);
 
-void print_path(int src, int dest, track_node **path, int path_len);
-
 /*
   High level of how nagivating functions work:
   Navigate(src, dest):
-    path = GetPath(src, dest)
-    current_node = src
-    for turn-out reversal_node in path:
-      time = Move(current_node, reversal_node)
-      Delay(time)
-      current_node = reversal_node
-    time = Move(current_node, destination)
-    Delay(time)
-
-  Move(src, dest):
    path = GetPath(src, dest)
    time = FigureOutTimeToNavigate(train, speed, path)
    direction = GetDirection(train, path)
