@@ -418,6 +418,7 @@ for track in tracks.itervalues():
 
     print("Routes\n")
     print(results)
+    track.graph = g
     # import pdb; pdb.set_trace()
     # exit(0)
 
@@ -502,7 +503,7 @@ void %s_route_table(track_node *track, track_edge *(*route_table)[TRACK_MAX][TRA
     fh.write("\n  // SECTION for %s\n" % (nd.name))
 
     source = nd.name
-    routes = dijsktra(g, source)
+    routes = dijsktra(track.graph, source)
     path = routes[1]
 
     for to_node_name, edge_path in path.iteritems():
