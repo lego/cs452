@@ -19,7 +19,13 @@
 #define BASIS_NODE_NAME Name2Node(BASIS_NODE)
 #define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME
 
+// used for displaying the path, updated on 100ms intervals
+path_t *current_path;
+bool is_pathing;
+int pathing_start_time;
+bool clear_path_display;
 
+// used for pathing -- the train properties and whether to stop, and where to
 int active_train;
 int active_speed;
 bool set_to_stop;
@@ -82,7 +88,7 @@ typedef struct {
 
 int path_display_pos;
 
-void DisplayPath(path_t *p) {
+void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time) {
   Putstr(COM2, SAVE_CURSOR);
   int i;
   for (i = 0; i < path_display_pos; i++) {
@@ -91,6 +97,16 @@ void DisplayPath(path_t *p) {
   }
   path_display_pos = 0;
 
+  int stop_dist = StoppingDistance(train, speed);
+  int velo = Velocity(train, speed);
+
+  // amount of mm travelled at this speed for the amount of time passed
+  int travelled_dist = ((curr_time - start_time) * velo) / 100;
+
+  int dist_to_dest = p->dist;
+  int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
+  int calculated_time = remaining_mm * 10 / velo;
+
   MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y);
   Putstr(COM2, "Path from ");
   Putstr(COM2, p->src->name);
@@ -98,18 +114,50 @@ void DisplayPath(path_t *p) {
   Putstr(COM2, p->dest->name);
   Putstr(COM2, ". Total distance=");
   Puti(COM2, p->dist);
-  // FIXME: add an eta
-  Putstr(COM2, ".");
-  for (i = 0; i < p->len; i++) {
-    path_display_pos++;
-    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
-    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
-      char dir;
+  // only show ETA for navigation
+  if (train == -2) {
+    Putstr(COM2, ". eta=");
+    Puti(COM2, (calculated_time / 100) % 10);
+    Puti(COM2, (calculated_time / 10) % 10);
+    Putstr(COM2, ".");
+    Puti(COM2, calculated_time % 10);
+    Putstr(COM2, "s");
+  }
+  int dist_sum = 0;
+
+  // don't start at the first because it's easier
+  for (i = 1; i < p->len; i++) {
+    track_edge *next_edge;
+    // if branch, figure out which way
+    // also find the edge to get the true distance (node.dist is incorrect for merged paths, i.e. SRC -> BASIS -> DEST)
+    char dir = 'x';
+    if (p->nodes[i-1]->type == NODE_BRANCH) {
       if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
         dir = 'C';
+        next_edge = &p->nodes[i-1]->edge[DIR_CURVED];
       } else {
         dir = 'S';
+        next_edge = &p->nodes[i-1]->edge[DIR_STRAIGHT];
       }
+    } else {
+      next_edge = &p->nodes[i-1]->edge[DIR_AHEAD];
+    }
+
+    dist_sum += next_edge->dist;
+
+    int remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
+    int eta_to_node = remaining_mm_to_node * 10 / velo;
+
+    // skip printing this node if we're already past it
+    // and also only skip if navigating
+    if (remaining_mm_to_node < 0 && train != -2) {
+      continue;
+    }
+
+    path_display_pos++;
+    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
+
+    if (p->nodes[i-1]->type == NODE_BRANCH) {
       Putstr(COM2, "    switch=");
       Puti(COM2, p->nodes[i-1]->num);
       Putstr(COM2, " needs to be ");
@@ -117,8 +165,107 @@ void DisplayPath(path_t *p) {
       path_display_pos++;
       MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
     }
+
     Putstr(COM2, "  node=");
     Putstr(COM2, p->nodes[i]->name);
+
+
+    // print distance to individual node and time to it
+    Putstr(COM2, "  dist=");
+    Puti(COM2, dist_sum);
+    Putstr(COM2, "mm");
+    // only show ETA for navigating
+    if (train != -2) {
+      Putstr(COM2, "  eta=");
+      Puti(COM2, (eta_to_node / 100) % 10);
+      Puti(COM2, (eta_to_node / 10) % 10);
+      Putstr(COM2, ".");
+      Puti(COM2, eta_to_node % 10);
+      Putstr(COM2, "s");
+    }
+  }
+
+  Putstr(COM2, RECOVER_CURSOR);
+}
+
+void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr_time) {
+  Putstr(COM2, SAVE_CURSOR);
+  int i;
+
+  int stop_dist = StoppingDistance(train, speed);
+  int velo = Velocity(train, speed);
+
+  // amount of mm travelled at this speed for the amount of time passed
+  int travelled_dist = ((curr_time - start_time) * velo) / 100;
+
+  int dist_to_dest = p->dist;
+  int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
+  int calculated_time = remaining_mm * 10 / velo;
+
+  int offset = jstrlen("Path from ") + jstrlen(p->src->name) + jstrlen(" ~> ") + jstrlen(p->dest->name) + jstrlen(". Total distance=");
+  MoveTerminalCursor(PATH_LOG_X + offset, PATH_LOG_Y);
+  Puti(COM2, p->dist);
+  // only show ETA for navigation
+  if (train == -2) {
+    Putstr(COM2, ". eta=");
+    Puti(COM2, (calculated_time / 100) % 10);
+    Puti(COM2, (calculated_time / 10) % 10);
+    Putstr(COM2, ".");
+    Puti(COM2, calculated_time % 10);
+    Putstr(COM2, "s" CLEAR_LINE_AFTER);
+  }
+  int dist_sum = 0;
+
+  // don't start at the first because it's easier
+  for (i = 1; i < p->len; i++) {
+    track_edge *next_edge;
+    // if branch, figure out which way
+    // also find the edge to get the true distance (node.dist is incorrect for merged paths, i.e. SRC -> BASIS -> DEST)
+    char dir = 'x';
+    if (p->nodes[i-1]->type == NODE_BRANCH) {
+      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+        dir = 'C';
+        next_edge = &p->nodes[i-1]->edge[DIR_CURVED];
+      } else {
+        dir = 'S';
+        next_edge = &p->nodes[i-1]->edge[DIR_STRAIGHT];
+      }
+    } else {
+      next_edge = &p->nodes[i-1]->edge[DIR_AHEAD];
+    }
+
+    dist_sum += next_edge->dist;
+
+    int remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
+    int eta_to_node = remaining_mm_to_node * 10 / velo;
+
+    // skip printing this node if we're already past it
+    // and also only skip if navigating
+    // if (remaining_mm_to_node < 0 && train != -2) {
+    //   continue;
+    // }
+
+    path_display_pos++;
+
+    if (p->nodes[i-1]->type == NODE_BRANCH) {
+      path_display_pos++;
+    }
+
+    int node_offset = jstrlen(" node=") + jstrlen(p->nodes[i]->name) + jstrlen("  dist=") + jstrlen(p->dest->name) + jstrlen(". Total distance=");
+
+    MoveTerminalCursor(PATH_LOG_X + node_offset, PATH_LOG_Y + path_display_pos);
+
+    Puti(COM2, dist_sum);
+    Putstr(COM2, "mm");
+    // only show ETA for navigating
+    if (train != -2) {
+      Putstr(COM2, "  eta=");
+      Puti(COM2, (eta_to_node / 100) % 10);
+      Puti(COM2, (eta_to_node / 10) % 10);
+      Putstr(COM2, ".");
+      Puti(COM2, eta_to_node % 10);
+      Putstr(COM2, "s" CLEAR_LINE_AFTER);
+    }
   }
 
   Putstr(COM2, RECOVER_CURSOR);
@@ -691,6 +838,8 @@ void sensor_saver() {
             RecordLog("\n\r");
             Delay(wait_ticks);
             SetTrainSpeed(active_train, 0);
+            is_pathing = false;
+            clear_path_display = true;
           }
 
           if (set_to_stop_from && req.argc == stop_on_node) {
@@ -766,12 +915,17 @@ void sensor_saver() {
 }
 
 void interactive() {
+  path_t p;
+  current_path = &p;
   // this needs to come before SENSOR SAVER due to Name2Node, so this should just be the first to happen
   InitNavigation();
   path_display_pos = 0;
   samples = 0;
   set_to_stop = false;
   set_to_stop_from = false;
+  is_pathing = false;
+  clear_path_display = false;
+  int path_update_counter = 0;
 
   int tid = MyTid();
   int command_parser_tid = Create(7, command_parser);
@@ -1068,13 +1222,14 @@ void interactive() {
               SetTrainSpeed(train, speed);
 
               // get the path to BASIS_NODE, our destination point
-              path_t p;
               GetPath(&p, WhereAmI(train), BASIS_NODE_NAME);
               // set all the switches to go there
               SetPathSwitches(&p);
               // get the full path including BASIS_NODE and display it
               GetMultiDestinationPath(&p, WhereAmI(train), BASIS_NODE_NAME, dest_node_id);
-              DisplayPath(&p);
+              DisplayPath(&p, active_train, active_speed, 0, 0);
+              is_pathing = true;
+              pathing_start_time = Time();
               // set the trains destination, this makes the pathing logic fire
               // up when the train hits BASIS_NODE
               stop_on_node = dest_node_id;
@@ -1126,13 +1281,14 @@ void interactive() {
 
               active_train = train;
               active_speed = speed;
-              path_t p;
               // get the path to the stopping from node
               GetPath(&p, WhereAmI(train), dest_node_id);
               // set the switches for that route
               SetPathSwitches(&p);
               // display the path
-              DisplayPath(&p);
+              DisplayPath(&p, active_train, active_speed, 0, 0);
+              is_pathing = true;
+              pathing_start_time = Time();
               stop_on_node = dest_node_id;
               set_to_stop_from = true;
             }
@@ -1153,9 +1309,9 @@ void interactive() {
                 break;
               }
 
-              path_t p;
               GetPath(&p, src_node_id, dest_node_id);
-              DisplayPath(&p);
+              DisplayPath(&p, -2, -2, 0, 0);
+              is_pathing = false;
             }
             break;
           case COMMAND_SET_VELOCITY:
@@ -1293,7 +1449,8 @@ void interactive() {
       case INT_REQ_TIME:
         // log_task("interactive is updating time", tid);
         Putstr(COM2, SAVE_CURSOR);
-        DrawTime(Time());
+        int cur_time = Time();
+        DrawTime(cur_time);
         DrawIdlePercent();
         MoveTerminalCursor(20, COMMAND_LOCATION + 4);
         Putstr(COM2, CLEAR_LINE);
@@ -1314,6 +1471,13 @@ void interactive() {
         Puti(COM2, samples);
         Putstr(COM2, " samples." CLEAR_LINE_AFTER);
         Putstr(COM2, RECOVER_CURSOR);
+        // only print every 2 * 100ms, too much printing otherwise
+        if (is_pathing && path_update_counter >= 2) {
+          path_update_counter = 0;
+          UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
+        } else {
+          path_update_counter++;
+        }
         break;
       case INT_REQ_SENSOR_UPDATE:
         {

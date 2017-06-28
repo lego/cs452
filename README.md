@@ -25,6 +25,7 @@ CS452-Codebase
   - [ ] Log more information about the state of the kernel and tasks
   - [ ] Add far more `KASSERT`s, and maybe a mechanism for levels which are enabled (performance reasons)
 - Cleanup
+  - [ ] One global "config.h" file for hardcoded magic numbers or parameters
   - [ ] Clean up assembly: move asm functions into `.s`, document them far more
   - [ ] Deal with all existing `TODO` or `FIXME`
   - [ ] Continue adding tests to `test/` for library code and more.
