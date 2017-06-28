@@ -15,6 +15,11 @@
 
 #define NUM_SWITCHES 22
 
+#define BASIS_NODE A4
+#define BASIS_NODE_NAME(BASIS) Name2Node( #BASIS )
+#define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME(BASIS_NODE)
+
+
 int active_train;
 int active_speed;
 bool set_to_stop;
@@ -640,26 +645,28 @@ void sensor_saver() {
   int E14 = Name2Node("E14");
 
   path_t p;
-  GetPath(&p, E8, C14);
+  GetPath(&p, Name2Node("E8"), Name2Node("C14"));
   int E8_C14_dist = p.dist;
 
-  GetPath(&p, C15, D12);
+  GetPath(&p, Name2Node("C15"), Name2Node("D12"));
   int C15_D12_dist = p.dist;
 
-  GetPath(&p, E14, E8);
+  GetPath(&p, Name2Node("E14"), Name2Node("E8"));
   int E14_E8_dist = p.dist;
 
-  GetPath(&p, B1, E14);
+  GetPath(&p, Name2Node("B1"), Name2Node("E14"));
   int B1_E14_dist = p.dist;
 
-  GetPath(&p, E14, Name2Node("E9"));
+  GetPath(&p, Name2Node("E14"), Name2Node("E9"));
   int E14_E9_dist = p.dist;
 
-  GetPath(&p, E14, Name2Node("C14"));
+  GetPath(&p, Name2Node("E14"), Name2Node("C14"));
   int E14_C14_dist = p.dist;
 
   GetPath(&p, Name2Node("C14"), Name2Node("C10"));
   int C14_C10_dist = p.dist;
+
+  DECLARE_BASIS_NODE(basis_node);
 
   while (true) {
     ReceiveS(&sender, req);
@@ -668,9 +675,9 @@ void sensor_saver() {
           int curr_time = Time();
           set_location(active_train, req.argc);
           sensor_reading_timestamps[req.argc] = curr_time;
-          if (req.argc == C10 && set_to_stop) {
+          if (req.argc == basis_node && set_to_stop) {
             set_to_stop = false;
-            GetPath(&p, C10, stop_on_node);
+            GetPath(&p, basis_node, stop_on_node);
             SetPathSwitches(&p);
             int dist_to_dest = p.dist;
             int remaining_mm = dist_to_dest - StoppingDistance(active_train, active_speed);
@@ -1056,16 +1063,16 @@ void interactive() {
               active_speed = speed;
               SetTrainSpeed(train, speed);
 
-              // get the path to C10, our destination point
+              // get the path to BASIS_NODE, our destination point
               path_t p;
-              GetPath(&p, WhereAmI(train), Name2Node("C10"));
+              GetPath(&p, WhereAmI(train), BASIS_NODE_NAME(BASIS_NODE));
               // set all the switches to go there
               SetPathSwitches(&p);
-              // get the full path including C10 and display it
-              GetMultiDestinationPath(&p, WhereAmI(train), Name2Node("C10"), dest_node_id);
+              // get the full path including BASIS_NODE and display it
+              GetMultiDestinationPath(&p, WhereAmI(train), BASIS_NODE_NAME(BASIS_NODE), dest_node_id);
               DisplayPath(&p);
               // set the trains destination, this makes the pathing logic fire
-              // up when the train hits C10
+              // up when the train hits BASIS_NODE
               stop_on_node = dest_node_id;
               set_to_stop = true;
             }
