@@ -24,7 +24,7 @@ typedef struct Path {
 
 void set_location(int train, int location);
 // int src = WhereAmI(train);
-void SetPathSwitches(int train, int speed, int src, int dest);
+void SetPathSwitches(path_t *path);
 
 int StoppingDistance(int train, int speed);
 

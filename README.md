@@ -2,11 +2,15 @@ CS452-Codebase
 ==============
 
 ### TODO
+- Better code patterns & standards
+  - [ ] Easier way to handle common code cases
+    - [ ] Error handling (`status`)
 - Tasks & Utilities
-  - [ ] Delayed command sender
+  - [ ] Delayed train controller command sender
   - [ ] Generic warehouse
   - [ ] Generic administrator
   - [ ] Generic shopkeeper / courier
+  - [ ] `Putf`, format style `Put`
 - Idle task metrics tracking
   - [ ] Idling time
   - [ ] SendQ depth

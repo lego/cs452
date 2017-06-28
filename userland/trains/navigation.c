@@ -168,16 +168,8 @@ void PrintPath(path_t *p) {
   }
 }
 
-void SetPathSwitches(int train, int speed, int src, int dest) {
-  KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
+void SetPathSwitches(path_t *p) {
   int i;
-  track_node *src_node = &track[src];
-  track_node *dest_node = &track[dest];
-
-  path_t path;
-  path_t *p = &path;
-  GetPath(p, src, dest);
-
   for (i = 0; i < p->len; i++) {
     if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
       if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
@@ -187,7 +179,6 @@ void SetPathSwitches(int train, int speed, int src, int dest) {
       }
     }
   }
-
 }
 
 void Navigate(int train, int speed, int src, int dest, bool include_stop) {

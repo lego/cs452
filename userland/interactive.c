@@ -672,6 +672,7 @@ void sensor_saver() {
           if (req.argc == C10 && set_to_stop) {
             set_to_stop = false;
             GetPath(&p, C10, stop_on_node);
+            SetPathSwitches(&p);
             int dist_to_dest = p.dist;
             int remaining_mm = dist_to_dest - StoppingDistance(active_train, active_speed);
             int velocity = Velocity(active_train, active_speed);
@@ -1055,11 +1056,18 @@ void interactive() {
 
               active_train = train;
               active_speed = speed;
-              SetPathSwitches(train, speed, most_recent_sensor, Name2Node("C10"));
               SetTrainSpeed(train, speed);
+
+              // get the path to C10, our destination point
               path_t p;
+              GetPath(&p, most_recent_sensor, Name2Node("C10"));
+              // set all the switches to go there
+              SetPathSwitches(&p);
+              // get the full path including C10 and display it
               GetMultiDestinationPath(&p, most_recent_sensor, Name2Node("C10"), dest_node_id);
               DisplayPath(&p);
+              // set the trains destination, this makes the pathing logic fire
+              // up when the train hits C10
               stop_on_node = dest_node_id;
               set_to_stop = true;
             }
@@ -1109,7 +1117,13 @@ void interactive() {
 
               active_train = train;
               active_speed = speed;
-              SetPathSwitches(train, speed, most_recent_sensor, dest_node_id);
+              path_t p;
+              // get the path to the stopping from node
+              GetPath(&p, most_recent_sensor, dest_node_id);
+              // set the switches for that route
+              SetPathSwitches(&p);
+              // display the path
+              DisplayPath(&p);
               stop_on_node = dest_node_id;
               set_to_stop_from = true;
             }
