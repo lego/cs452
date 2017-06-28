@@ -89,7 +89,7 @@ endif
 
 # Depend on main.elf and use the script to copy the file over
 install: main.elf
-	./upload.sh $<
+	cp $< $(TRACK).elf && ./upload.sh $(TRACK).elf && ./upload.sh $<
 
 # ARM binary
 main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)

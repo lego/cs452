@@ -15,9 +15,9 @@
 
 #define NUM_SWITCHES 22
 
-#define BASIS_NODE A4
-#define BASIS_NODE_NAME(BASIS) Name2Node( #BASIS )
-#define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME(BASIS_NODE)
+#define BASIS_NODE "A4"
+#define BASIS_NODE_NAME Name2Node(BASIS_NODE)
+#define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME
 
 
 int active_train;
@@ -1059,17 +1059,21 @@ void interactive() {
                 break;
               }
 
+              RecordLog("Basis is");
+              RecordLogi(BASIS_NODE_NAME);
+              RecordLog(".\n\r");
+
               active_train = train;
               active_speed = speed;
               SetTrainSpeed(train, speed);
 
               // get the path to BASIS_NODE, our destination point
               path_t p;
-              GetPath(&p, WhereAmI(train), BASIS_NODE_NAME(BASIS_NODE));
+              GetPath(&p, WhereAmI(train), BASIS_NODE_NAME);
               // set all the switches to go there
               SetPathSwitches(&p);
               // get the full path including BASIS_NODE and display it
-              GetMultiDestinationPath(&p, WhereAmI(train), BASIS_NODE_NAME(BASIS_NODE), dest_node_id);
+              GetMultiDestinationPath(&p, WhereAmI(train), BASIS_NODE_NAME, dest_node_id);
               DisplayPath(&p);
               // set the trains destination, this makes the pathing logic fire
               // up when the train hits BASIS_NODE
