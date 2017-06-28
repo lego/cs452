@@ -46,8 +46,8 @@ void InitNavigation() {
   stopping_distance[58][14] = MILLIMETRES(700);
 
   velocity[69][9] = MILLIMETRES(420);
-  velocity[69][10] = MILLIMETRES(485); // super accurate
-  velocity[69][11] = MILLIMETRES(515);
+  velocity[69][10] = MILLIMETRES(485); // ~accurate
+  velocity[69][11] = MILLIMETRES(530); // ~accurate
   velocity[69][12] = MILLIMETRES(530);
   velocity[69][13] = MILLIMETRES(575);
   velocity[69][14] = MILLIMETRES(605);
