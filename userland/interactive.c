@@ -1,3 +1,4 @@
+#include <io.h>
 #include <basic.h>
 #include <bwio.h>
 #include <interactive.h>
@@ -382,23 +383,22 @@ void DrawTime(int t) {
   Putstr(COM2, buf);
 }
 
-// from main.c
-#include <io.h>
-extern volatile io_time_t idle_time_total;
-extern volatile io_time_t time_since_idle_totalled;
+io_time_t last_time_idle_displayed;
+io_time_t idle_execution_time;
 
 void DrawIdlePercent() {
   // FIXME: is there a way to drop the use of kernel global variables here?
 
   // get idle total, current time, and total time for idle total start
-  io_time_t idle_total = idle_time_total;
-  io_time_t curr_time = io_get_time();
-  io_time_t time_total = curr_time - time_since_idle_totalled;
-  // reset counters
-  time_since_idle_totalled = curr_time;
-  idle_time_total = 0;
 
-  int idle_percent = (idle_total * 1000) / time_total;
+  io_time_t last_idle_execution_time = idle_execution_time;
+  idle_execution_time = GetIdleTaskExecutionTime();
+  io_time_t idle_diff = idle_execution_time - last_idle_execution_time;
+  io_time_t curr_time = io_get_time();
+  io_time_t time_total = curr_time - last_time_idle_displayed;
+  last_time_idle_displayed = curr_time;
+
+  int idle_percent = (idle_diff * 1000) / time_total;
 
   // "Idle 99.9% "
   //       ^ 6th char
@@ -462,18 +462,16 @@ const int bucketSensors[BUCKETS] = {
 };
 
 const int sensorDistances[BUCKETS] = {
-  297,
-  405,
-  354,
-  376,
+  785,
+  589,
   440,
-  481,
-  302,
-  405,
-  285,
+  485,
+  293,
+  404,
   284,
-  697,
-  275
+  277,
+  774,
+  375
 };
 
 int bucketSamples[BUCKETS*SAMPLES];
@@ -592,6 +590,8 @@ void interactive() {
   int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, &sensor_saver);
   int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, &sensor_reader);
   int sender;
+  idle_execution_time = 0;
+  last_time_idle_displayed = 0;
 
   log_task("interactive initialized time_keeper=%d", tid, time_keeper_tid);
   DrawInitialScreen();

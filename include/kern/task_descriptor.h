@@ -47,10 +47,14 @@ struct TaskDescriptor {
   volatile task_state_t state;
   void *stack_pointer;
   void (*entrypoint)();
+
+  /* Diagnostics */
+  io_time_t execution_time;
+  const char *func_name;
 };
 
 typedef struct TaskDescriptor task_descriptor_t;
 
-task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)());
+task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name);
 
 #endif

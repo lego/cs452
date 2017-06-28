@@ -1,6 +1,8 @@
 #ifndef __KERNEL_H__
 #define __KERNEL_H__
 
+#include <io.h>
+
 // Hardcoded maximum used in a number of places
 // WARNING: this is also defined in orex.ld
 // if this in increased, you should also increase that one
@@ -20,7 +22,9 @@
  * @param  code
  * @return          the new tasks ID
  */
-int Create(int priority, void (*code)( ) );
+#define Create(priority, code) CreateWithName(priority, code, #code)
+int CreateWithName(int priority, void (*code)( ), const char *name);
+
 
 /**
  * Gets the current task ID
@@ -77,5 +81,7 @@ enum await_event_t {
 
 int AwaitEvent( await_event_t event_type );
 int AwaitEventPut( await_event_t event_type, char ch );
+
+io_time_t GetIdleTaskExecutionTime();
 
 #endif

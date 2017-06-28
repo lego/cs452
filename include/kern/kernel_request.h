@@ -12,6 +12,7 @@
 typedef struct SyscallCreateArg {
   int priority;
   void (*entrypoint)();
+  const char *func_name;
 } syscall_create_arg_t;
 
 typedef struct SyscallPIDRet {

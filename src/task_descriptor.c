@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #endif
 
-task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)()) {
+task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name) {
   // TODO: Assert task priority is valid, i.e. in [1,5]
   int tid = ctx->used_descriptors++;
   if (tid >= MAX_TASKS) {
@@ -29,6 +29,8 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
   task->entrypoint = entrypoint;
   task->state = STATE_READY;
   task->next_ready_task = NULL;
+  task->execution_time = 0;
+  task->func_name = func_name;
   #ifndef DEBUG_MODE
   task->stack_pointer = _TaskStackStart + (_TaskStackSize * tid);
   #endif

@@ -7,7 +7,7 @@
 #include <nameserver.h>
 #include <jstring.h>
 
-int Create(int priority, void (*entrypoint)()) {
+int CreateWithName(int priority, void (*entrypoint)(), const char *func_name) {
   assert(0 <= priority && priority < 32);
 
   kernel_request_t request;
@@ -17,6 +17,7 @@ int Create(int priority, void (*entrypoint)()) {
   syscall_create_arg_t arg;
   arg.priority = priority;
   arg.entrypoint = entrypoint;
+  arg.func_name = func_name;
 
   request.arguments = &arg;
 
@@ -145,5 +146,16 @@ int AwaitEventPut( await_event_t event_type, char ch) {
   request.arguments = &arg;
 
   context_switch(&request);
+  return 0;
+}
+
+io_time_t GetIdleTaskExecutionTime() {
+  int i;
+  for (i = 0; i < ctx->used_descriptors; i++) {
+    if (ctx->descriptors[i].priority == 31) {
+      return ctx->descriptors[i].execution_time;
+    }
+  }
+  KASSERT(false, "Could not find idle task");
   return 0;
 }

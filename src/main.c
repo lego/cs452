@@ -51,21 +51,23 @@ static inline void handle(kernel_request_t *request) {
   syscall_handle(request);
 }
 
-volatile io_time_t idle_time_total;
-io_time_t idle_time_start;
-volatile io_time_t time_since_idle_totalled;
+io_time_t execution_time_start;
 
 // TODO: we should track the timing for all tasks, not just the idle task
-static inline void idle_task_pre_activate(task_descriptor_t *task) {
-  if (task->priority == 31) {
-    idle_time_start = io_get_time();
-  }
+static inline void task_pre_activate(task_descriptor_t *task) {
+  execution_time_start = io_get_time();
 }
 
-static inline void idle_task_post_activate(task_descriptor_t *task) {
-  if (task->priority == 31) {
-    io_time_t idle_time_end = io_get_time();
-    idle_time_total += (idle_time_end - idle_time_start);
+static inline void task_post_activate(task_descriptor_t *task) {
+  io_time_t execution_time_end = io_get_time();
+  task->execution_time += (execution_time_end - execution_time_start);
+}
+
+void print_stats() {
+  bwprintf(COM2, "Execution time\n\r");
+  int i;
+  for (i = 0; i < ctx->used_descriptors; i++) {
+    bwprintf(COM2, "Task %20d used %d (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
   }
 }
 
@@ -80,13 +82,14 @@ void cleanup() {
   interrupts_clear_all();
   bwputc(COM1, 0x61);
   bwsetfifo(COM2, ON);
+
+  print_stats();
 }
 
 int main() {
   should_exit = false;
   active_task = NULL;
   ctx = NULL;
-  idle_time_total = 0;
 
   /* initialize various kernel components */
   context_switch_init();
@@ -104,7 +107,7 @@ int main() {
   io_enable_caches();
 
   /* create first user task */
-  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_ENTRY_TASK, ENTRY_FUNC);
+  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_ENTRY_TASK, ENTRY_FUNC, "First user task");
   scheduler_requeue_task(first_user_task);
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
@@ -119,9 +122,9 @@ int main() {
   while (!should_exit) {
     task_descriptor_t *next_task = scheduler_next_task();
     log_kmain("next task tid=%d", next_task->tid);
-    idle_task_pre_activate(next_task);
+    task_pre_activate(next_task);
     kernel_request_t *request = activate(next_task);
-    idle_task_post_activate(next_task);
+    task_post_activate(next_task);
     if (next_task->state != STATE_ZOMBIE) {
       handle(request);
     }
