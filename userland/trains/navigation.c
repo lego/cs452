@@ -22,6 +22,9 @@ int path_buf[TRACK_MAX];
 int velocity[TRAINS_MAX][15];
 int stopping_distance[TRAINS_MAX][15];
 
+int velocitySamples[TRAINS_MAX][15][VELOCITY_SAMPLES_MAX];
+int velocitySampleStart[TRAINS_MAX][15];
+
 int Name2Node(char *name) {
   for (int i = 0; i < TRACK_MAX; i++) {
     if (jstrcmp(track[i].name, name)) {
@@ -36,20 +39,27 @@ void InitNavigation() {
 
   for (i = 0; i < TRAINS_MAX; i++) {
       int j;
-      for (j = 0; j < 14; j++) {
+      for (j = 0; j < 15; j++) {
         velocity[i][j] = -1;
         stopping_distance[i][j] = -1;
+
+        velocitySampleStart[i][j] = 0;
+        int k;
+        for (k = 0; k < VELOCITY_SAMPLES_MAX; k++) {
+          velocitySamples[i][j][k] = 0;
+        }
       }
   }
 
-  // all units are millimetres
-  velocity[69][10] = 460; // ~accurate
-  velocity[69][11] = 530; // ~accurate, (cut a bit short, should remeasure)
-  velocity[69][12] = 577; // ~accurate, averaged 575 - 579, tending to 579 (didnt spend too long)
-  velocity[69][13] = 600; // ~accurate, averaged 590-610, didn't leave on for awhile
-  velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
+  //// all units are millimetres
+  //velocity[69][10] = 460; // ~accurate
+  //velocity[69][11] = 530; // ~accurate, (cut a bit short, should remeasure)
+  //velocity[69][12] = 577; // ~accurate, averaged 575 - 579, tending to 579 (didnt spend too long)
+  //velocity[69][13] = 600; // ~accurate, averaged 590-610, didn't leave on for awhile
+  //velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
 
   stopping_distance[69][10] = 280 + 56 + 30; // reasonably accurate
+  stopping_distance[58][10] = -80; // reasonably accurate
 
   #if defined(USE_TRACKA)
   init_tracka(track);
@@ -272,6 +282,8 @@ int CalculateTime(int distance, int velocity) {
 }
 
 int Velocity(int train, int speed) {
+  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when recording sample. Got %d", train);
+  KASSERT(speed >= 0 && speed <= 14, "Invalid speed when recording sample. Got %d", speed);
   return velocity[train][speed];
 }
 
@@ -352,6 +364,27 @@ int get_path(int src, int dest, track_node **path, int path_buf_size) {
   return n;
 }
 
+
+void record_velocity_sample(int train, int speed, int sample) {
+  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when recording sample. Got %d", train);
+  KASSERT(speed >= 0 && speed <= 14, "Invalid speed when recording sample. Got %d", speed);
+  int startIndex = velocitySampleStart[train][speed];
+  KASSERT(startIndex >= 0 && startIndex < VELOCITY_SAMPLES_MAX, "This shouldn't happen.");
+  velocitySamples[train][speed][startIndex] = sample;
+  velocitySampleStart[train][speed] = (startIndex + 1) % VELOCITY_SAMPLES_MAX;
+
+  int total = 0;
+  int n = 0;
+  for (int i = 0; i < VELOCITY_SAMPLES_MAX; i++) {
+    if (velocitySamples[train][speed][i] > 0) {
+      total += velocitySamples[train][speed][i];
+      n++;
+    }
+  }
+  if (n > 0) {
+    velocity[train][speed] = total/n;
+  }
+}
 
 void set_velocity(int train, int speed, int velo) {
   velocity[train][speed] = velo;

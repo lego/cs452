@@ -6,6 +6,8 @@
 
 #define TRAINS_MAX 80
 
+#define VELOCITY_SAMPLES_MAX 5
+
 extern track_node track[TRACK_MAX];
 
 typedef struct Path {
@@ -77,6 +79,7 @@ void dijkstra(int src, int dest);
 int get_path(int src, int dest, track_node **path, int path_buf_size);
 
 void set_velocity(int train, int speed, int velocity);
+void record_velocity_sample(int train, int speed, int sample);
 
 void set_stopping_distance(int train, int speed, int distance);
 
