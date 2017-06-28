@@ -85,4 +85,6 @@ int AwaitEventPut( await_event_t event_type, char ch );
 
 io_time_t GetIdleTaskExecutionTime();
 
+void RecordLog(char *msg);
+
 #endif

@@ -159,3 +159,16 @@ io_time_t GetIdleTaskExecutionTime() {
   KASSERT(false, "Could not find idle task");
   return 0;
 }
+
+void RecordLog(char * msg) {
+  int len = jstrlen(msg);
+  KASSERT(len < LOG_SIZE - log_length, "Will overflow logs");
+  int i;
+  int start = log_length;
+  for (i = 0; i < len; i++) {
+    logs[start + i] = msg[i];
+  }
+  // FIXME: chance this gets interrupted. if this happens, we want to do this
+  // in the kernel and not userland
+  log_length += len;
+}

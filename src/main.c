@@ -41,6 +41,8 @@
 volatile task_descriptor_t *active_task;
 context_t *ctx;
 bool should_exit;
+char logs[LOG_SIZE];
+volatile int log_length;
 
 
 static inline kernel_request_t *activate(task_descriptor_t *task) {
@@ -71,6 +73,11 @@ void print_stats() {
   }
 }
 
+void print_logs() {
+  logs[log_length] = 0;
+  bwputstr(COM2, logs);
+}
+
 void cleanup() {
   // Clear out any interrupt bits
   // This is needed because for some reason if we run our program more than
@@ -83,6 +90,7 @@ void cleanup() {
   bwputc(COM1, 0x61);
   bwsetfifo(COM2, ON);
 
+  print_logs();
   print_stats();
 }
 
@@ -90,6 +98,7 @@ int main() {
   should_exit = false;
   active_task = NULL;
   ctx = NULL;
+  log_length = 0;
 
   /* initialize various kernel components */
   context_switch_init();

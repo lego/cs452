@@ -64,4 +64,12 @@ extern context_t *ctx;
  */
 extern bool should_exit;
 
+
+/*
+ * for recording logs and printing at the end
+ */
+#define LOG_SIZE 16384
+extern char logs[LOG_SIZE];
+extern volatile int log_length;
+
 #endif
