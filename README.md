@@ -5,6 +5,7 @@ CS452-Codebase
 - Better code patterns & standards
   - [ ] Easier way to handle common code cases
     - [ ] Error handling (`status`)
+  - [ ] "Safe" array struct, using macros to create and access them that have array bound checks!
 - Tasks & Utilities
   - [ ] Delayed train controller command sender
   - [ ] Generic warehouse
