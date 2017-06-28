@@ -152,4 +152,7 @@ static inline int debruijin_ctz(unsigned int v) {
  */
 unsigned long hash(unsigned char *str);
 
+float minf(float a, float b);
+float maxf(float a, float b);
+
 #endif

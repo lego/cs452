@@ -238,3 +238,19 @@ unsigned long hash(unsigned char *str) {
 
   return hash;
 }
+
+float minf(float a, float b) {
+  if (a < b) {
+    return a;
+  } else {
+    return b;
+  }
+}
+
+float maxf(float a, float b) {
+  if (a > b) {
+    return a;
+  } else {
+    return b;
+  }
+}

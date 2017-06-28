@@ -39,6 +39,7 @@ enum command_t {
   COMMAND_SWITCH_TOGGLE,
   COMMAND_SWITCH_TOGGLE_ALL,
   COMMAND_CLEAR_SENSOR_SAMPLES,
+  COMMAND_CLEAR_SENSOR_OFFSET,
   COMMAND_PRINT_SENSOR_SAMPLES,
   COMMAND_PRINT_SENSOR_MULTIPLIERS,
   COMMAND_HELP,
@@ -78,6 +79,8 @@ command_t get_command_type(char *command) {
     return COMMAND_SWITCH_TOGGLE_ALL;
   } else if (jstrcmp(command, "clss")) {
     return COMMAND_CLEAR_SENSOR_SAMPLES;
+  } else if (jstrcmp(command, "clo")) {
+    return COMMAND_CLEAR_SENSOR_OFFSET;
   } else if (jstrcmp(command, "pss")) {
     return COMMAND_PRINT_SENSOR_SAMPLES;
   } else if (jstrcmp(command, "psm")) {
@@ -454,13 +457,11 @@ void initSwitches(int *initSwitches) {
   }
 }
 
-#define BUCKETS 12
-#define SAMPLES 20
+#define BUCKETS 10
+#define SAMPLES 3
 
 const int bucketSensors[BUCKETS] = {
-  16*(4-1)+( 4-1), // D 4
-  16*(2-1)+( 6-1), // B 6
-  16*(3-1)+(12-1), // C12
+  16*(3-1)+(14-1), // C14
   16*(1-1)+( 4-1), // A 4
   16*(2-1)+(16-1), // B16
   16*(3-1)+( 5-1), // C 5
@@ -468,23 +469,21 @@ const int bucketSensors[BUCKETS] = {
   16*(4-1)+(12-1), // D12
   16*(5-1)+(11-1), // E11
   16*(4-1)+(10-1), // D10
-  16*(4-1)+( 5-1), // D 5
-  16*(5-1)+( 6-1)  // E 6
+  16*(4-1)+( 8-1), // D 8
+  16*(5-1)+( 8-1)  // E 8
 };
 
 const int sensorDistances[BUCKETS] = {
-  282,
-  412,
-  355,
-  375,
+  785,
+  567,
   440,
   485,
   293,
   404,
   284,
   277,
-  697,
-  285
+  774,
+  375
 };
 
 int bucketSamples[BUCKETS*SAMPLES];
@@ -519,11 +518,13 @@ void clearBuckets() {
 
 void registerSample(int sensor, int prevSensor, int sample, int time) {
   for (int i = 0; i < BUCKETS; i++) {
-    if (bucketSensors[i] == sensor && bucketSize[i] < SAMPLES) {
-      int j = (i == 0 ? BUCKETS : i) - 1;
-      if (bucketSensors[j] == prevSensor) {
-        bucketSamples[i*SAMPLES+bucketSize[i]] = sample;
-        bucketSize[i]++;
+    if (bucketSensors[i] == sensor) {
+      if (bucketSize[i] < SAMPLES) {
+        int j = (i == 0 ? BUCKETS : i) - 1;
+        if (bucketSensors[j] == prevSensor) {
+          bucketSamples[i*SAMPLES+bucketSize[i]] = sample;
+          bucketSize[i]++;
+        }
       }
       if (count > 1) {
         int total = 0;
@@ -536,14 +537,19 @@ void registerSample(int sensor, int prevSensor, int sample, int time) {
         int sampleWithLastOffset = sample - offset;
         int predictedSample = prediction - (time-sampleWithLastOffset);
         offset = ((float)sample - predictedSample);
+        float maxO = 10.0f;
+        offset = minf(maxf(offset, -maxO), maxO);
         if (prediction != 0.0f) {
           predictionAccuracy = ((float)predictedSample) / ((float)sample);
         }
         prediction = (float)time + bucketAvg[(i+1)%BUCKETS] + offset;
       }
-      if (i == 10) {
+      if (i == 7) {
         if (count > 3) {
-          DelayUntil(prediction);
+          //DelayUntil(prediction-2);
+          //clearBuckets();
+          //DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + minf(maxf(offset, -20.0f), 20.0f)));
+          DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + offset));
           SetTrainSpeed(lastTrain, 0);
         }
         count++;
@@ -553,11 +559,12 @@ void registerSample(int sensor, int prevSensor, int sample, int time) {
   }
 }
 
+int lastSensor = -1;
+
 void sensor_saver() {
   RegisterAs(SENSOR_SAVER);
   interactive_req_t req;
 
-  int lastSensor = -1;
   int lastSensorTime = -1;
 
   int sender;
@@ -756,6 +763,11 @@ void interactive() {
           case COMMAND_CLEAR_SENSOR_SAMPLES:
             clearBuckets();
             break;
+          case COMMAND_CLEAR_SENSOR_OFFSET:
+            prediction = 0.0f;
+            offset = 0;
+            lastSensor = -1;
+            break;
           case COMMAND_PRINT_SENSOR_SAMPLES: {
               Putstr(COM2, SAVE_CURSOR);
               char buf[10];
@@ -773,7 +785,10 @@ void interactive() {
                   speedTotal += avg;
                   n++;
                 }
-                ji2a(avg, buf);
+                ji2a((total/bucketSize[i]), buf);
+                Putstr(COM2, buf);
+                Putstr(COM2, "  -  ");
+                ji2a((int)(avg*1000), buf);
                 Putstr(COM2, buf);
 
                 //for (int j = 0; j < bucketSize[i]; j++) {
