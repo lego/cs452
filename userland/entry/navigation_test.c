@@ -34,17 +34,7 @@ void navigation_test() {
 
   GetPath(&p, Name2Node("EN3"), Name2Node("EX2"));
   PrintPath(&p);
-  #elif defined(USE_TRACKA)
-  path_t p;
-  GetPath(&p, Name2Node("B6"), Name2Node("B16"));
-  PrintPath(&p);
-
-  GetPath(&p, Name2Node("B5"), Name2Node("B16"));
-  PrintPath(&p);
-
-  GetPath(&p, Name2Node("E6"), Name2Node("MR14"));
-  PrintPath(&p);
-  #elif defined(USE_TRACKB)
+  #elif defined(USE_TRACKA) || defined(USE_TRACKB)
   path_t p;
   GetPath(&p, Name2Node("D4"), Name2Node("B6"));
   PrintPath(&p);
@@ -96,6 +86,9 @@ void navigation_test() {
 
   GetPath(&p, Name2Node("C10"), Name2Node("E14"));
   PrintPath(&p);
+  GetPath(&p, Name2Node("E14"), Name2Node("E10"));
+  PrintPath(&p);
+
 
   #endif
 

@@ -43,7 +43,7 @@ void InitNavigation() {
   }
 
   // all units are millimetres
-  velocity[69][10] = 485; // ~accurate
+  velocity[69][10] = 460; // ~accurate
   velocity[69][11] = 530; // ~accurate, (cut a bit short, should remeasure)
   velocity[69][12] = 577; // ~accurate, averaged 575 - 579, tending to 579 (didnt spend too long)
   velocity[69][13] = 600; // ~accurate, averaged 590-610, didn't leave on for awhile
