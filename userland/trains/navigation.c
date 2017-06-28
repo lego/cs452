@@ -48,7 +48,7 @@ void InitNavigation() {
   velocity[69][9] = MILLIMETRES(420);
   velocity[69][10] = MILLIMETRES(485); // ~accurate
   velocity[69][11] = MILLIMETRES(530); // ~accurate
-  velocity[69][12] = MILLIMETRES(530);
+  velocity[69][12] = MILLIMETRES(577); // ~accurate, averaged 575 - 579, tending to 579 (not sure why)
   velocity[69][13] = MILLIMETRES(575);
   velocity[69][14] = MILLIMETRES(605);
 
