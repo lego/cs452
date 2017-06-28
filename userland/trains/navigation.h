@@ -23,6 +23,8 @@ typedef struct Path {
 #define MILLISECONDS(amt) amt
 
 void set_location(int train, int location);
+// int src = WhereAmI(train);
+void SetPathSwitches(int train, int speed, int src, int dest);
 
 int StoppingDistance(int train, int speed);
 

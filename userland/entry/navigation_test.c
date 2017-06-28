@@ -94,6 +94,9 @@ void navigation_test() {
   GetPath(&p, Name2Node("E11"), Name2Node("E8"));
   PrintPath(&p);
 
+  GetPath(&p, Name2Node("C10"), Name2Node("E14"));
+  PrintPath(&p);
+
   #endif
 
   ExitKernel();

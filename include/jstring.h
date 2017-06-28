@@ -1,6 +1,6 @@
 #include <basic.h>
 
-unsigned int jstrlen(char *c);
+unsigned int jstrlen(const char *c);
 
 bool jstrcmp(const char *str1, const char *str2);
 void jstrappend(char *str1, char *str2, char *buf);

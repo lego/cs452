@@ -1,7 +1,7 @@
 #include <basic.h>
 #include <jstring.h>
 
-unsigned int jstrlen(char *c) {
+unsigned int jstrlen(const char *c) {
   int len = 0;
   while(c[len] != 0) len++;
   return len;

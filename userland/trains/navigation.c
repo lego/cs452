@@ -42,12 +42,14 @@ void InitNavigation() {
       }
   }
 
-  velocity[69][10] = MILLIMETRES(485); // ~accurate
-  velocity[69][11] = MILLIMETRES(530); // ~accurate, (cut a bit short, should remeasure)
-  velocity[69][12] = MILLIMETRES(577); // ~accurate, averaged 575 - 579, tending to 579 (didnt spend too long)
-  velocity[69][13] = MILLIMETRES(600); // ~accurate, averaged 590-610, didn't leave on for awhile
+  // all units are millimetres
+  velocity[69][10] = 485; // ~accurate
+  velocity[69][11] = 530; // ~accurate, (cut a bit short, should remeasure)
+  velocity[69][12] = 577; // ~accurate, averaged 575 - 579, tending to 579 (didnt spend too long)
+  velocity[69][13] = 600; // ~accurate, averaged 590-610, didn't leave on for awhile
+  velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
 
-  stopping_distance[69][10] = MILLIMETRES(280 + 56 + 30); // reasonably accurate
+  stopping_distance[69][10] = 280 + 56 + 30; // reasonably accurate
 
   #if defined(USE_TRACKA)
   init_tracka(track);
@@ -71,10 +73,12 @@ void set_location(int train, int location) {
 }
 
 int WhereAmI(int train) {
+  KASSERT(state.train_locations[train] < 0, "Train had bad location. train=%d location=%d", train, state.train_locations[train]);
   return state.train_locations[train];
 }
 
 void GetPath(path_t *p, int src, int dest) {
+  KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
   track_node *nodes[TRACK_MAX];
 
   int reverse_src = track[src].reverse->id;
@@ -144,10 +148,33 @@ void PrintPath(path_t *p) {
   }
 }
 
+void SetPathSwitches(int train, int speed, int src, int dest) {
+  KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
+  int i;
+  track_node *src_node = &track[src];
+  track_node *dest_node = &track[dest];
+
+  path_t path;
+  path_t *p = &path;
+  GetPath(p, src, dest);
+
+  for (i = 0; i < p->len; i++) {
+    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
+      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+        SetSwitch(p->nodes[i-1]->num, SWITCH_CURVED);
+      } else {
+        SetSwitch(p->nodes[i-1]->num, SWITCH_STRAIGHT);
+      }
+    }
+  }
+
+}
+
 void Navigate(int train, int speed, int src, int dest, bool include_stop) {
   if (velocity[train][speed] == -1 || stopping_distance[train][speed] == -1) {
     KASSERT(false, "Train speed / stopping distance not yet calibrated");
   }
+  KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
 
   int i;
   // int src = WhereAmI(train);
@@ -228,7 +255,10 @@ int DeaccelTime(int train, int speed) {
 // => 1000
 
 int StoppingDistance(int train, int speed) {
-  return stopping_distance[train][speed];
+  // These stopping distance values are actually the offset from C10 -> E14
+  // thus we take dist(C10->E14) and subtract the offset for the stopping
+  // distance
+  return 1056 - stopping_distance[train][speed];
 }
 
 int CalculateDistance(int velocity, int t) {
@@ -248,6 +278,7 @@ int Velocity(int train, int speed) {
 #define INT_MAX 999999 // FIXME: proper INT_MAX
 
 void dijkstra(int src, int dest) {
+    KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
     #define HEAP_SIZE TRACK_MAX + 1
     heapnode_t heap_nodes[HEAP_SIZE];
     heap_t heap = heap_create(heap_nodes, HEAP_SIZE);
@@ -284,7 +315,7 @@ void dijkstra(int src, int dest) {
             edges[edges_len++] = &v->edge[DIR_CURVED];
             break;
           default:
-            KASSERT(false, "Node type not handled. node_id=%d type=%d", v->id, v->type);
+            KASSERT(false, "Node type not handled. node_id=%d type=%d. src=%d dest=%d", v->id, v->type, src, dest);
             break;
         }
         for (j = 0; j < edges_len; j++) {
@@ -323,9 +354,9 @@ int get_path(int src, int dest, track_node **path, int path_buf_size) {
 
 
 void set_velocity(int train, int speed, int velo) {
-  velocity[train][speed] = MILLIMETRES(velo);
+  velocity[train][speed] = velo;
 }
 
 void set_stopping_distance(int train, int speed, int distance) {
-  stopping_distance[train][speed] = MILLIMETRES(distance);
+  stopping_distance[train][speed] = distance;
 }

@@ -619,14 +619,20 @@ void sensor_saver() {
             set_to_stop = false;
             GetPath(&p, C10, stop_on_node);
             int dist_to_dest = p.dist;
-            int remaining_mm = StoppingDistance(active_train, active_speed)/10 + dist_to_dest;
+            int remaining_mm = dist_to_dest - StoppingDistance(active_train, active_speed);
             int velocity = Velocity(active_train, active_speed);
-            int wait_ticks = remaining_mm * 10 / velocity;
+            // * 100 in order to get the amount of ticks (10ms) we need to wait
+            int wait_ticks = remaining_mm * 100 / velocity;
+            RecordLog("waiting ");
+            RecordLogi(wait_ticks);
+            RecordLog(" ticks to reach ");
+            RecordLog(p.dest->name);
+            RecordLog("\n\r");
             Delay(wait_ticks);
             SetTrainSpeed(active_train, 0);
           }
 
-          if (req.argc == C10 && set_to_stop_from) {
+          if (set_to_stop_from && req.argc == stop_on_node) {
             set_to_stop_from = false;
             SetTrainSpeed(active_train, 0);
           }
@@ -985,35 +991,36 @@ void interactive() {
                 break;
               }
 
-              path_t p;
-              GetPath(&p, WhereAmI(train), dest_node_id);
-
-              Putstr(COM2, "Navigating train ");
-              Putstr(COM2, req.arg1);
-              Putstr(COM2, " at speed ");
-              Putstr(COM2, req.arg2);
-              Putstr(COM2, " to ");
-              Putstr(COM2, req.arg3);
-              Putstr(COM2, ". dist=");
-              char buf[10];
-              ji2a(p.dist, buf);
-              Putstr(COM2, buf);
-              Putstr(COM2, " len=");
-              ji2a(p.len, buf);
-              Putstr(COM2, buf);
-              Putstr(COM2, " path=");
-              int k;
-              for (k = 0; k < p.len; k++) {
-                Putstr(COM2, p.nodes[k]->name);
-                if (k < p.len - 1) {
-                  Putstr(COM2, ",");
-                }
-              }
+              // path_t p;
+              // GetPath(&p, WhereAmI(train), dest_node_id);
+              //
+              // Putstr(COM2, "Navigating train ");
+              // Putstr(COM2, req.arg1);
+              // Putstr(COM2, " at speed ");
+              // Putstr(COM2, req.arg2);
+              // Putstr(COM2, " to ");
+              // Putstr(COM2, req.arg3);
+              // Putstr(COM2, ". dist=");
+              // char buf[10];
+              // ji2a(p.dist, buf);
+              // Putstr(COM2, buf);
+              // Putstr(COM2, " len=");
+              // ji2a(p.len, buf);
+              // Putstr(COM2, buf);
+              // Putstr(COM2, " path=");
+              // int k;
+              // for (k = 0; k < p.len; k++) {
+              //   Putstr(COM2, p.nodes[k]->name);
+              //   if (k < p.len - 1) {
+              //     Putstr(COM2, ",");
+              //   }
+              // }
               active_train = train;
               active_speed = speed;
+              SetPathSwitches(train, speed, most_recent_sensor, Name2Node("C10"));
               SetTrainSpeed(train, speed);
               Delay(50);
-              Navigate(train, speed, lastSensor, Name2Node("C10"), false);
+              // Navigate(train, speed, most_recent_sensor, dest_node_id, false);
               stop_on_node = dest_node_id;
               set_to_stop = true;
             }
@@ -1055,35 +1062,11 @@ void interactive() {
                 break;
               }
 
-              path_t p;
-              GetPath(&p, WhereAmI(train), dest_node_id);
-
-              Putstr(COM2, "Navigating train ");
-              Putstr(COM2, req.arg1);
-              Putstr(COM2, " at speed ");
-              Putstr(COM2, req.arg2);
-              Putstr(COM2, " to ");
-              Putstr(COM2, req.arg3);
-              Putstr(COM2, ". dist=");
-              char buf[10];
-              ji2a(p.dist, buf);
-              Putstr(COM2, buf);
-              Putstr(COM2, " len=");
-              ji2a(p.len, buf);
-              Putstr(COM2, buf);
-              Putstr(COM2, " path=");
-              int k;
-              for (k = 0; k < p.len; k++) {
-                Putstr(COM2, p.nodes[k]->name);
-                if (k < p.len - 1) {
-                  Putstr(COM2, ",");
-                }
-              }
               active_train = train;
               active_speed = speed;
               SetTrainSpeed(train, speed);
               Delay(50);
-              Navigate(train, speed, lastSensor, Name2Node("C10"), false);
+              SetPathSwitches(train, speed, most_recent_sensor, dest_node_id);
               stop_on_node = dest_node_id;
               set_to_stop_from = true;
             }
