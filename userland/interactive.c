@@ -18,6 +18,7 @@
 int active_train;
 int active_speed;
 bool set_to_stop = false;
+bool set_to_stop_from = false;
 bool stop_on_node;
 
 // use for command parsing
@@ -44,6 +45,7 @@ enum command_t {
   COMMAND_PRINT_SENSOR_SAMPLES,
   COMMAND_PRINT_SENSOR_MULTIPLIERS,
   COMMAND_HELP,
+  COMMAND_STOP_FROM,
   COMMAND_SET_LOCATION,
   COMMAND_SET_VELOCITY,
   COMMAND_SET_STOPPING_DISTANCE,
@@ -99,6 +101,8 @@ command_t get_command_type(char *command) {
     return COMMAND_SET_LOCATION;
   } else if (jstrcmp(command, "stop")) {
     return COMMAND_SET_STOPPING_DISTANCE;
+  } else if (jstrcmp(command, "stopfrom")) {
+    return COMMAND_STOP_FROM;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
@@ -617,6 +621,11 @@ void sensor_saver() {
             SetTrainSpeed(active_train, 0);
           }
 
+          if (req.argc == C10 && set_to_stop_from) {
+            set_to_stop_from = false;
+            SetTrainSpeed(active_train, 0);
+          }
+
           if (req.argc == C14) {
             int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
             int velocity = (E8_C14_dist * 100) / time_diff;
@@ -990,6 +999,76 @@ void interactive() {
               Navigate(train, speed, lastSensor, Name2Node("C10"), false);
               stop_on_node = dest_node_id;
               set_to_stop = true;
+            }
+            break;
+          case COMMAND_STOP_FROM:
+            {
+              int status;
+              int train = jatoui(req.arg1, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid train provided: got ");
+                Putstr(COM2, req.arg1);
+                break;
+              }
+
+              if (train < 0 || train > 80) {
+                Putstr(COM2, "Invalid train provided: got ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " expected 1-80");
+                break;
+              }
+
+              int speed = jatoui(req.arg2, &status);
+              if (status != 0) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg2);
+                break;
+              }
+
+              if (speed < 0 || speed > 14) {
+                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, req.arg2);
+                Putstr(COM2, " expected 0-14");
+                break;
+              }
+              int dest_node_id = Name2Node(req.arg3);
+              if (dest_node_id == -1) {
+                Putstr(COM2, "Invalid dest node: got ");
+                Putstr(COM2, req.arg3);
+                break;
+              }
+
+              path_t p;
+              GetPath(&p, WhereAmI(train), dest_node_id);
+
+              Putstr(COM2, "Navigating train ");
+              Putstr(COM2, req.arg1);
+              Putstr(COM2, " at speed ");
+              Putstr(COM2, req.arg2);
+              Putstr(COM2, " to ");
+              Putstr(COM2, req.arg3);
+              Putstr(COM2, ". dist=");
+              char buf[10];
+              ji2a(p.dist, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " len=");
+              ji2a(p.len, buf);
+              Putstr(COM2, buf);
+              Putstr(COM2, " path=");
+              int k;
+              for (k = 0; k < p.len; k++) {
+                Putstr(COM2, p.nodes[k]->name);
+                if (k < p.len - 1) {
+                  Putstr(COM2, ",");
+                }
+              }
+              active_train = train;
+              active_speed = speed;
+              SetTrainSpeed(train, speed);
+              Delay(50);
+              Navigate(train, speed, lastSensor, Name2Node("C10"), false);
+              stop_on_node = dest_node_id;
+              set_to_stop_from = true;
             }
             break;
           case COMMAND_PATH:
