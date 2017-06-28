@@ -178,10 +178,10 @@ void SetPathSwitches(path_t *p) {
       RecordLog("  Setting switch ");
       RecordLog(p->nodes[i-1]->name);
       if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
-        RecordLog("to C\n\r");
+        RecordLog(" to C\n\r");
         SetSwitch(p->nodes[i-1]->num, SWITCH_CURVED);
       } else {
-        RecordLog("to S\n\r");
+        RecordLog(" to S\n\r");
         SetSwitch(p->nodes[i-1]->num, SWITCH_STRAIGHT);
       }
     }

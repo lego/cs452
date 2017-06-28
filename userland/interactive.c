@@ -833,8 +833,8 @@ void interactive() {
         break;
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
+        Putstr(COM2, CLEAR_LINE_BEFORE);
         MoveTerminalCursor(0, COMMAND_LOCATION + 1);
-        Putstr(COM2, CLEAR_LINE);
         switch (req.command_type) {
           case COMMAND_QUIT:
             Putstr(COM2, "\033[2J\033[HRunning quit");
@@ -1312,7 +1312,7 @@ void interactive() {
         Puti(COM2, sum);
         Putstr(COM2, "mm/s for ");
         Puti(COM2, samples);
-        Putstr(COM2, " sampes.");
+        Putstr(COM2, " samples." CLEAR_LINE_AFTER);
         Putstr(COM2, RECOVER_CURSOR);
         break;
       case INT_REQ_SENSOR_UPDATE:
