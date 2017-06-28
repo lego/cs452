@@ -563,6 +563,7 @@ void sensor_saver() {
   int C15 = Name2Node("C15");
   int E11 = Name2Node("E11");
   int E8 = Name2Node("E8");
+  int C10 = Name2Node("C10");
 
   path_t p;
   GetPath(&p, E8, C14);
@@ -587,34 +588,38 @@ void sensor_saver() {
 
           int curr_time = Time();
           sensor_reading_timestamps[req.argc] = curr_time;
-          if (req.argc == C14) {
-            int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
-            int velocity = (C14_dist * 100) / time_diff;
-
-            RecordLog("Readings for E8 ~> C14: time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s\n\r");
-          } else if (req.argc == D12) {
-            int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
-            int velocity = (D12_dist * 100) / time_diff;
-
-            RecordLog("Readings for C15 ~> D12: time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s\n\r");
-          } else if (req.argc == E8) {
-            int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E11];
-            int velocity = (E8_dist * 100) / time_diff;
-
-            RecordLog("Readings for E11 ~> E8 : time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s (curve)\n\r");
+          if (req.argc == C10) {
+            SetTrainSpeed(69, 0);
           }
+
+          // if (req.argc == C14) {
+          //   int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
+          //   int velocity = (C14_dist * 100) / time_diff;
+          //
+          //   RecordLog("Readings for E8 ~> C14: time_diff=");
+          //   RecordLogi(time_diff*10);
+          //   RecordLog(" velocity=");
+          //   RecordLogi(velocity);
+          //   RecordLog("mm/s\n\r");
+          // } else if (req.argc == D12) {
+          //   int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
+          //   int velocity = (D12_dist * 100) / time_diff;
+          //
+          //   RecordLog("Readings for C15 ~> D12: time_diff=");
+          //   RecordLogi(time_diff*10);
+          //   RecordLog(" velocity=");
+          //   RecordLogi(velocity);
+          //   RecordLog("mm/s\n\r");
+          // } else if (req.argc == E8) {
+          //   int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E11];
+          //   int velocity = (E8_dist * 100) / time_diff;
+          //
+          //   RecordLog("Readings for E11 ~> E8 : time_diff=");
+          //   RecordLogi(time_diff*10);
+          //   RecordLog(" velocity=");
+          //   RecordLogi(velocity);
+          //   RecordLog("mm/s (curve)\n\r");
+          // }
 
           // int time = Time();
           // int diffTime = time - lastSensorTime;
@@ -668,7 +673,7 @@ void interactive() {
   initialSwitchStates[11] = SWITCH_STRAIGHT;
   initialSwitchStates[12] = SWITCH_CURVED;
   initialSwitchStates[13] = SWITCH_CURVED;
-  initialSwitchStates[14] = SWITCH_STRAIGHT;
+  initialSwitchStates[14] = SWITCH_CURVED;
   initialSwitchStates[15] = SWITCH_STRAIGHT;
   initialSwitchStates[16] = SWITCH_STRAIGHT;
   initialSwitchStates[17] = SWITCH_CURVED;
