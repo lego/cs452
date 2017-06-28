@@ -93,16 +93,23 @@ command_t get_command_type(char *command) {
   } else if (jstrcmp(command, "psm")) {
     return COMMAND_PRINT_SENSOR_MULTIPLIERS;
   } else if (jstrcmp(command, "nav")) {
+    // navigates the train to B
     return COMMAND_NAVIGATE;
   } else if (jstrcmp(command, "path")) {
+    // runs the pathing algorithm from A to B
     return COMMAND_PATH;
   } else if (jstrcmp(command, "velo")) {
+    // manually sets the velocity for a train speed
     return COMMAND_SET_VELOCITY;
   } else if (jstrcmp(command, "loc")) {
+    // manually sets the location for a train
     return COMMAND_SET_LOCATION;
   } else if (jstrcmp(command, "stopdist")) {
+    // manually sets the stopdistance for a train speed
     return COMMAND_SET_STOPPING_DISTANCE;
   } else if (jstrcmp(command, "stopfrom")) {
+    // moves the train to a node and sends the stop command on arrival
+    // (only works for sensor nodes)
     return COMMAND_STOP_FROM;
   } else {
     // KASSERT(false, "Command not valid: %s", command);
