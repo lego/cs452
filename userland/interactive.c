@@ -28,6 +28,8 @@ bool clear_path_display;
 // used for pathing -- the train properties and whether to stop, and where to
 int active_train;
 int active_speed;
+int velocity_reading_delay_until;
+int most_recent_sensor;
 bool set_to_stop;
 bool set_to_stop_from;
 bool stop_on_node;
@@ -58,6 +60,7 @@ enum command_t {
   COMMAND_HELP,
   COMMAND_STOP_FROM,
   COMMAND_SET_LOCATION,
+  COMMAND_PRINT_VELOCITY,
   COMMAND_SET_VELOCITY,
   COMMAND_SET_STOPPING_DISTANCE,
   COMMAND_UPTIME,
@@ -305,6 +308,9 @@ command_t get_command_type(char *command) {
   } else if (jstrcmp(command, "velo")) {
     // manually sets the velocity for a train speed
     return COMMAND_SET_VELOCITY;
+  } else if (jstrcmp(command, "pvelo")) {
+    // manually sets the velocity for a train speed
+    return COMMAND_PRINT_VELOCITY;
   } else if (jstrcmp(command, "loc")) {
     // manually sets the location for a train
     return COMMAND_SET_LOCATION;
@@ -776,6 +782,21 @@ int sensor_reading_timestamps[256];
 int sample_points[1000];
 int samples = 0;
 
+#define NUM_SENSORS 80
+
+int findSensorOrBranch(int start) {
+  int current = start;
+  do {
+    if (track[current].edge[DIR_AHEAD].dest != 0) {
+      current = track[current].edge[DIR_AHEAD].dest->id;
+    } else {
+      current = -1;
+    }
+  } while(current >= 0 && track[current].type != NODE_SENSOR && track[current].type != NODE_BRANCH);
+
+  return current;
+}
+
 void sensor_saver() {
   RegisterAs(SENSOR_SAVER);
   interactive_req_t req;
@@ -791,7 +812,61 @@ void sensor_saver() {
   int B1 = Name2Node("B1");
   int E14 = Name2Node("E14");
 
+  int prevSensor[NUM_SENSORS][2];
+  int sensorDistances[NUM_SENSORS][2];
+
+  for (int i = 0; i < 80; i++) {
+    prevSensor[i][0] = -1;
+    prevSensor[i][1] = -1;
+  }
+
+  for (int i = 0; i < 80; i++) {
+    int next1 = -1;
+    int next2 = -1;
+
+    int next = findSensorOrBranch(i);
+    if (track[next].type == NODE_BRANCH) {
+      next1 = track[next].edge[DIR_STRAIGHT].dest->id;
+      next2 = track[next].edge[DIR_CURVED].dest->id;
+      if (track[next1].type != NODE_SENSOR) {
+        next1 = findSensorOrBranch(next1);
+      }
+      if (track[next2].type != NODE_SENSOR) {
+        next2 = findSensorOrBranch(next2);
+      }
+      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d, started at %d, intermediary %d", next1, i, next);
+      //KASSERT(next2 >= -1 && next2 < NUM_SENSORS, "next2 broken, got %d, started at %d, intermediary %d", next2, i, next);
+    } else {
+      next1 = next;
+      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d", next1);
+    }
+
+    if (next1 >= 0 && next1 < NUM_SENSORS) {
+      for (int j = 0; j < 2; j++) {
+        if (prevSensor[next1][j] == -1) {
+          prevSensor[next1][j] = i;
+        }
+      }
+    }
+    if (next2 >= 0 && next2 < NUM_SENSORS) {
+      for (int j = 0; j < 2; j++) {
+        if (prevSensor[next2][j] == -1) {
+          prevSensor[next2][j] = i;
+        }
+      }
+    }
+  }
+
   path_t p;
+  for (int i = 0; i < 80; i++) {
+    for (int j = 0; j < 2; j++) {
+      if (prevSensor[i][j] != -1) {
+        GetPath(&p, prevSensor[i][j], i);
+        sensorDistances[i][j] = p.dist;
+      }
+    }
+  }
+
   GetPath(&p, Name2Node("E8"), Name2Node("C14"));
   int E8_C14_dist = p.dist;
 
@@ -837,6 +912,7 @@ void sensor_saver() {
             RecordLog(p.dest->name);
             RecordLog("\n\r");
             Delay(wait_ticks);
+            velocity_reading_delay_until = Time();
             SetTrainSpeed(active_train, 0);
             is_pathing = false;
             clear_path_display = true;
@@ -847,56 +923,26 @@ void sensor_saver() {
             SetTrainSpeed(active_train, 0);
           }
 
-          if (req.argc == C14) {
-            int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
-            int velocity = (E8_C14_dist * 100) / time_diff;
-
-            RecordLog("Readings for E8 ~> C14: time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s\n\r");
-            sample_points[samples++] = velocity;
-          } else if (req.argc == D12) {
-            int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
-            int velocity = (C15_D12_dist * 100) / time_diff;
-
-            RecordLog("Readings for C15 ~> D12: time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s\n\r");
-            sample_points[samples++] = velocity;
-          } else if (req.argc == E8) {
-            int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E14];
-            int velocity = (E14_E8_dist * 100) / time_diff;
-
-            RecordLog("Readings for E14 ~> E8 : time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s (curve)\n\r");
-            sample_points[samples++] = velocity;
-          } else if (req.argc == E14) {
-            int time_diff = sensor_reading_timestamps[E14] - sensor_reading_timestamps[B1];
-            int velocity = (B1_E14_dist * 100) / time_diff;
-
-            RecordLog("Readings for B1 ~> E14 : time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s (curve)\n\r");
-            sample_points[samples++] = velocity;
-          } else if (req.argc == C10) {
-            int time_diff = sensor_reading_timestamps[C10] - sensor_reading_timestamps[C14];
-            int velocity = (C14_C10_dist * 100) / time_diff;
-
-            RecordLog("Readings for C14 ~> C10 : time_diff=");
-            RecordLogi(time_diff*10);
-            RecordLog(" velocity=");
-            RecordLogi(velocity);
-            RecordLog("mm/s (curve)\n\r");
-            sample_points[samples++] = velocity;
+          int velocity = 0;
+          if (lastSensor != -1) {
+            for (int i = 0; i < 2; i++) {
+              if (prevSensor[req.argc][i] == lastSensor) {
+                int time_diff = sensor_reading_timestamps[req.argc] - sensor_reading_timestamps[lastSensor];
+                velocity = (sensorDistances[req.argc][i] * 100) / time_diff;
+                RecordLog("Readings for ");
+                RecordLogi(prevSensor[req.argc][i]);
+                RecordLog(" ~> ");
+                RecordLogi(req.argc);
+                RecordLog(" : time_diff=");
+                RecordLogi(time_diff*10);
+                RecordLog(" velocity=");
+                RecordLogi(velocity);
+                RecordLog("mm/s (curve)\n\r");
+              }
+            }
+          }
+          if (velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
+            record_velocity_sample(active_train, active_speed, velocity);
           }
 
           // int time = Time();
@@ -917,6 +963,9 @@ void sensor_saver() {
 void interactive() {
   path_t p;
   current_path = &p;
+  active_train = 0;
+  active_speed = 0;
+  velocity_reading_delay_until = 0;
   // this needs to come before SENSOR SAVER due to Name2Node, so this should just be the first to happen
   InitNavigation();
   path_display_pos = 0;
@@ -1041,6 +1090,7 @@ void interactive() {
               SetTrainSpeed(train, speed);
               active_train = train;
               active_speed = speed;
+              velocity_reading_delay_until = Time();
             }
             break;
           case COMMAND_TRAIN_REVERSE:
@@ -1219,6 +1269,8 @@ void interactive() {
 
               active_train = train;
               active_speed = speed;
+              velocity_reading_delay_until = Time();
+              SetPathSwitches(train, speed, most_recent_sensor, Name2Node("C10"));
               SetTrainSpeed(train, speed);
 
               // get the path to BASIS_NODE, our destination point
@@ -1361,6 +1413,16 @@ void interactive() {
               Putstr(COM2, "mm/s ");
 
               set_velocity(train, speed, velocity);
+              }
+              break;
+          case COMMAND_PRINT_VELOCITY:
+              {
+                int velocity = Velocity(active_train, active_speed);
+                char buf[10];
+                ji2a(velocity, buf);
+                Putstr(COM2, "Velocity = ");
+                Putstr(COM2, buf);
+                Putstr(COM2, "mm/s");
               }
               break;
           case COMMAND_SET_LOCATION:
