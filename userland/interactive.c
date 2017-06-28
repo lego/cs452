@@ -551,6 +551,9 @@ int lastSensor = -1;
 
 int sensor_reading_timestamps[256];
 
+int sample_points[1000];
+int samples = 0;
+
 void sensor_saver() {
   RegisterAs(SENSOR_SAVER);
   interactive_req_t req;
@@ -561,7 +564,6 @@ void sensor_saver() {
   int D12 = Name2Node("D12");
   int C8 = Name2Node("C8");
   int C15 = Name2Node("C15");
-  int E11 = Name2Node("E11");
   int E8 = Name2Node("E8");
   int C10 = Name2Node("C10");
   int B1 = Name2Node("B1");
@@ -574,7 +576,7 @@ void sensor_saver() {
   GetPath(&p, C15, D12);
   int D12_dist = p.dist;
 
-  GetPath(&p, E11, E8);
+  GetPath(&p, E14, E8);
   int E8_dist = p.dist;
 
   GetPath(&p, B1, E14);
@@ -610,6 +612,7 @@ void sensor_saver() {
             RecordLog(" velocity=");
             RecordLogi(velocity);
             RecordLog("mm/s\n\r");
+            sample_points[samples++] = velocity;
           } else if (req.argc == D12) {
             int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
             int velocity = (D12_dist * 100) / time_diff;
@@ -619,15 +622,17 @@ void sensor_saver() {
             RecordLog(" velocity=");
             RecordLogi(velocity);
             RecordLog("mm/s\n\r");
+            sample_points[samples++] = velocity;
           } else if (req.argc == E8) {
-            int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E11];
+            int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E14];
             int velocity = (E8_dist * 100) / time_diff;
 
-            RecordLog("Readings for E11 ~> E8 : time_diff=");
+            RecordLog("Readings for E14 ~> E8 : time_diff=");
             RecordLogi(time_diff*10);
             RecordLog(" velocity=");
             RecordLogi(velocity);
             RecordLog("mm/s (curve)\n\r");
+            sample_points[samples++] = velocity;
           } else if (req.argc == E14) {
             int time_diff = sensor_reading_timestamps[E14] - sensor_reading_timestamps[B1];
             int velocity = (E14_dist * 100) / time_diff;
@@ -637,6 +642,7 @@ void sensor_saver() {
             RecordLog(" velocity=");
             RecordLogi(velocity);
             RecordLog("mm/s (curve)\n\r");
+            sample_points[samples++] = velocity;
           }
 
           // int time = Time();
@@ -657,6 +663,7 @@ void sensor_saver() {
 void interactive() {
   // this needs to come before SENSOR SAVER due to Name2Node, so this should just be the first to happen
   InitNavigation();
+  samples = 0;
 
 
   int tid = MyTid();
@@ -700,7 +707,6 @@ void interactive() {
   initialSwitchStates[20] = SWITCH_STRAIGHT;
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
-
 
   interactive_req_t req;
 
@@ -765,9 +771,10 @@ void interactive() {
               RecordLog(req.arg1);
               RecordLog(" to speed ");
               RecordLog(req.arg2);
-              RecordLog("\n\r");
+              RecordLog(". Resetting samples.\n\r");
 
               lastTrain = train;
+              samples = 0;
               SetTrainSpeed(train, speed);
             }
             break;
@@ -1148,6 +1155,16 @@ void interactive() {
         MoveTerminalCursor(30, COMMAND_LOCATION + 4);
         ji2a((1000*offset), buf);
         Putstr(COM2, buf);
+
+        int sum = 0; int i;
+        for (i = 0; i < samples; i++) sum += sample_points[i];
+        sum /= samples;
+        MoveTerminalCursor(0, COMMAND_LOCATION + 8);
+        Putstr(COM2, "Current velocity sample average:");
+        Puti(COM2, sum);
+        Putstr(COM2, " mm/s for ");
+        Puti(COM2, samples);
+        Putstr(COM2, " sample points.");
         Putstr(COM2, RECOVER_CURSOR);
         break;
       case INT_REQ_SENSOR_UPDATE:
