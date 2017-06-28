@@ -564,15 +564,18 @@ void sensor_saver() {
   int E11 = Name2Node("E11");
   int E8 = Name2Node("E8");
 
-  path_t p;
-  GetPath(&p, E8, C14);
-  int C14_dist = p.dist;
-
-  GetPath(&p, C15, D12);
-  int D12_dist = p.dist;
-
-  GetPath(&p, E11, E8);
-  int E8_dist = p.dist;
+  // path_t p;
+  // GetPath(&p, E8, C14);
+  // int C14_dist = p.dist;
+  int C14_dist = 785;
+  //
+  // GetPath(&p, C15, D12);
+  // int D12_dist = p.dist;
+  int D12_dist = 405;
+  //
+  // GetPath(&p, E11, E8);
+  // int E8_dist = p.dist;
+  int E8_dist = 1433;
 
   while (true) {
     ReceiveS(&sender, req);

@@ -91,7 +91,7 @@ void navigation_test() {
   GetPath(&p, Name2Node("E8"), Name2Node("C14"));
   PrintPath(&p);
 
-  GetPath(&p, Name2Node("C14"), Name2Node("A4"));
+  GetPath(&p, Name2Node("E11"), Name2Node("E8"));
   PrintPath(&p);
 
   #endif
