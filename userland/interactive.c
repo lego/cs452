@@ -17,8 +17,8 @@
 
 int active_train;
 int active_speed;
-bool set_to_stop = false;
-bool set_to_stop_from = false;
+bool set_to_stop;
+bool set_to_stop_from;
 bool stop_on_node;
 
 // use for command parsing
@@ -687,6 +687,8 @@ void interactive() {
   // this needs to come before SENSOR SAVER due to Name2Node, so this should just be the first to happen
   InitNavigation();
   samples = 0;
+  set_to_stop = false;
+  set_to_stop_from = false;
 
 
   int tid = MyTid();
