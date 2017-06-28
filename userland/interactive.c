@@ -595,13 +595,13 @@ void sensor_saver() {
 
           int curr_time = Time();
           sensor_reading_timestamps[req.argc] = curr_time;
-          // if (req.argc == C10) {
-          //   int remaining_mm = 280;
-          //   int velocity = 480;
-          //   int wait_ticks = remaining_mm * 100 / velocity;
-          //   Delay(wait_ticks);
-          //   SetTrainSpeed(69, 0);
-          // }
+          if (req.argc == C10) {
+            int remaining_mm = 280;
+            int velocity = 485;
+            int wait_ticks = remaining_mm * 100 / velocity;
+            Delay(wait_ticks);
+            SetTrainSpeed(69, 0);
+          }
 
           if (req.argc == C14) {
             int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
