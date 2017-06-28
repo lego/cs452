@@ -475,7 +475,7 @@ const int bucketSensors[BUCKETS] = {
 
 const int sensorDistances[BUCKETS] = {
   785,
-  567,
+  589,
   440,
   485,
   293,
@@ -537,7 +537,7 @@ void registerSample(int sensor, int prevSensor, int sample, int time) {
         int sampleWithLastOffset = sample - offset;
         int predictedSample = prediction - (time-sampleWithLastOffset);
         offset = ((float)sample - predictedSample);
-        float maxO = 10.0f;
+        float maxO = 5.0f;
         offset = minf(maxf(offset, -maxO), maxO);
         if (prediction != 0.0f) {
           predictionAccuracy = ((float)predictedSample) / ((float)sample);
