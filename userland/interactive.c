@@ -564,18 +564,15 @@ void sensor_saver() {
   int E11 = Name2Node("E11");
   int E8 = Name2Node("E8");
 
-  // path_t p;
-  // GetPath(&p, E8, C14);
-  // int C14_dist = p.dist;
-  int C14_dist = 785;
-  //
-  // GetPath(&p, C15, D12);
-  // int D12_dist = p.dist;
-  int D12_dist = 405;
-  //
-  // GetPath(&p, E11, E8);
-  // int E8_dist = p.dist;
-  int E8_dist = 1433;
+  path_t p;
+  GetPath(&p, E8, C14);
+  int C14_dist = p.dist;
+
+  GetPath(&p, C15, D12);
+  int D12_dist = p.dist;
+
+  GetPath(&p, E11, E8);
+  int E8_dist = p.dist;
 
   while (true) {
     ReceiveS(&sender, req);
@@ -635,6 +632,10 @@ void sensor_saver() {
 }
 
 void interactive() {
+  // this needs to come before SENSOR SAVER due to Name2Node, so this should just be the first to happen
+  InitNavigation();
+
+
   int tid = MyTid();
   int command_parser_tid = Create(7, command_parser);
   int time_keeper_tid = Create(7, time_keeper);
@@ -677,7 +678,6 @@ void interactive() {
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
 
-  InitNavigation();
 
   interactive_req_t req;
 
