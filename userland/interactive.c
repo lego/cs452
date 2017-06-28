@@ -100,7 +100,7 @@ command_t get_command_type(char *command) {
     return COMMAND_SET_VELOCITY;
   } else if (jstrcmp(command, "loc")) {
     return COMMAND_SET_LOCATION;
-  } else if (jstrcmp(command, "stop")) {
+  } else if (jstrcmp(command, "stopdist")) {
     return COMMAND_SET_STOPPING_DISTANCE;
   } else if (jstrcmp(command, "stopfrom")) {
     return COMMAND_STOP_FROM;
@@ -605,13 +605,6 @@ void sensor_saver() {
     ReceiveS(&sender, req);
     switch (req.type) {
     case INT_REQ_SENSOR_UPDATE: {
-
-          // if (req.argc == 55) { // D7
-          //   SetTrainSpeed(58, 1);
-          //   // Delay(1);
-          //   // SetTrainSpeed(58, 0);
-          // }
-
           int curr_time = Time();
           most_recent_sensor = req.argc;
           sensor_reading_timestamps[req.argc] = curr_time;
