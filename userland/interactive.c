@@ -73,7 +73,7 @@ typedef struct {
   char echo[4];
 } interactive_req_t;
 
-#define PATH_LOG_X 50
+#define PATH_LOG_X 60
 #define PATH_LOG_Y 2
 
 int path_display_pos;
@@ -96,8 +96,8 @@ void DisplayPath(path_t *p) {
   Puti(COM2, p->dist);
   // FIXME: add an eta
   Putstr(COM2, ".");
-  path_display_pos++;
   for (i = 0; i < p->len; i++) {
+    path_display_pos++;
     MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
     if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
       char dir;
@@ -108,15 +108,13 @@ void DisplayPath(path_t *p) {
       }
       Putstr(COM2, "    switch=");
       Puti(COM2, p->nodes[i-1]->num);
-      Putstr(COM2, " set to ");
+      Putstr(COM2, " needs to be ");
       Putc(COM2, dir);
       path_display_pos++;
       MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
     }
     Putstr(COM2, "  node=");
     Putstr(COM2, p->nodes[i]->name);
-    path_display_pos++;
-    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
   }
 
   Putstr(COM2, RECOVER_CURSOR);
@@ -1175,13 +1173,13 @@ void interactive() {
                 break;
               }
 
-              Putstr(COM2, "Set velocity of ");
+              Putstr(COM2, "Set velocity train=");
               Putstr(COM2, req.arg1);
               Putstr(COM2, " speed=");
               Putstr(COM2, req.arg2);
               Putstr(COM2, " to ");
               Putstr(COM2, req.arg3);
-              Putstr(COM2, " mm/s ");
+              Putstr(COM2, "mm/s ");
 
               set_velocity(train, speed, velocity);
               }
@@ -1250,13 +1248,13 @@ void interactive() {
                   break;
                 }
 
-                Putstr(COM2, "Set stopping distance of ");
+                Putstr(COM2, "Set stopping distance train=");
                 Putstr(COM2, req.arg1);
-                Putstr(COM2, " speed ");
+                Putstr(COM2, " speed=");
                 Putstr(COM2, req.arg2);
                 Putstr(COM2, " to ");
                 Putstr(COM2, req.arg3);
-                Putstr(COM2, " mm ");
+                Putstr(COM2, "mm ");
                 set_stopping_distance(train, speed, stopping_distance);
               }
               break;
@@ -1287,11 +1285,11 @@ void interactive() {
         for (i = 0; i < samples; i++) sum += sample_points[i];
         sum /= samples;
         MoveTerminalCursor(0, COMMAND_LOCATION + 8);
-        Putstr(COM2, "Current velocity sample average:");
+        Putstr(COM2, "Velocity sample avg. ");
         Puti(COM2, sum);
-        Putstr(COM2, " mm/s for ");
+        Putstr(COM2, "mm/s for ");
         Puti(COM2, samples);
-        Putstr(COM2, " sample points.");
+        Putstr(COM2, " sampes.");
         Putstr(COM2, RECOVER_CURSOR);
         break;
       case INT_REQ_SENSOR_UPDATE:
