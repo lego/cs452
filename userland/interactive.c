@@ -596,7 +596,7 @@ void sensor_saver() {
           int curr_time = Time();
           sensor_reading_timestamps[req.argc] = curr_time;
           if (req.argc == C10) {
-            int remaining_mm = 280;
+            int remaining_mm = 280 + 56 + 30;
             int velocity = 485;
             int wait_ticks = remaining_mm * 100 / velocity;
             Delay(wait_ticks);
