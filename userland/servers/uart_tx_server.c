@@ -233,3 +233,19 @@ void MoveTerminalCursor(unsigned int x, unsigned int y) {
 
   Putc(COM2, 'H');
 }
+
+int GetTxQueueLength( int channel ) {
+  KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
+  log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
+  int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
+  if (server_tid == -1) {
+    KASSERT(false, "UART tx server not initialized");
+    return -1;
+  }
+  uart_request_t req;
+  req.type = GET_QUEUE_REQUEST;
+  req.channel = channel;
+  int result;
+  SendS(server_tid, req, result);
+  return result;
+}

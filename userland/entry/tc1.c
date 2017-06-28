@@ -19,5 +19,5 @@ void tc1_entry_task() {
 
   Create(PRIORITY_TRAIN_CONTROLLER_SERVER, train_controller_server);
 
-  Create(10, interactive);
+  Create(PRIORITY_INTERACTIVE, interactive);
 }
