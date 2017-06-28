@@ -116,6 +116,8 @@ userland_%.s: userland/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
 userland_trains_%.s: userland/trains/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+userland_servers_%.s: userland/servers/%.c
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
 userland_entry_%.s: userland/entry/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
 

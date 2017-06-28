@@ -1,8 +1,8 @@
 #include <basic.h>
 #include <kernel.h>
-#include <uart_tx_server.h>
+#include <servers/uart_tx_server.h>
 #include <kernel.h>
-#include <nameserver.h>
+#include <servers/nameserver.h>
 #include <heap.h>
 #include <bwio.h>
 #include <priorities.h>
@@ -13,6 +13,7 @@ static int uart2_tx_server_tid = -1;
 enum {
   TX_NOTIFIER,
   PUT_REQUEST,
+  GET_QUEUE_REQUEST,
 };
 
 typedef struct {
@@ -125,6 +126,9 @@ void uart_tx_server() {
       }
       ReplyN(requester);
       break;
+    case GET_QUEUE_REQUEST:
+      ReplyS(requester, outputQueueLength);
+      break;
     default:
       KASSERT(false, "uart_server received unknown request type=%d", request.type);
       break;
@@ -157,8 +161,6 @@ int Putcs( int channel, const char* c, int len ) {
   log_task("Putc c=%c", active_task->tid, c);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
   if (server_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
     KASSERT(false, "UART tx server not initialized");
     return -1;
   }
@@ -177,8 +179,6 @@ int Putc( int channel, const char c ) {
   log_task("Putc tid=%d char=%c", active_task->tid, uart_tx_server_tid, c);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
   if (server_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
     KASSERT(false, "UART tx server not initialized");
     return -1;
   }
@@ -196,8 +196,6 @@ int Putstr(int channel, const char *str ) {
   log_task("Putstr str=%s", active_task->tid, str);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
   if (server_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
     KASSERT(false, "UART tx server not initialized");
     return -1;
   }
@@ -219,7 +217,8 @@ int Puti(int channel, int i) {
 }
 
 
-void move_cursor(unsigned int x, unsigned int y) {
+void MoveTerminalCursor(unsigned int x, unsigned int y) {
+  // FIXME: make this happen in one Putstr operation for escape sequence continuity
   char bf[12];
   Putc(COM2, ESCAPE_CH);
   Putc(COM2, '[');

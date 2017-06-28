@@ -1,8 +1,8 @@
 #include <basic.h>
 #include <kernel.h>
-#include <uart_rx_server.h>
+#include <servers/uart_rx_server.h>
 #include <kernel.h>
-#include <nameserver.h>
+#include <servers/nameserver.h>
 #include <heap.h>
 #include <bwio.h>
 #include <priorities.h>
@@ -148,8 +148,6 @@ char Getc( int channel ) {
   log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
   int server_tid = ((channel == COM1) ? uart1_rx_server_tid : uart2_rx_server_tid);
   if (server_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
     KASSERT(false, "UART rx server not initialized");
     return -1;
   }
@@ -166,8 +164,6 @@ int ClearRx(int channel ) {
   log_task("ClearRx tid=%d", active_task->tid, uart_rx_server_tid);
   int server_tid = ((channel == COM1) ? uart1_rx_server_tid : uart2_rx_server_tid);
   if (server_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
     KASSERT(false, "UART rx server not initialized");
     return -1;
   }
@@ -183,8 +179,6 @@ int GetRxQueueLength( int channel ) {
   log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
   int server_tid = ((channel == COM1) ? uart1_rx_server_tid : uart2_rx_server_tid);
   if (server_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
     KASSERT(false, "UART rx server not initialized");
     return -1;
   }

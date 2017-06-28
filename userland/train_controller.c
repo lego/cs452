@@ -1,9 +1,9 @@
 #include <train_controller.h>
 #include <basic.h>
 #include <bwio.h>
-#include <nameserver.h>
-#include <clock_server.h>
-#include <uart_tx_server.h>
+#include <servers/nameserver.h>
+#include <servers/clock_server.h>
+#include <servers/uart_tx_server.h>
 #include <priorities.h>
 
 static int train_controller_server_tid = -1;
@@ -74,7 +74,7 @@ void train_controller_server() {
   train_control_request_t request;
 
   for (int i = 0; i < NUM_WORKERS; i++) {
-    workers[i] = Create(PRIORITY_TRAIN_CONTROLLER_TASK, &train_controller_task);
+    workers[i] = Create(PRIORITY_TRAIN_CONTROLLER_TASK, train_controller_task);
     workerReady[i] = false;
   }
 

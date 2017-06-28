@@ -4,7 +4,7 @@
 #include <kern/context_switch.h>
 #include <kern/kernel_request.h>
 #include <kernel.h>
-#include <nameserver.h>
+#include <servers/nameserver.h>
 #include <jstring.h>
 
 int CreateWithName(int priority, void (*entrypoint)(), const char *func_name) {

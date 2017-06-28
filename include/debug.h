@@ -27,6 +27,8 @@
 #include <kern/task_descriptor.h>
 extern volatile task_descriptor_t *active_task;
 
+#include <bwio.h>
+
 #if DEBUG_MODE
 /**
  * This function is made to only be a breakpoint in GDB
@@ -37,7 +39,6 @@ void debugger();
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <bwio.h>
 
 /**
  * Prints with a formatted string to STDERR for debugging output

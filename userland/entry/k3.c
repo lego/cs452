@@ -2,8 +2,8 @@
 #include <bwio.h>
 #include <entry/k3.h>
 #include <kernel.h>
-#include <nameserver.h>
-#include <clock_server.h>
+#include <servers/nameserver.h>
+#include <servers/clock_server.h>
 #include <idle_task.h>
 #include <io.h>
 #include <priorities.h>
@@ -106,7 +106,7 @@ void k3_entry_task() {
 // #include <basic.h>
 // #include <bwio.h>
 // #include <k2_entry.h>
-// #include <nameserver.h>
+// #include <servers/nameserver.h>
 // #include <kernel.h>
 // #include <ts7200.h>
 //

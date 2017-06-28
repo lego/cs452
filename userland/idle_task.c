@@ -1,7 +1,7 @@
 #include <basic.h>
 #include <ts7200.h>
 #include <idle_task.h>
-#include <nameserver.h>
+#include <servers/nameserver.h>
 
 void idle_task() {
   while (true) {

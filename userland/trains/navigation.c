@@ -2,9 +2,9 @@
 #include <trains/navigation.h>
 #include <trains/track_data.h>
 #include <trains/track_node.h>
-#include <clock_server.h>
+#include <servers/clock_server.h>
 #include <bwio.h>
-#include <uart_tx_server.h>
+#include <servers/uart_tx_server.h>
 #include <jstring.h>
 #include <heap.h>
 #include <train_controller.h>
@@ -169,7 +169,7 @@ void Navigate(int train, int speed, int src, int dest) {
   int remainingTime = CalculateTime(remainingDist, Velocity(train, speed));
 
   Putstr(COM2, SAVE_CURSOR);
-  move_cursor(0, COMMAND_LOCATION + 5);
+  MoveTerminalCursor(0, COMMAND_LOCATION + 5);
   Putstr(COM2, "Setting train=");
   Puti(COM2, train);
   Putstr(COM2, " speed=");
@@ -181,7 +181,7 @@ void Navigate(int train, int speed, int src, int dest) {
   SetTrainSpeed(train, speed);
   Delay((remainingTime / 10));
 
-  move_cursor(0, COMMAND_LOCATION + 6);
+  MoveTerminalCursor(0, COMMAND_LOCATION + 6);
   Putstr(COM2, "Stopping train=");
   Puti(COM2, train);
   Putstr(COM2, "\n\r");

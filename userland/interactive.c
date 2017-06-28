@@ -2,11 +2,11 @@
 #include <basic.h>
 #include <bwio.h>
 #include <interactive.h>
-#include <nameserver.h>
-#include <clock_server.h>
+#include <servers/nameserver.h>
+#include <servers/clock_server.h>
 #include <terminal.h>
-#include <uart_rx_server.h>
-#include <uart_tx_server.h>
+#include <servers/uart_rx_server.h>
+#include <servers/uart_tx_server.h>
 #include <train_controller.h>
 #include <kernel.h>
 #include <trains/navigation.h>
@@ -349,7 +349,7 @@ void DrawInitialScreen() {
   // Change BG colour
   Putstr(COM2, BLACK_FG);
   Putstr(COM2, WHITE_BG);
-  move_cursor(0, SWITCH_LOCATION);
+  MoveTerminalCursor(0, SWITCH_LOCATION);
   Putstr(COM2, "Switch status");
 
   Putstr(COM2, RESET_ATTRIBUTES);
@@ -362,10 +362,10 @@ void DrawInitialScreen() {
 
   Putstr(COM2, BLACK_FG);
   Putstr(COM2, WHITE_BG);
-  move_cursor(0, SENSOR_HISTORY_LOCATION);
+  MoveTerminalCursor(0, SENSOR_HISTORY_LOCATION);
   Putstr(COM2, "Recent sensor triggers");
 
-  move_cursor(0, COMMAND_LOCATION);
+  MoveTerminalCursor(0, COMMAND_LOCATION);
   Putstr(COM2, "Commands");
   // Reset BG colour
   Putstr(COM2, RESET_ATTRIBUTES);
@@ -377,7 +377,7 @@ void DrawInitialScreen() {
 void DrawTime(int t) {
   // "Time 10:22 100"
   //       ^ 6th char
-  move_cursor(6, 0);
+  MoveTerminalCursor(6, 0);
   char buf[12];
   ticks2a(t, buf, 12);
   Putstr(COM2, buf);
@@ -402,7 +402,7 @@ void DrawIdlePercent() {
 
   // "Idle 99.9% "
   //       ^ 6th char
-  move_cursor(0, 2);
+  MoveTerminalCursor(0, 2);
 
   Putstr(COM2, "Idle ");
   Putc(COM2, '0' + (idle_percent / 100) % 10);
@@ -421,7 +421,7 @@ void SetSwitchAndRender(int sw, int state) {
 
   if (index >= 0 && index < NUM_SWITCHES) {
     Putstr(COM2, SAVE_CURSOR);
-    move_cursor(3+7*(index/6)+(index>=18?1:0), SWITCH_LOCATION+1+index%6);
+    MoveTerminalCursor(3+7*(index/6)+(index>=18?1:0), SWITCH_LOCATION+1+index%6);
     if (state == SWITCH_CURVED) {
       Putc(COM2, 'C');
     } else if (state == SWITCH_STRAIGHT) {
@@ -585,10 +585,10 @@ void sensor_saver() {
 
 void interactive() {
   int tid = MyTid();
-  int command_parser_tid = Create(7, &command_parser);
-  int time_keeper_tid = Create(7, &time_keeper);
-  int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, &sensor_saver);
-  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, &sensor_reader);
+  int command_parser_tid = Create(7, command_parser);
+  int time_keeper_tid = Create(7, time_keeper);
+  int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
+  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, sensor_reader);
   int sender;
   idle_execution_time = 0;
   last_time_idle_displayed = 0;
@@ -644,7 +644,7 @@ void interactive() {
         break;
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
-        move_cursor(0, COMMAND_LOCATION + 1);
+        MoveTerminalCursor(0, COMMAND_LOCATION + 1);
         Putstr(COM2, CLEAR_LINE);
         switch (req.command_type) {
           case COMMAND_QUIT:
@@ -771,7 +771,7 @@ void interactive() {
               int speedTotal = 0;
               int n = 0;
               for (int i = 0; i < BUCKETS; i++) {
-                move_cursor(0, COMMAND_LOCATION + 5 + i);
+                MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
                 Putstr(COM2, CLEAR_LINE);
                 int total = 0;
                 for (int j = 0; j < bucketSize[i]; j++) {
@@ -789,13 +789,13 @@ void interactive() {
                 Putstr(COM2, buf);
 
                 //for (int j = 0; j < bucketSize[i]; j++) {
-                //  move_cursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
+                //  MoveTerminalCursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
                 //  char buf[10];
                 //  ji2a(bucketSamples[i*SAMPLES+j], buf);
                 //  Putstr(COM2, buf);
                 //}
               }
-              move_cursor(0, COMMAND_LOCATION + 3);
+              MoveTerminalCursor(0, COMMAND_LOCATION + 3);
               ji2a(speedTotal/n, buf);
               Putstr(COM2, buf);
               Putstr(COM2, RECOVER_CURSOR);
@@ -805,7 +805,7 @@ void interactive() {
               Putstr(COM2, SAVE_CURSOR);
               char buf[10];
               for (int i = 0; i < BUCKETS; i++) {
-                move_cursor(0, COMMAND_LOCATION + 5 + i);
+                MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
                 Putstr(COM2, CLEAR_LINE);
                 float total = 0;
                 for (int j = 0; j < speedMultSize[i]; j++) {
@@ -1059,12 +1059,12 @@ void interactive() {
         Putstr(COM2, SAVE_CURSOR);
         DrawTime(Time());
         DrawIdlePercent();
-        move_cursor(20, COMMAND_LOCATION + 4);
+        MoveTerminalCursor(20, COMMAND_LOCATION + 4);
         Putstr(COM2, CLEAR_LINE);
         char buf[12];
         ji2a((1000*predictionAccuracy), buf);
         Putstr(COM2, buf);
-        move_cursor(30, COMMAND_LOCATION + 4);
+        MoveTerminalCursor(30, COMMAND_LOCATION + 4);
         ji2a((1000*offset), buf);
         Putstr(COM2, buf);
         Putstr(COM2, RECOVER_CURSOR);
@@ -1072,7 +1072,7 @@ void interactive() {
       case INT_REQ_SENSOR_UPDATE:
         {
           Putstr(COM2, SAVE_CURSOR);
-          move_cursor(0, SENSOR_HISTORY_LOCATION + 1);
+          MoveTerminalCursor(0, SENSOR_HISTORY_LOCATION + 1);
           Putstr(COM2, CLEAR_LINE);
           Putstr(COM2, "Sensors read! ");
           int time = Time();

@@ -1,6 +1,6 @@
 #include <basic.h>
 #include <kernel.h>
-#include <nameserver.h>
+#include <servers/nameserver.h>
 
 static int nameserver_tid = -1;
 
@@ -28,29 +28,36 @@ void nameserver() {
       // FIXME: handle status
     }
 
-    if (req.call_type == REGISTER_CALL) {
+    switch (req.call_type) {
+    case REGISTER_CALL:
       // If register call, just add to the hashmap
       log_nameserver("nameserver registered name=%d tid=%d", req.name, source_tid);
       mapping[req.name] = source_tid;
       // FIXME: handle status
       status = Reply(source_tid, NULL, 0);
-    } else if (req.call_type == WHOIS_CALL) {
-      // If whois, get the value
-      // Reply -1 if no tid found, else reply tid
-      int val = mapping[req.name];
-      log_nameserver("nameserver resp name=%d tid=%d", req.name, val);
-      status = Reply(source_tid, &val, sizeof(int));
+      break;
+    case WHOIS_CALL:
+      {
+        // If whois, get the value
+        // Reply -1 if no tid found, else reply tid
+        int val = mapping[req.name];
+        log_nameserver("nameserver resp name=%d tid=%d", req.name, val);
+        status = Reply(source_tid, &val, sizeof(int));
 
-      // Reply failed, continue ?
-      if (status <= 0) {
-        // FIXME: handle status
+        // Reply failed, continue ?
+        if (status <= 0) {
+          // FIXME: handle status
+        }
       }
-    } else {
-      // FIXME: shoud not happen
+      break;
+    default:
+      KASSERT(false, "Nameserver received unknown req.call_type: got call_type=%d", req.call_type);
     }
   }
 }
 
+// TODO: would be clever to overwrite a tasks diagnostic name with the registered name
+// helps with specialized tasks such as UART{1,2} servers
 int RegisterAs( task_name_t name ) {
   log_task("RegisterAs name=%d", active_task->tid, name);
   if (nameserver_tid == -1){

@@ -1,8 +1,8 @@
 #include <basic.h>
 #include <bwio.h>
-#include <clock_server.h>
+#include <servers/clock_server.h>
 #include <kernel.h>
-#include <nameserver.h>
+#include <servers/nameserver.h>
 #include <heap.h>
 #include <priorities.h>
 
@@ -60,7 +60,7 @@ void clock_server() {
   while (true) {
     Receive(&requester, &request, sizeof(clock_request_t));
 
-    switch ( request.type ) {
+    switch (request.type) {
     case NOTIFIER:
       ReplyN(requester);
       ticks += 1;
@@ -81,9 +81,7 @@ void clock_server() {
       heap_push(&delay_queue, request.time_value, (void *) requester);
       break;
     default:
-      bwprintf(COM2, "UH OH...\n\r");
-      // FIXME: Clock server receive request.type unknown.
-      assert(false);
+      KASSERT(false, "Clock server received unknown request.type: type=%d", request.type);
       break;
     }
 

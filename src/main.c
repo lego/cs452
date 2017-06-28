@@ -67,7 +67,7 @@ void print_stats() {
   bwprintf(COM2, "Execution time\n\r");
   int i;
   for (i = 0; i < ctx->used_descriptors; i++) {
-    bwprintf(COM2, "Task %20d used %d (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
+    bwprintf(COM2, "Task %d used %d (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
   }
 }
 
