@@ -585,6 +585,9 @@ void sensor_saver() {
   GetPath(&p, E14, Name2Node("E9"));
   int E14_E9_dist = p.dist;
 
+  GetPath(&p, E14, Name2Node("D5"));
+  int E14_D5_dist = p.dist;
+
   while (true) {
     ReceiveS(&sender, req);
     switch (req.type) {
@@ -599,7 +602,7 @@ void sensor_saver() {
           int curr_time = Time();
           sensor_reading_timestamps[req.argc] = curr_time;
           if (req.argc == C10) {
-            int remaining_mm = 280 + 56 + 30 + E14_E9_dist;
+            int remaining_mm = 280 + 56 + 30 + E14_D5_dist;
             int velocity = 485;
             int wait_ticks = remaining_mm * 100 / velocity;
             Delay(wait_ticks);
