@@ -699,6 +699,13 @@ void interactive() {
               Putstr(COM2, req.arg1);
               Putstr(COM2, " to speed ");
               Putstr(COM2, req.arg2);
+
+              RecordLog("Set train ");
+              RecordLog(req.arg1);
+              RecordLog(" to speed ");
+              RecordLog(req.arg2);
+              RecordLog("\n\r");
+
               lastTrain = train;
               SetTrainSpeed(train, speed);
             }
