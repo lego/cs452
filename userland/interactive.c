@@ -73,6 +73,61 @@ typedef struct {
   char echo[4];
 } interactive_req_t;
 
+#define PATH_LOG_X 50
+#define PATH_LOG_Y 2
+
+int path_display_pos;
+
+void DisplayPath(path_t *p) {
+  Putstr(COM2, SAVE_CURSOR);
+  int i;
+  for (i = 0; i < path_display_pos; i++) {
+    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + i);
+    Putstr(COM2, CLEAR_LINE_AFTER);
+  }
+  path_display_pos = 0;
+
+  MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y);
+  Putstr(COM2, "Path from ");
+  Putstr(COM2, p->src->name);
+  Putstr(COM2, " ~> ");
+  Putstr(COM2, p->dest->name);
+  Putstr(COM2, ". Total distance=");
+  Puti(COM2, p->dist);
+  // FIXME: add an eta
+  Putstr(COM2, ".");
+  path_display_pos++;
+  for (i = 0; i < p->len; i++) {
+    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
+    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
+      char dir;
+      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+        dir = 'C';
+      } else {
+        dir = 'S';
+      }
+      Putstr(COM2, "    switch=");
+      Puti(COM2, p->nodes[i-1]->num);
+      Putstr(COM2, " set to ");
+      Putc(COM2, dir);
+      path_display_pos++;
+      MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
+    }
+    Putstr(COM2, "  node=");
+    Putstr(COM2, p->nodes[i]->name);
+    path_display_pos++;
+    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
+  }
+
+  Putstr(COM2, RECOVER_CURSOR);
+}
+
+void ClearLastCmdMessage() {
+  Putstr(COM2, SAVE_CURSOR);
+  MoveTerminalCursor(0, COMMAND_LOCATION + 1);
+  Putstr(COM2, RECOVER_CURSOR);
+}
+
 command_t get_command_type(char *command) {
   if (jstrcmp(command, "q")) {
     return COMMAND_QUIT;
@@ -198,6 +253,7 @@ interactive_req_t figure_out_command(char *command_buffer) {
 //     }
 //   }
 // }
+
 
 #define MAX_COMMAND_LIMIT 20
 
@@ -707,10 +763,11 @@ void sensor_saver() {
 void interactive() {
   // this needs to come before SENSOR SAVER due to Name2Node, so this should just be the first to happen
   InitNavigation();
+  path_display_pos = 0;
   samples = 0;
   set_to_stop = false;
   set_to_stop_from = false;
-
+  most_recent_sensor = -1;
 
   int tid = MyTid();
   int command_parser_tid = Create(7, command_parser);
@@ -759,6 +816,8 @@ void interactive() {
   int lastSensor = -1;
   int lastSensorTime = -1;
   clearBuckets();
+
+  ClearLastCmdMessage();
 
   while (true) {
     ReceiveS(&sender, req);
@@ -991,36 +1050,18 @@ void interactive() {
                 break;
               }
 
-              // path_t p;
-              // GetPath(&p, WhereAmI(train), dest_node_id);
-              //
-              // Putstr(COM2, "Navigating train ");
-              // Putstr(COM2, req.arg1);
-              // Putstr(COM2, " at speed ");
-              // Putstr(COM2, req.arg2);
-              // Putstr(COM2, " to ");
-              // Putstr(COM2, req.arg3);
-              // Putstr(COM2, ". dist=");
-              // char buf[10];
-              // ji2a(p.dist, buf);
-              // Putstr(COM2, buf);
-              // Putstr(COM2, " len=");
-              // ji2a(p.len, buf);
-              // Putstr(COM2, buf);
-              // Putstr(COM2, " path=");
-              // int k;
-              // for (k = 0; k < p.len; k++) {
-              //   Putstr(COM2, p.nodes[k]->name);
-              //   if (k < p.len - 1) {
-              //     Putstr(COM2, ",");
-              //   }
-              // }
+              if (train != active_train && active_speed <= 0 && most_recent_sensor != -1) {
+                Putstr(COM2, "Train must already be in motion and hit a sensor to path.");
+                break;
+              }
+
               active_train = train;
               active_speed = speed;
               SetPathSwitches(train, speed, most_recent_sensor, Name2Node("C10"));
               SetTrainSpeed(train, speed);
-              Delay(50);
-              // Navigate(train, speed, most_recent_sensor, dest_node_id, false);
+              path_t p;
+              GetMultiDestinationPath(&p, most_recent_sensor, Name2Node("C10"), dest_node_id);
+              DisplayPath(&p);
               stop_on_node = dest_node_id;
               set_to_stop = true;
             }
@@ -1055,6 +1096,7 @@ void interactive() {
                 Putstr(COM2, " expected 0-14");
                 break;
               }
+
               int dest_node_id = Name2Node(req.arg3);
               if (dest_node_id == -1) {
                 Putstr(COM2, "Invalid dest node: got ");
@@ -1062,10 +1104,13 @@ void interactive() {
                 break;
               }
 
+              if (train != active_train && active_speed <= 0 && most_recent_sensor != -1) {
+                Putstr(COM2, "Train must already be in motion and hit a sensor to path.");
+                break;
+              }
+
               active_train = train;
               active_speed = speed;
-              SetTrainSpeed(train, speed);
-              Delay(50);
               SetPathSwitches(train, speed, most_recent_sensor, dest_node_id);
               stop_on_node = dest_node_id;
               set_to_stop_from = true;
@@ -1089,26 +1134,7 @@ void interactive() {
 
               path_t p;
               GetPath(&p, src_node_id, dest_node_id);
-
-              Putstr(COM2, "Path ");
-              Putstr(COM2, req.arg1);
-              Putstr(COM2, " ~> ");
-              Putstr(COM2, req.arg3);
-              Putstr(COM2, ". dist=");
-              char buf[10];
-              ji2a(p.dist, buf);
-              Putstr(COM2, buf);
-              Putstr(COM2, " len=");
-              ji2a(p.len, buf);
-              Putstr(COM2, buf);
-              Putstr(COM2, " route=");
-              int k;
-              for (k = 0; k < p.len; k++) {
-                Putstr(COM2, p.nodes[k]->name);
-                if (k < p.len - 1) {
-                  Putstr(COM2, ",");
-                }
-              }
+              DisplayPath(&p);
             }
             break;
           case COMMAND_SET_VELOCITY:
@@ -1151,7 +1177,7 @@ void interactive() {
 
               Putstr(COM2, "Set velocity of ");
               Putstr(COM2, req.arg1);
-              Putstr(COM2, " speed ");
+              Putstr(COM2, " speed=");
               Putstr(COM2, req.arg2);
               Putstr(COM2, " to ");
               Putstr(COM2, req.arg3);

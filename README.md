@@ -2,6 +2,11 @@ CS452-Codebase
 ==============
 
 ### TODO
+- Tasks & Utilities
+  - [ ] Delayed command sender
+  - [ ] Generic warehouse
+  - [ ] Generic administrator
+  - [ ] Generic shopkeeper / courier
 - Idle task metrics tracking
   - [ ] Idling time
   - [ ] SendQ depth

@@ -80,6 +80,7 @@ void set_velocity(int train, int speed, int velocity);
 
 void set_stopping_distance(int train, int speed, int distance);
 
+void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2);
 
 /*
   High level of how nagivating functions work:

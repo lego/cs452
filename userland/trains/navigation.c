@@ -31,6 +31,26 @@ int Name2Node(char *name) {
   return -1;
 }
 
+
+void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2) {
+  path_t p1;
+  path_t p2;
+  GetPath(&p1, src, dest1);
+  GetPath(&p2, dest1, dest2);
+
+  p->dist = p1.dist + p2.dist;
+  p->len = p1.len + p2.len - 1;
+  int i;
+  for (i = 0; i < p1.len; i++) {
+    p->nodes[i] = p1.nodes[i];
+  }
+  for (i = 1; i < p2.len; i++) {
+    p->nodes[i + p1.len - 1] = p2.nodes[i];
+  }
+  p->src = p1.src;
+  p->dest = p2.dest;
+}
+
 void InitNavigation() {
   int i;
 
