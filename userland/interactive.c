@@ -564,6 +564,8 @@ void sensor_saver() {
   int E11 = Name2Node("E11");
   int E8 = Name2Node("E8");
   int C10 = Name2Node("C10");
+  int B1 = Name2Node("B1");
+  int E14 = Name2Node("E14");
 
   path_t p;
   GetPath(&p, E8, C14);
@@ -574,6 +576,9 @@ void sensor_saver() {
 
   GetPath(&p, E11, E8);
   int E8_dist = p.dist;
+
+  GetPath(&p, B1, E14);
+  int E14_dist = p.dist;
 
   while (true) {
     ReceiveS(&sender, req);
@@ -588,43 +593,51 @@ void sensor_saver() {
 
           int curr_time = Time();
           sensor_reading_timestamps[req.argc] = curr_time;
-          if (req.argc == C10) {
-
-            int remaining_mm = 280;
-            int velocity = 480;
-            int wait_ticks = remaining_mm * 100 / velocity;
-            Delay(wait_ticks);
-            SetTrainSpeed(69, 0);
-          }
-
-          // if (req.argc == C14) {
-          //   int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
-          //   int velocity = (C14_dist * 100) / time_diff;
-          //
-          //   RecordLog("Readings for E8 ~> C14: time_diff=");
-          //   RecordLogi(time_diff*10);
-          //   RecordLog(" velocity=");
-          //   RecordLogi(velocity);
-          //   RecordLog("mm/s\n\r");
-          // } else if (req.argc == D12) {
-          //   int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
-          //   int velocity = (D12_dist * 100) / time_diff;
-          //
-          //   RecordLog("Readings for C15 ~> D12: time_diff=");
-          //   RecordLogi(time_diff*10);
-          //   RecordLog(" velocity=");
-          //   RecordLogi(velocity);
-          //   RecordLog("mm/s\n\r");
-          // } else if (req.argc == E8) {
-          //   int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E11];
-          //   int velocity = (E8_dist * 100) / time_diff;
-          //
-          //   RecordLog("Readings for E11 ~> E8 : time_diff=");
-          //   RecordLogi(time_diff*10);
-          //   RecordLog(" velocity=");
-          //   RecordLogi(velocity);
-          //   RecordLog("mm/s (curve)\n\r");
+          // if (req.argc == C10) {
+          //   int remaining_mm = 280;
+          //   int velocity = 480;
+          //   int wait_ticks = remaining_mm * 100 / velocity;
+          //   Delay(wait_ticks);
+          //   SetTrainSpeed(69, 0);
           // }
+
+          if (req.argc == C14) {
+            int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
+            int velocity = (C14_dist * 100) / time_diff;
+
+            RecordLog("Readings for E8 ~> C14: time_diff=");
+            RecordLogi(time_diff*10);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s\n\r");
+          } else if (req.argc == D12) {
+            int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
+            int velocity = (D12_dist * 100) / time_diff;
+
+            RecordLog("Readings for C15 ~> D12: time_diff=");
+            RecordLogi(time_diff*10);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s\n\r");
+          } else if (req.argc == E8) {
+            int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E11];
+            int velocity = (E8_dist * 100) / time_diff;
+
+            RecordLog("Readings for E11 ~> E8 : time_diff=");
+            RecordLogi(time_diff*10);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s (curve)\n\r");
+          } else if (req.argc == E14) {
+            int time_diff = sensor_reading_timestamps[E14] - sensor_reading_timestamps[B1];
+            int velocity = (E14_dist * 100) / time_diff;
+
+            RecordLog("Readings for B1 ~> E14 : time_diff=");
+            RecordLogi(time_diff*10);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s (curve)\n\r");
+          }
 
           // int time = Time();
           // int diffTime = time - lastSensorTime;
