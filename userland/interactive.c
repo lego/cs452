@@ -1270,7 +1270,6 @@ void interactive() {
               active_train = train;
               active_speed = speed;
               velocity_reading_delay_until = Time();
-              SetPathSwitches(train, speed, most_recent_sensor, Name2Node("C10"));
               SetTrainSpeed(train, speed);
 
               // get the path to BASIS_NODE, our destination point
