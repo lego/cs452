@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <trains/track_node.h>
 #include <trains/track_data.h>
 
@@ -38,7 +39,7 @@ void GetPath(path_t *p, int src, int dest);
 void PrintPath(path_t *p);
 
 // Navigates a train from A to B
-void Navigate(int train, int speed, int src, int dest);
+void Navigate(int train, int speed, int src, int dest, bool include_stop);
 
 // Get the accelerating distance
 int AccelDist(int train, int speed);

@@ -52,6 +52,8 @@ void InitNavigation() {
   velocity[69][13] = MILLIMETRES(575);
   velocity[69][14] = MILLIMETRES(605);
 
+  stopping_distance[69][10] = MILLIMETRES(280 + 56 + 30); // reasonably accurate
+
   #if defined(USE_TRACKA)
   init_tracka(track);
   #elif defined(USE_TRACKB)
@@ -147,7 +149,7 @@ void PrintPath(path_t *p) {
   }
 }
 
-void Navigate(int train, int speed, int src, int dest) {
+void Navigate(int train, int speed, int src, int dest, bool include_stop) {
   if (velocity[train][speed] == -1 || stopping_distance[train][speed] == -1) {
     KASSERT(false, "Train speed / stopping distance not yet calibrated");
   }
@@ -186,15 +188,18 @@ void Navigate(int train, int speed, int src, int dest) {
   Putstr(COM2, "\n\r");
 
   SetTrainSpeed(train, speed);
-  Delay((remainingTime / 10));
 
-  MoveTerminalCursor(0, COMMAND_LOCATION + 6);
-  Putstr(COM2, "Stopping train=");
-  Puti(COM2, train);
-  Putstr(COM2, "\n\r");
-  Putstr(COM2, RECOVER_CURSOR);
+  if (include_stop) {
+    Delay((remainingTime / 10));
 
-  SetTrainSpeed(train, 0);
+    MoveTerminalCursor(0, COMMAND_LOCATION + 6);
+    Putstr(COM2, "Stopping train=");
+    Puti(COM2, train);
+    Putstr(COM2, "\n\r");
+    Putstr(COM2, RECOVER_CURSOR);
+
+    SetTrainSpeed(train, 0);
+  }
   state.train_locations[train] = dest;
 }
 

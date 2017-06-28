@@ -15,6 +15,11 @@
 
 #define NUM_SWITCHES 22
 
+int active_train;
+int active_speed;
+bool set_to_stop = false;
+bool stop_on_node;
+
 // use for command parsing
 // in particular this is where the command is string split
 // and a reference to the arguments locations are passed around
@@ -571,16 +576,16 @@ void sensor_saver() {
 
   path_t p;
   GetPath(&p, E8, C14);
-  int C14_dist = p.dist;
+  int E8_C14_dist = p.dist;
 
   GetPath(&p, C15, D12);
-  int D12_dist = p.dist;
+  int C15_D12_dist = p.dist;
 
   GetPath(&p, E14, E8);
-  int E8_dist = p.dist;
+  int E14_E8_dist = p.dist;
 
   GetPath(&p, B1, E14);
-  int E14_dist = p.dist;
+  int B1_E14_dist = p.dist;
 
   GetPath(&p, E14, Name2Node("E9"));
   int E14_E9_dist = p.dist;
@@ -599,19 +604,22 @@ void sensor_saver() {
           //   // SetTrainSpeed(58, 0);
           // }
 
-          // int curr_time = Time();
-          // sensor_reading_timestamps[req.argc] = curr_time;
-          // if (req.argc == C10) {
-          //   int remaining_mm = 280 + 56 + 30 + E14_C14_dist;
-          //   int velocity = 485;
-          //   int wait_ticks = remaining_mm * 100 / velocity;
-          //   Delay(wait_ticks);
-          //   SetTrainSpeed(69, 0);
-          // }
+          int curr_time = Time();
+          sensor_reading_timestamps[req.argc] = curr_time;
+          if (req.argc == C10 && set_to_stop) {
+            set_to_stop = false;
+            GetPath(&p, C10, stop_on_node);
+            int dist_to_dest = p.dist;
+            int remaining_mm = StoppingDistance(active_train, active_speed)/10 + dist_to_dest;
+            int velocity = Velocity(active_train, active_speed);
+            int wait_ticks = remaining_mm * 10 / velocity;
+            Delay(wait_ticks);
+            SetTrainSpeed(active_train, 0);
+          }
 
           if (req.argc == C14) {
             int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
-            int velocity = (C14_dist * 100) / time_diff;
+            int velocity = (E8_C14_dist * 100) / time_diff;
 
             RecordLog("Readings for E8 ~> C14: time_diff=");
             RecordLogi(time_diff*10);
@@ -621,7 +629,7 @@ void sensor_saver() {
             sample_points[samples++] = velocity;
           } else if (req.argc == D12) {
             int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
-            int velocity = (D12_dist * 100) / time_diff;
+            int velocity = (C15_D12_dist * 100) / time_diff;
 
             RecordLog("Readings for C15 ~> D12: time_diff=");
             RecordLogi(time_diff*10);
@@ -631,7 +639,7 @@ void sensor_saver() {
             sample_points[samples++] = velocity;
           } else if (req.argc == E8) {
             int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E14];
-            int velocity = (E8_dist * 100) / time_diff;
+            int velocity = (E14_E8_dist * 100) / time_diff;
 
             RecordLog("Readings for E14 ~> E8 : time_diff=");
             RecordLogi(time_diff*10);
@@ -641,7 +649,7 @@ void sensor_saver() {
             sample_points[samples++] = velocity;
           } else if (req.argc == E14) {
             int time_diff = sensor_reading_timestamps[E14] - sensor_reading_timestamps[B1];
-            int velocity = (E14_dist * 100) / time_diff;
+            int velocity = (B1_E14_dist * 100) / time_diff;
 
             RecordLog("Readings for B1 ~> E14 : time_diff=");
             RecordLogi(time_diff*10);
@@ -656,8 +664,8 @@ void sensor_saver() {
           // if (lastSensor > 0) {
           //   registerSample(req.argc, lastSensor, diffTime, time);
           // }
-          // lastSensor = req.argc;
-          // lastSensorTime = time;
+          lastSensor = req.argc;
+          lastSensorTime = curr_time;
         break;
     } default:
       KASSERT(false, "Received unknown request type.");
@@ -755,7 +763,7 @@ void interactive() {
               }
 
               if (train < 0 || train > 80) {
-                Putstr(COM2, "Invalid speed provided for tr: got ");
+                Putstr(COM2, "Invalid train provided for tr: got ");
                 Putstr(COM2, req.arg1);
                 Putstr(COM2, " expected 1-80");
                 break;
@@ -782,6 +790,8 @@ void interactive() {
               lastTrain = train;
               samples = 0;
               SetTrainSpeed(train, speed);
+              active_train = train;
+              active_speed = speed;
             }
             break;
           case COMMAND_TRAIN_REVERSE:
@@ -923,7 +933,7 @@ void interactive() {
               }
 
               if (train < 0 || train > 80) {
-                Putstr(COM2, "Invalid speed provided: got ");
+                Putstr(COM2, "Invalid train provided: got ");
                 Putstr(COM2, req.arg1);
                 Putstr(COM2, " expected 1-80");
                 break;
@@ -973,7 +983,13 @@ void interactive() {
                   Putstr(COM2, ",");
                 }
               }
-              Navigate(train, speed, WhereAmI(train), dest_node_id);
+              active_train = train;
+              active_speed = speed;
+              SetTrainSpeed(train, speed);
+              Delay(50);
+              Navigate(train, speed, lastSensor, Name2Node("C10"), false);
+              stop_on_node = dest_node_id;
+              set_to_stop = true;
             }
             break;
           case COMMAND_PATH:
