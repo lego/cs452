@@ -170,11 +170,20 @@ void PrintPath(path_t *p) {
 
 void SetPathSwitches(path_t *p) {
   int i;
+  RecordLog("SetPathSwitches ");
+  RecordLog(p->src->name);
+  RecordLog(" ~> ");
+  RecordLog(p->dest->name);
+  RecordLog("\n\r");
   for (i = 0; i < p->len; i++) {
     if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
+      RecordLog("  Setting switch ");
+      RecordLog(p->nodes[i-1]->name);
       if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+        RecordLog("to C\n\r");
         SetSwitch(p->nodes[i-1]->num, SWITCH_CURVED);
       } else {
+        RecordLog("to S\n\r");
         SetSwitch(p->nodes[i-1]->num, SWITCH_STRAIGHT);
       }
     }
