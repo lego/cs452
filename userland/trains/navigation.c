@@ -84,8 +84,6 @@ void InitNavigation() {
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;
   }
-
-  state.train_locations[58] = Name2Node("C12");
 }
 
 void set_location(int train, int location) {

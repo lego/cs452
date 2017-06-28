@@ -17,7 +17,6 @@
 
 int active_train;
 int active_speed;
-int most_recent_sensor;
 bool set_to_stop;
 bool set_to_stop_from;
 bool stop_on_node;
@@ -667,7 +666,7 @@ void sensor_saver() {
     switch (req.type) {
     case INT_REQ_SENSOR_UPDATE: {
           int curr_time = Time();
-          most_recent_sensor = req.argc;
+          set_location(active_train, req.argc);
           sensor_reading_timestamps[req.argc] = curr_time;
           if (req.argc == C10 && set_to_stop) {
             set_to_stop = false;
@@ -766,7 +765,6 @@ void interactive() {
   samples = 0;
   set_to_stop = false;
   set_to_stop_from = false;
-  most_recent_sensor = -1;
 
   int tid = MyTid();
   int command_parser_tid = Create(7, command_parser);
@@ -1049,7 +1047,7 @@ void interactive() {
                 break;
               }
 
-              if (train != active_train && active_speed <= 0 && most_recent_sensor != -1) {
+              if (train != active_train || active_speed <= 0 || WhereAmI(train) == -1) {
                 Putstr(COM2, "Train must already be in motion and hit a sensor to path.");
                 break;
               }
@@ -1060,11 +1058,11 @@ void interactive() {
 
               // get the path to C10, our destination point
               path_t p;
-              GetPath(&p, most_recent_sensor, Name2Node("C10"));
+              GetPath(&p, WhereAmI(train), Name2Node("C10"));
               // set all the switches to go there
               SetPathSwitches(&p);
               // get the full path including C10 and display it
-              GetMultiDestinationPath(&p, most_recent_sensor, Name2Node("C10"), dest_node_id);
+              GetMultiDestinationPath(&p, WhereAmI(train), Name2Node("C10"), dest_node_id);
               DisplayPath(&p);
               // set the trains destination, this makes the pathing logic fire
               // up when the train hits C10
@@ -1110,7 +1108,7 @@ void interactive() {
                 break;
               }
 
-              if (train != active_train && active_speed <= 0 && most_recent_sensor != -1) {
+              if (train != active_train || active_speed <= 0 || WhereAmI(train) != -1) {
                 Putstr(COM2, "Train must already be in motion and hit a sensor to path.");
                 break;
               }
@@ -1119,7 +1117,7 @@ void interactive() {
               active_speed = speed;
               path_t p;
               // get the path to the stopping from node
-              GetPath(&p, most_recent_sensor, dest_node_id);
+              GetPath(&p, WhereAmI(train), dest_node_id);
               // set the switches for that route
               SetPathSwitches(&p);
               // display the path
