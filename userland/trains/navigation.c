@@ -42,15 +42,10 @@ void InitNavigation() {
       }
   }
 
-  velocity[58][14] = MILLIMETRES(580);
-  stopping_distance[58][14] = MILLIMETRES(700);
-
-  velocity[69][9] = MILLIMETRES(420);
   velocity[69][10] = MILLIMETRES(485); // ~accurate
   velocity[69][11] = MILLIMETRES(530); // ~accurate
   velocity[69][12] = MILLIMETRES(577); // ~accurate, averaged 575 - 579, tending to 579 (not sure why)
-  velocity[69][13] = MILLIMETRES(575);
-  velocity[69][14] = MILLIMETRES(605);
+  velocity[69][13] = MILLIMETRES(600); // ~accurate, averaged 590-610, didn't leave on for awhile
 
   stopping_distance[69][10] = MILLIMETRES(280 + 56 + 30); // reasonably accurate
 

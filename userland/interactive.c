@@ -17,6 +17,7 @@
 
 int active_train;
 int active_speed;
+int most_recent_sensor;
 bool set_to_stop;
 bool set_to_stop_from;
 bool stop_on_node;
@@ -597,6 +598,9 @@ void sensor_saver() {
   GetPath(&p, E14, Name2Node("C14"));
   int E14_C14_dist = p.dist;
 
+  GetPath(&p, Name2Node("C14"), Name2Node("C10"));
+  int C14_C10_dist = p.dist;
+
   while (true) {
     ReceiveS(&sender, req);
     switch (req.type) {
@@ -609,6 +613,7 @@ void sensor_saver() {
           // }
 
           int curr_time = Time();
+          most_recent_sensor = req.argc;
           sensor_reading_timestamps[req.argc] = curr_time;
           if (req.argc == C10 && set_to_stop) {
             set_to_stop = false;
@@ -661,6 +666,16 @@ void sensor_saver() {
             int velocity = (B1_E14_dist * 100) / time_diff;
 
             RecordLog("Readings for B1 ~> E14 : time_diff=");
+            RecordLogi(time_diff*10);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s (curve)\n\r");
+            sample_points[samples++] = velocity;
+          } else if (req.argc == C10) {
+            int time_diff = sensor_reading_timestamps[C10] - sensor_reading_timestamps[C14];
+            int velocity = (C14_C10_dist * 100) / time_diff;
+
+            RecordLog("Readings for C14 ~> C10 : time_diff=");
             RecordLogi(time_diff*10);
             RecordLog(" velocity=");
             RecordLogi(velocity);
