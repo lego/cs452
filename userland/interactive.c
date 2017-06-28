@@ -532,16 +532,16 @@ void registerSample(int sensor, int prevSensor, int sample, int time) {
         }
         prediction = (float)time + bucketAvg[(i+1)%BUCKETS] + offset;
       }
-      if (i == 7) {
-        if (count > 3) {
-          //DelayUntil(prediction-2);
-          //clearBuckets();
-          //DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + minf(maxf(offset, -20.0f), 20.0f)));
-          DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + offset));
-          SetTrainSpeed(lastTrain, 0);
-        }
-        count++;
-      }
+      // if (i == 7) {
+      //   if (count > 3) {
+      //     //DelayUntil(prediction-2);
+      //     //clearBuckets();
+      //     //DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + minf(maxf(offset, -20.0f), 20.0f)));
+      //     DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + offset));
+      //     SetTrainSpeed(lastTrain, 0);
+      //   }
+      //   count++;
+      // }
       break;
     }
   }
