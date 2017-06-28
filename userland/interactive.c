@@ -564,6 +564,13 @@ void sensor_saver() {
     ReceiveS(&sender, req);
     switch (req.type) {
       case INT_REQ_SENSOR_UPDATE: {
+
+          if (req.argc == 55) { // D7
+            SetTrainSpeed(58, 1);
+            // Delay(1);
+            // SetTrainSpeed(58, 0);
+          }
+
           int time = Time();
           int diffTime = time - lastSensorTime;
           if (lastSensor > 0) {
@@ -603,7 +610,7 @@ void interactive() {
   initialSwitchStates[ 5] = SWITCH_STRAIGHT;
   initialSwitchStates[ 6] = SWITCH_STRAIGHT;
   initialSwitchStates[ 7] = SWITCH_STRAIGHT;
-  initialSwitchStates[ 8] = SWITCH_CURVED;
+  initialSwitchStates[ 8] = SWITCH_STRAIGHT;
   initialSwitchStates[ 9] = SWITCH_STRAIGHT;
   initialSwitchStates[10] = SWITCH_CURVED;
   initialSwitchStates[11] = SWITCH_STRAIGHT;
