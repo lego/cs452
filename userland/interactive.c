@@ -557,6 +557,23 @@ void sensor_saver() {
   int lastSensorTime = -1;
   int sender;
 
+  int C14 = Name2Node("C14");
+  int D12 = Name2Node("D12");
+  int C8 = Name2Node("C8");
+  int C15 = Name2Node("C15");
+  int E11 = Name2Node("E11");
+  int E8 = Name2Node("E8");
+
+  path_t p;
+  GetPath(&p, E8, C14);
+  int C14_dist = p.dist;
+
+  GetPath(&p, C15, D12);
+  int D12_dist = p.dist;
+
+  GetPath(&p, E11, E8);
+  int E8_dist = p.dist;
+
   while (true) {
     ReceiveS(&sender, req);
     switch (req.type) {
@@ -570,24 +587,42 @@ void sensor_saver() {
 
           int curr_time = Time();
           sensor_reading_timestamps[req.argc] = curr_time;
-          if (req.argc == Name2Node("C14")) {
-            int time_diff = sensor_reading_timestamps[Name2Node("C14")] - sensor_reading_timestamps[Name2Node("E8")];
-            int velocity = (785 * 100) / time_diff;
+          if (req.argc == C14) {
+            int time_diff = sensor_reading_timestamps[C14] - sensor_reading_timestamps[E8];
+            int velocity = (C14_dist * 100) / time_diff;
 
             RecordLog("Readings for E8 ~> C14: time_diff=");
-            RecordLogi(time_diff);
+            RecordLogi(time_diff*10);
             RecordLog(" velocity=");
             RecordLogi(velocity);
             RecordLog("mm/s\n\r");
+          } else if (req.argc == D12) {
+            int time_diff = sensor_reading_timestamps[D12] - sensor_reading_timestamps[C15];
+            int velocity = (D12_dist * 100) / time_diff;
 
-            // int time = Time();
-            // int diffTime = time - lastSensorTime;
-            // if (lastSensor > 0) {
-            //   registerSample(req.argc, lastSensor, diffTime, time);
-            // }
-            // lastSensor = req.argc;
-            // lastSensorTime = time;
+            RecordLog("Readings for C15 ~> D12: time_diff=");
+            RecordLogi(time_diff*10);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s\n\r");
+          } else if (req.argc == E8) {
+            int time_diff = sensor_reading_timestamps[E8] - sensor_reading_timestamps[E11];
+            int velocity = (E8_dist * 100) / time_diff;
+
+            RecordLog("Readings for E11 ~> E8 : time_diff=");
+            RecordLogi(time_diff*10);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s (curve)\n\r");
           }
+
+          // int time = Time();
+          // int diffTime = time - lastSensorTime;
+          // if (lastSensor > 0) {
+          //   registerSample(req.argc, lastSensor, diffTime, time);
+          // }
+          // lastSensor = req.argc;
+          // lastSensorTime = time;
         break;
     } default:
       KASSERT(false, "Received unknown request type.");
