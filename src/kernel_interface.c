@@ -172,3 +172,9 @@ void RecordLog(char * msg) {
   // in the kernel and not userland
   log_length += len;
 }
+
+void RecordLogi(int i) {
+  char bf[12];
+  ji2a(i, bf);
+  RecordLog(bf);
+}

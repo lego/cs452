@@ -549,35 +549,48 @@ void registerSample(int sensor, int prevSensor, int sample, int time) {
 
 int lastSensor = -1;
 
+int sensor_reading_timestamps[256];
+
 void sensor_saver() {
   RegisterAs(SENSOR_SAVER);
   interactive_req_t req;
-
   int lastSensorTime = -1;
-
   int sender;
 
   while (true) {
-    //KASSERT(false, "Sensor Saver! %d", MyTid());
     ReceiveS(&sender, req);
     switch (req.type) {
-      case INT_REQ_SENSOR_UPDATE: {
+    case INT_REQ_SENSOR_UPDATE: {
 
-          if (req.argc == 55) { // D7
-            SetTrainSpeed(58, 1);
-            // Delay(1);
-            // SetTrainSpeed(58, 0);
-          }
+          // if (req.argc == 55) { // D7
+          //   SetTrainSpeed(58, 1);
+          //   // Delay(1);
+          //   // SetTrainSpeed(58, 0);
+          // }
 
-          int time = Time();
-          int diffTime = time - lastSensorTime;
-          if (lastSensor > 0) {
-            registerSample(req.argc, lastSensor, diffTime, time);
+          int curr_time = Time();
+          sensor_reading_timestamps[req.argc] = curr_time;
+          if (req.argc == Name2Node("C14")) {
+            int time_diff = sensor_reading_timestamps[Name2Node("C14")] - sensor_reading_timestamps[Name2Node("E8")];
+            int velocity = (785 * 100) / time_diff;
+
+            RecordLog("Readings for E8 ~> C14: time_diff=");
+            RecordLogi(time_diff);
+            RecordLog(" velocity=");
+            RecordLogi(velocity);
+            RecordLog("mm/s\n\r");
+
+            // int time = Time();
+            // int diffTime = time - lastSensorTime;
+            // if (lastSensor > 0) {
+            //   registerSample(req.argc, lastSensor, diffTime, time);
+            // }
+            // lastSensor = req.argc;
+            // lastSensorTime = time;
           }
-          lastSensor = req.argc;
-          lastSensorTime = time;
-        }
-      break;
+        break;
+    } default:
+      KASSERT(false, "Received unknown request type.");
     }
     ReplyN(sender);
   }
