@@ -1548,7 +1548,7 @@ void interactive() {
             break;
         }
         MoveTerminalCursor(40, COMMAND_LOCATION + 2);
-        Putstr(COM2, CLEAR_LINE);
+        Putstr(COM2, CLEAR_LINE_BEFORE);
         MoveTerminalCursor(0, COMMAND_LOCATION + 2);
         Putstr(COM2, "# ");
         break;
@@ -1558,24 +1558,28 @@ void interactive() {
         int cur_time = Time();
         DrawTime(cur_time);
         DrawIdlePercent();
-        MoveTerminalCursor(20, COMMAND_LOCATION + 4);
-        Putstr(COM2, CLEAR_LINE);
-        char buf[12];
-        ji2a((1000*predictionAccuracy), buf);
-        Putstr(COM2, buf);
-        MoveTerminalCursor(30, COMMAND_LOCATION + 4);
-        ji2a((1000*offset), buf);
-        Putstr(COM2, buf);
+
+        // This was printing predictionAccuracy stuff, commented out for UI cleanliness
+        // MoveTerminalCursor(20, COMMAND_LOCATION + 4);
+        // Putstr(COM2, CLEAR_LINE);
+        // char buf[12];
+        // ji2a((1000*predictionAccuracy), buf);
+        // Putstr(COM2, buf);
+        // MoveTerminalCursor(30, COMMAND_LOCATION + 4);
+        // ji2a((1000*offset), buf);
+        // Putstr(COM2, buf);
 
         int sum = 0; int i;
         for (i = 0; i < samples; i++) sum += sample_points[i];
         sum /= samples;
+        MoveTerminalCursor(40, COMMAND_LOCATION + 8);
+        Putstr(COM2, CLEAR_LINE_BEFORE);
         MoveTerminalCursor(0, COMMAND_LOCATION + 8);
         Putstr(COM2, "Velocity sample avg. ");
         Puti(COM2, sum);
         Putstr(COM2, "mm/s for ");
         Puti(COM2, samples);
-        Putstr(COM2, " samples." CLEAR_LINE_AFTER);
+        Putstr(COM2, " samples.");
         Putstr(COM2, RECOVER_CURSOR);
         // only print every 2 * 100ms, too much printing otherwise
         if (is_pathing && path_update_counter >= 2) {
