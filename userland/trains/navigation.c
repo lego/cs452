@@ -61,7 +61,7 @@ void InitNavigation() {
       int j;
       for (j = 0; j < 15; j++) {
         velocity[i][j] = -1;
-        stopping_distance[i][j] = -1;
+        stopping_distance[i][j] = 0;
 
         velocitySampleStart[i][j] = 0;
         int k;
@@ -79,7 +79,7 @@ void InitNavigation() {
   //velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
 
   stopping_distance[69][10] = 280 + 56 + 30; // reasonably accurate
-  stopping_distance[58][10] = -80; // reasonably accurate
+  stopping_distance[71][14] = -140; // reasonably accurate
 
   #if defined(USE_TRACKA)
   init_tracka(track);
@@ -199,7 +199,7 @@ void SetPathSwitches(path_t *p) {
 }
 
 void Navigate(int train, int speed, int src, int dest, bool include_stop) {
-  if (velocity[train][speed] == -1 || stopping_distance[train][speed] == -1) {
+  if (velocity[train][speed] == -1) {
     KASSERT(false, "Train speed / stopping distance not yet calibrated");
   }
   KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);

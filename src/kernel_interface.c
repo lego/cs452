@@ -162,7 +162,9 @@ io_time_t GetIdleTaskExecutionTime() {
 
 void RecordLog(const char * msg) {
   int len = jstrlen(msg);
-  KASSERT(len < LOG_SIZE - log_length, "Will overflow logs");
+  if (!(len < LOG_SIZE - log_length)) {
+    log_length = 0;
+  }
   int i;
   int start = log_length;
   for (i = 0; i < len; i++) {
