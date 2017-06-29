@@ -1036,7 +1036,7 @@ void interactive() {
         break;
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
-        Putstr(COM2, CLEAR_LINE_BEFORE);
+        Putstr(COM2, RECOVER_CURSOR " " CLEAR_LINE_BEFORE);
         MoveTerminalCursor(0, COMMAND_LOCATION + 1);
         switch (req.command_type) {
           case COMMAND_QUIT:
@@ -1263,7 +1263,7 @@ void interactive() {
                 break;
               }
 
-              RecordLog("Basis is");
+              RecordLog("Basis is ");
               RecordLogi(BASIS_NODE_NAME);
               RecordLog(".\n\r");
 
