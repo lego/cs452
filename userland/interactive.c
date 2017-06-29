@@ -205,7 +205,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
   int calculated_time = remaining_mm * 10 / velo;
 
-  int offset = jstrlen("Path from ") + jstrlen(p->src->name) + jstrlen(" ~> ") + jstrlen(p->dest->name) + jstrlen(". Total distance=");
+  int offset = -1 +jstrlen("Path from ") + -1 +jstrlen(p->src->name) + -1 +jstrlen(" ~> ") + -1 +jstrlen(p->dest->name) + -1 +jstrlen(". Total distance=");
   MoveTerminalCursor(PATH_LOG_X + offset, PATH_LOG_Y);
   Puti(COM2, p->dist);
   // only show ETA for navigation
@@ -254,7 +254,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
       path_display_pos++;
     }
 
-    int node_offset = jstrlen(" node=") + jstrlen(p->nodes[i]->name) + jstrlen("  dist=") + jstrlen(p->dest->name) + jstrlen(". Total distance=");
+    int node_offset = -1 +jstrlen(" node=") + -1 +jstrlen(p->nodes[i]->name) + -1 +jstrlen("  dist=") + -1 +jstrlen(p->dest->name) + -1 +jstrlen(". Total distance=");
 
     MoveTerminalCursor(PATH_LOG_X + node_offset, PATH_LOG_Y + path_display_pos);
 
@@ -1036,8 +1036,8 @@ void interactive() {
         break;
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
-        Putstr(COM2, RECOVER_CURSOR " " CLEAR_LINE_BEFORE);
         MoveTerminalCursor(0, COMMAND_LOCATION + 1);
+        Putstr(COM2, CLEAR_LINE);
         switch (req.command_type) {
           case COMMAND_QUIT:
             Putstr(COM2, "\033[2J\033[HRunning quit");
