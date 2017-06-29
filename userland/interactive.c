@@ -164,7 +164,7 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   // only show ETA for navigation
   if (train != -2) {
     MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-    Putstr(COM2, " eta=");
+    Putstr(COM2, " timeleft=");
     PrintTicks(calculated_time);
   }
   int dist_sum = 0;
@@ -189,9 +189,15 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 
     dist_sum += next_edge->dist;
 
-    int remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
+    int remaining_mm_to_node;
+    if (i == p->len - 1) {
+      remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
+    } else {
+      remaining_mm_to_node = dist_sum - travelled_dist;
+    }
     int eta_to_node = remaining_mm_to_node * 10 / velo;
     if (eta_to_node < 0) eta_to_node = 0;
+    p->nodes[i]->expected_time = eta_to_node;
 
     if (p->nodes[i-1]->type == NODE_BRANCH) {
       path_display_pos++;
@@ -218,7 +224,7 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
     if (train != -2) {
       MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
       Putstr(COM2, "eta=");
-      PrintTicks(eta_to_node);
+      PrintTicks(p->nodes[i]->expected_time);
     }
   }
 
@@ -247,7 +253,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   Puti(COM2, remaining_mm + stop_dist);
   Putstr(COM2, "mm" CLEAR_LINE_AFTER);
   MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-  Putstr(COM2, "eta=");
+  Putstr(COM2, "timeleft=");
   PrintTicks(calculated_time);
   int dist_sum = 0;
 
@@ -272,8 +278,6 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
     dist_sum += next_edge->dist;
 
     int remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
-    int eta_to_node = remaining_mm_to_node * 10 / velo;
-    if (eta_to_node < 0) eta_to_node = 0;
     if (remaining_mm_to_node < 0) remaining_mm_to_node = -stop_dist;
 
     if (p->nodes[i-1]->type == NODE_BRANCH) {
@@ -290,7 +294,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
     // only show ETA for navigating
     MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
     Putstr(COM2, "eta=");
-    PrintTicks(eta_to_node + start_time);
+    PrintTicks(p->nodes[i]->expected_time);
     if (p->nodes[i]->type == NODE_SENSOR && p->nodes[i]->actual_sensor_trip != -1) {
       Putstr(COM2, " actual=");
       PrintTicks(p->nodes[i]->actual_sensor_trip);

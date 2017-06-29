@@ -41,4 +41,5 @@ struct track_node {
 
   // For displaying the actual vs. expected sensor stuff
   int actual_sensor_trip;
+  int expected_time;
 };
