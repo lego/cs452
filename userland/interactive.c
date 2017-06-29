@@ -197,7 +197,7 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
     }
     int eta_to_node = remaining_mm_to_node * 10 / velo;
     if (eta_to_node < 0) eta_to_node = 0;
-    p->nodes[i]->expected_time = eta_to_node;
+    p->nodes[i]->expected_time = eta_to_node + start_time;
 
     if (p->nodes[i-1]->type == NODE_BRANCH) {
       path_display_pos++;
