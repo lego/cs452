@@ -101,8 +101,8 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   }
   path_display_pos = 0;
 
-  int stop_dist = StoppingDistance(train, speed);
-  int velo = Velocity(train, speed);
+  int stop_dist = train == -2 ? 0 : StoppingDistance(train, speed);
+  int velo = train == -2 ? 0 : Velocity(train, speed);
 
   // amount of mm travelled at this speed for the amount of time passed
   int travelled_dist = ((curr_time - start_time) * velo) / 100;
