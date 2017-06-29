@@ -842,7 +842,25 @@ int findSensorOrBranch(int start) {
   return current;
 }
 
+void stopper() {
+  int sender;
+  int train;
+  int delay;
+  while (true) {
+    Receive(&sender, &train, sizeof(int));
+    ReplyN(sender);
+    Receive(&sender, &delay, sizeof(int));
+    ReplyN(sender);
+    Delay(delay);
+    SetTrainSpeed(train, 0);
+    velocity_reading_delay_until = Time();
+    is_pathing = false;
+    clear_path_display = true;
+  }
+}
+
 void sensor_saver() {
+  int stopper_tid = Create(2, stopper);
   RegisterAs(SENSOR_SAVER);
   interactive_req_t req;
   int lastSensorTime = -1;
@@ -957,11 +975,8 @@ void sensor_saver() {
             RecordLog(" ticks to reach ");
             RecordLog(p.dest->name);
             RecordLog("\n\r");
-            Delay(wait_ticks);
-            velocity_reading_delay_until = Time();
-            SetTrainSpeed(active_train, 0);
-            is_pathing = false;
-            clear_path_display = true;
+            Send(stopper_tid, &active_train, sizeof(int), NULL, 0);
+            Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
           }
 
           if (set_to_stop_from && req.argc == stop_on_node) {
@@ -1651,8 +1666,8 @@ void interactive() {
         Puti(COM2, samples);
         Putstr(COM2, " samples.");
         Putstr(COM2, RECOVER_CURSOR);
-        // only print every 2 * 100ms, too much printing otherwise
-        if (is_pathing && path_update_counter >= 2) {
+        // only print every 3 * 100ms, too much printing otherwise
+        if (is_pathing && path_update_counter >= 3) {
           path_update_counter = 0;
           // DisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
           UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
