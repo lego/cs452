@@ -60,6 +60,7 @@ enum command_t {
   COMMAND_HELP,
   COMMAND_STOP_FROM,
   COMMAND_SET_LOCATION,
+  COMMAND_MANUAL_SENSE,
   COMMAND_PRINT_VELOCITY,
   COMMAND_SET_VELOCITY,
   COMMAND_SET_STOPPING_DISTANCE,
@@ -86,6 +87,39 @@ typedef struct {
   // INT_REQ_ECHO data
   char echo[4];
 } interactive_req_t;
+
+
+
+static void insert_two_char_int(int b, char *buf) {
+  KASSERT(0 <= b && b < 100, "Provided number was outside of range: got %d", b);
+  buf[0] = '0' + (b / 10);
+  buf[1] = '0' + (b % 10);
+}
+
+void ticks2a(int ticks, char *buf, int buf_size) {
+  KASSERT(buf_size >= 10, "Buffer provided is not big enough. Got %d, wanted >=10", buf_size);
+  KASSERT(ticks < 360000, "Uptime exceeded an hour. Can't handle time display, ticks (%d) >= 360000", ticks);
+
+  int minutes = (ticks / 6000) % 24;
+  int seconds = (ticks / 100) % 60;
+
+
+  insert_two_char_int(minutes, buf);
+  // Insert semicolon
+  buf[2] = ':';
+  insert_two_char_int(seconds, buf + 3);
+  // Insert space
+  buf[5] = ' ';
+  insert_two_char_int(ticks % 100, buf + 6);
+  buf[8] = '0';
+  buf[9] = '\0';
+}
+
+void PrintTicks(int ticks) {
+  char buf[12];
+  ticks2a(ticks, buf, 12);
+  Putstr(COM2, buf);
+}
 
 #define PATH_LOG_X 60
 #define PATH_LOG_Y 2
@@ -124,12 +158,9 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   Putstr(COM2, "mm");
   // only show ETA for navigation
   if (train != -2) {
+    MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
     Putstr(COM2, " eta=");
-    Putc(COM2, '0' + ((calculated_time / 100) % 10));
-    Putc(COM2, '0' + ((calculated_time / 10) % 10));
-    Putstr(COM2, ".");
-    Putc(COM2, '0' + (calculated_time % 10));
-    Putstr(COM2, "s");
+    PrintTicks(calculated_time);
   }
   int dist_sum = 0;
 
@@ -177,15 +208,12 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
     MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
     Putstr(COM2, "dist=");
     Puti(COM2, dist_sum);
-    Putstr(COM2, "mm");
+    Putstr(COM2, "mm" CLEAR_LINE_AFTER);
     // only show ETA for navigating
     if (train != -2) {
-      Putstr(COM2, "  eta=");
-      Putc(COM2, '0' + ((eta_to_node / 100) % 10));
-      Putc(COM2, '0' + ((eta_to_node / 10) % 10));
-      Putstr(COM2, ".");
-      Putc(COM2, '0' + (eta_to_node % 10));
-      Putstr(COM2, "s");
+      MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
+      Putstr(COM2, "eta=");
+      PrintTicks(eta_to_node);
     }
   }
 
@@ -212,12 +240,10 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
   Putstr(COM2, "dist=");
   Puti(COM2, remaining_mm + stop_dist);
-  Putstr(COM2, "mm  eta=");
-  Putc(COM2, '0' + ((calculated_time / 100) % 10));
-  Putc(COM2, '0' + ((calculated_time / 10) % 10));
-  Putstr(COM2, ".");
-  Putc(COM2, '0' + (calculated_time % 10));
-  Putstr(COM2, "s" CLEAR_LINE_AFTER);
+  Putstr(COM2, "mm" CLEAR_LINE_AFTER);
+  MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
+  Putstr(COM2, "eta=");
+  PrintTicks(calculated_time);
   int dist_sum = 0;
 
   // don't start at the first because it's easier
@@ -255,14 +281,11 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
     MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
     Putstr(COM2, "dist=");
     Puti(COM2, remaining_mm_to_node + stop_dist);
-    Putstr(COM2, "mm");
+    Putstr(COM2, "mm" CLEAR_LINE_AFTER);
     // only show ETA for navigating
-    Putstr(COM2, "  eta=");
-    Putc(COM2, '0' + ((eta_to_node / 100) % 10));
-    Putc(COM2, '0' + ((eta_to_node / 10) % 10));
-    Putstr(COM2, ".");
-    Putc(COM2, '0' + (eta_to_node % 10));
-    Putstr(COM2, "s" CLEAR_LINE_AFTER);
+    MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
+    Putstr(COM2, "eta=");
+    PrintTicks(eta_to_node);
   }
 
   Putstr(COM2, RECOVER_CURSOR SHOW_CURSOR);
@@ -281,6 +304,8 @@ command_t get_command_type(char *command) {
     return COMMAND_TRAIN_SPEED;
   } else if (jstrcmp(command, "rv")) {
     return COMMAND_TRAIN_REVERSE;
+  } else if (jstrcmp(command, "sen")) {
+    return COMMAND_MANUAL_SENSE;
   } else if (jstrcmp(command, "sw")) {
     return COMMAND_SWITCH_TOGGLE;
   } else if (jstrcmp(command, "swa")) {
@@ -322,6 +347,40 @@ command_t get_command_type(char *command) {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_HELP;
   }
+}
+
+#define SENSOR_LOG_LENGTH 12
+
+int sensor_display_nums[SENSOR_LOG_LENGTH];
+int sensor_display_times[SENSOR_LOG_LENGTH];
+int logged_sensors;
+int last_logged_sensors;
+
+
+void PrintSensorTrigger(int sensor_num, int sensor_time) {
+  if (logged_sensors < SENSOR_LOG_LENGTH) logged_sensors++;
+  last_logged_sensors = (last_logged_sensors + 1) % SENSOR_LOG_LENGTH;
+  sensor_display_nums[last_logged_sensors] = sensor_num;
+  sensor_display_times[last_logged_sensors] = sensor_time;
+  int i;
+  for (i = 0; i < logged_sensors; i++) {
+    MoveTerminalCursor(30, SENSOR_HISTORY_LOCATION + 1 + i);
+    Putstr(COM2, CLEAR_LINE_BEFORE);
+    MoveTerminalCursor(0, SENSOR_HISTORY_LOCATION + 1 + i);
+    if (last_logged_sensors == i) {
+      Putstr(COM2,  "=> ");
+    } else {
+      Putstr(COM2, "   ");
+    }
+    Putstr(COM2, track[sensor_display_nums[i]].name);
+    Putstr(COM2, " ");
+    MoveTerminalCursor(8, SENSOR_HISTORY_LOCATION + 1 + i);
+    PrintTicks(sensor_display_times[i]);
+  }
+}
+
+void TriggerSensor(int sensor_num, int sensor_time) {
+  PrintSensorTrigger(sensor_num, sensor_time);
 }
 
 interactive_req_t figure_out_command(char *command_buffer) {
@@ -541,31 +600,6 @@ void time_keeper() {
   }
 }
 
-static void insert_two_char_int(int b, char *buf) {
-  KASSERT(0 <= b && b < 100, "Provided number was outside of range: got %d", b);
-  buf[0] = '0' + (b / 10);
-  buf[1] = '0' + (b % 10);
-}
-
-void ticks2a(int ticks, char *buf, int buf_size) {
-  KASSERT(buf_size >= 10, "Buffer provided is not big enough. Got %d, wanted >=10", buf_size);
-  KASSERT(ticks < 360000, "Uptime exceeded an hour. Can't handle time display, ticks (%d) >= 360000", ticks);
-
-  int minutes = (ticks / 6000) % 24;
-  int seconds = (ticks / 100) % 60;
-
-
-  insert_two_char_int(minutes, buf);
-  // Insert semicolon
-  buf[2] = ':';
-  insert_two_char_int(seconds, buf + 3);
-  // Insert space
-  buf[5] = ' ';
-  insert_two_char_int(ticks % 100, buf + 6);
-  buf[8] = '0';
-  buf[9] = '\0';
-}
-
 void DrawInitialScreen() {
   Putstr(COM2, SAVE_TERMINAL);
   Putstr(COM2, "Time xx:xx xx0\n\r");
@@ -603,9 +637,7 @@ void DrawTime(int t) {
   // "Time 10:22 100"
   //       ^ 6th char
   MoveTerminalCursor(6, 0);
-  char buf[12];
-  ticks2a(t, buf, 12);
-  Putstr(COM2, buf);
+  PrintTicks(t);
 }
 
 io_time_t last_time_idle_displayed;
@@ -894,6 +926,7 @@ void sensor_saver() {
           int curr_time = Time();
           set_location(active_train, req.argc);
           sensor_reading_timestamps[req.argc] = curr_time;
+          TriggerSensor(req.argc, curr_time);
           if (req.argc == basis_node && set_to_stop) {
             set_to_stop = false;
             GetPath(&p, basis_node, stop_on_node);
@@ -959,6 +992,8 @@ void sensor_saver() {
 
 void interactive() {
   path_t p;
+  logged_sensors = 0;
+  last_logged_sensors = SENSOR_LOG_LENGTH - 1; // goes around
   current_path = &p;
   active_train = 0;
   active_speed = 0;
@@ -1543,6 +1578,24 @@ void interactive() {
                 set_stopping_distance(train, speed, -stopping_distance);
               }
               break;
+          case COMMAND_MANUAL_SENSE:
+            {
+              int node = Name2Node(req.arg1);
+              if (node == -1) {
+                Putstr(COM2, "Invalid location.");
+                break;
+              }
+              if (track[node].type != NODE_SENSOR) {
+                Putstr(COM2, "You can only manually trigger a sensor.");
+                break;
+              }
+
+              Putstr(COM2, "Manually triggering sensor ");
+              Putstr(COM2, track[node].name);
+              int curr_time = Time();
+              TriggerSensor(node, curr_time);
+            }
+            break;
           default:
             Putstr(COM2, "Got invalid command=");
             Putstr(COM2, global_command_buffer + global_command_buffer[0]);
