@@ -194,6 +194,7 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr_time) {
   Putstr(COM2, SAVE_CURSOR);
   int i;
+  path_display_pos = 0;
 
   int stop_dist = StoppingDistance(train, speed);
   int velo = Velocity(train, speed);
