@@ -270,7 +270,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
 
 void ClearLastCmdMessage() {
   Putstr(COM2, SAVE_CURSOR);
-  MoveTerminalCursor(40, COMMAND_LOCATION + 1);
+  MoveTerminalCursor(0, COMMAND_LOCATION + 1);
   Putstr(COM2, CLEAR_LINE RECOVER_CURSOR);
 }
 
