@@ -1033,8 +1033,7 @@ void interactive() {
         break;
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
-        MoveTerminalCursor(0, COMMAND_LOCATION + 1);
-        Putstr(COM2, CLEAR_LINE);
+        ClearLastCmdMessage();
         switch (req.command_type) {
           case COMMAND_QUIT:
             Putstr(COM2, "\033[2J\033[HRunning quit");
@@ -1548,8 +1547,9 @@ void interactive() {
             Putstr(COM2, global_command_buffer + global_command_buffer[0]);
             break;
         }
-        Putstr(COM2, "\n\r");
+        MoveTerminalCursor(40, COMMAND_LOCATION + 2);
         Putstr(COM2, CLEAR_LINE);
+        MoveTerminalCursor(0, COMMAND_LOCATION + 2);
         Putstr(COM2, "# ");
         break;
       case INT_REQ_TIME:
