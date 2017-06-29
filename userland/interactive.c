@@ -979,8 +979,8 @@ void sensor_saver() {
             RecordLog(" ticks to reach ");
             RecordLog(p.dest->name);
             RecordLog("\n\r");
-            Send(stopper_tid, &active_train, sizeof(int), NULL, 0);
-            Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
+            // Send(stopper_tid, &active_train, sizeof(int), NULL, 0);
+            // Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
           }
 
           if (set_to_stop_from && req.argc == stop_on_node) {
