@@ -371,6 +371,7 @@ int last_logged_sensors;
 
 
 void PrintSensorTrigger(int sensor_num, int sensor_time) {
+  Putstr(COM2, SAVE_CURSOR);
   if (logged_sensors < SENSOR_LOG_LENGTH) logged_sensors++;
   last_logged_sensors = (last_logged_sensors + 1) % SENSOR_LOG_LENGTH;
   sensor_display_nums[last_logged_sensors] = sensor_num;
@@ -390,6 +391,7 @@ void PrintSensorTrigger(int sensor_num, int sensor_time) {
     MoveTerminalCursor(8, SENSOR_HISTORY_LOCATION + 1 + i);
     PrintTicks(sensor_display_times[i]);
   }
+  Putstr(COM2, RECOVER_CURSOR);
 }
 
 void TriggerSensor(int sensor_num, int sensor_time) {
