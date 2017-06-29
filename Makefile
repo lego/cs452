@@ -11,7 +11,7 @@ PROJECT=K4
 endif
 
 ifndef TRACK
-TRACK=A
+TRACK=B
 endif
 
 ifndef LOCAL

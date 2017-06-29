@@ -82,6 +82,7 @@ void set_velocity(int train, int speed, int velocity);
 void record_velocity_sample(int train, int speed, int sample);
 
 void set_stopping_distance(int train, int speed, int distance);
+void offset_stopping_distance(int train, int speed, int offset);
 
 void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2);
 

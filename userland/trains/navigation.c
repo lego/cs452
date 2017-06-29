@@ -413,3 +413,7 @@ void set_velocity(int train, int speed, int velo) {
 void set_stopping_distance(int train, int speed, int distance) {
   stopping_distance[train][speed] = distance;
 }
+
+void offset_stopping_distance(int train, int speed, int offset) {
+  stopping_distance[train][speed] += offset;
+}

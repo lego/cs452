@@ -63,6 +63,7 @@ enum command_t {
   COMMAND_MANUAL_SENSE,
   COMMAND_PRINT_VELOCITY,
   COMMAND_SET_VELOCITY,
+  COMMAND_STOPPING_DISTANCE_OFFSET,
   COMMAND_SET_STOPPING_DISTANCE,
   COMMAND_SET_STOPPING_DISTANCEN,
   COMMAND_UPTIME,
@@ -346,6 +347,9 @@ command_t get_command_type(char *command) {
   } else if (jstrcmp(command, "loc")) {
     // manually sets the location for a train
     return COMMAND_SET_LOCATION;
+  } else if (jstrcmp(command, "stopdistoff")) {
+    // manually sets the stopdistance for a train speed
+    return COMMAND_STOPPING_DISTANCE_OFFSET;
   } else if (jstrcmp(command, "stopdist")) {
     // manually sets the stopdistance for a train speed
     return COMMAND_SET_STOPPING_DISTANCE;
@@ -522,7 +526,7 @@ void command_parser() {
       }
 
       // if not alphanumeric or space, ignore
-      if (!is_alphanumeric(c) && c != ' ') {
+      if (!is_alphanumeric(c) && c != ' ' && c != '-') {
         continue;
       }
 
@@ -1496,6 +1500,29 @@ void interactive() {
               set_location(train, node);
             }
             break;
+          case COMMAND_STOPPING_DISTANCE_OFFSET:
+            {
+                int status = 0;
+                int offset = jatoui(req.arg1, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid offset provided: got ");
+                  Putstr(COM2, req.arg1);
+                  break;
+                }
+
+                Putstr(COM2, "Ofsetting stopping distance train=");
+                char buf[10];
+                ji2a(active_train, buf);
+                Putstr(COM2, buf);
+                Putstr(COM2, " speed=");
+                ji2a(active_speed, buf);
+                Putstr(COM2, buf);
+                Putstr(COM2, " to ");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, "mm ");
+                set_stopping_distance(active_train, active_speed, offset);
+              }
+              break;
           case COMMAND_SET_STOPPING_DISTANCE:
             {
                 int status;
