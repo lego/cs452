@@ -115,11 +115,12 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   Putstr(COM2, p->src->name);
   Putstr(COM2, " ~> ");
   Putstr(COM2, p->dest->name);
-  Putstr(COM2, ". Total distance=");
+  MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
+  Putstr(COM2, "dist=");
   Puti(COM2, p->dist);
   // only show ETA for navigation
   if (train == -2) {
-    Putstr(COM2, ". eta=");
+    Putstr(COM2, " eta=");
     Puti(COM2, (calculated_time / 100) % 10);
     Puti(COM2, (calculated_time / 10) % 10);
     Putstr(COM2, ".");
@@ -174,7 +175,8 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 
 
     // print distance to individual node and time to it
-    Putstr(COM2, "  dist=");
+    MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
+    Putstr(COM2, "dist=");
     Puti(COM2, dist_sum);
     Putstr(COM2, "mm");
     // only show ETA for navigating
@@ -206,8 +208,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
   int calculated_time = remaining_mm * 10 / velo;
 
-  int offset = -1 +jstrlen("Path from ") + -1 +jstrlen(p->src->name) + -1 +jstrlen(" ~> ") + -1 +jstrlen(p->dest->name) + -1 +jstrlen(". Total distance=");
-  MoveTerminalCursor(PATH_LOG_X + offset, PATH_LOG_Y);
+  MoveTerminalCursor(100 + 5, PATH_LOG_Y + path_display_pos);
   Puti(COM2, p->dist);
   // only show ETA for navigation
   if (train == -2) {
@@ -255,10 +256,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
       path_display_pos++;
     }
 
-    int node_offset = -1 +jstrlen(" node=") + -1 +jstrlen(p->nodes[i]->name) + -1 +jstrlen("  dist=") + -1 +jstrlen(p->dest->name) + -1 +jstrlen(". Total distance=");
-
-    MoveTerminalCursor(PATH_LOG_X + node_offset, PATH_LOG_Y + path_display_pos);
-
+    MoveTerminalCursor(100 + 5, PATH_LOG_Y + path_display_pos);
     Puti(COM2, dist_sum);
     Putstr(COM2, "mm");
     // only show ETA for navigating
