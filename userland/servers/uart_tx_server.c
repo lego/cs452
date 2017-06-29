@@ -66,7 +66,7 @@ void uart_tx_notifier() {
  * which is important to log if there is a fatal error
  */
 
-#define OUTPUT_QUEUE_MAX 2000
+#define OUTPUT_QUEUE_MAX 4096
 
 void uart_tx_server() {
   int tid = MyTid();

@@ -17,6 +17,9 @@
 
 #define RESET_ATTRIBUTES "\x1b" "[0m"
 
+#define HIDE_CURSOR "\x1b" "[?25l"
+#define SHOW_CURSOR "\x1b" "[?25h"
+
 #define WHITE_BG "\x1b" "[47m"
 #define RED_BG "\x1b" "[41m"
 #define GREEN_BG "\x1b" "[42m"

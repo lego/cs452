@@ -109,8 +109,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   int dist_to_dest = p->dist;
   int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
   int calculated_time = remaining_mm * 10 / velo;
+  if (calculated_time < 0) calculated_time = 0;
 
-  MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y);
+
+  MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
   Putstr(COM2, "Path from ");
   Putstr(COM2, p->src->name);
   Putstr(COM2, " ~> ");
@@ -120,11 +122,11 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   Puti(COM2, p->dist);
   // only show ETA for navigation
   if (train == -2) {
-    Putstr(COM2, " eta=");
-    Puti(COM2, (calculated_time / 100) % 10);
-    Puti(COM2, (calculated_time / 10) % 10);
+    Putstr(COM2, "mm eta=");
+    Putc(COM2, '0' + ((calculated_time / 100) % 10));
+    Putc(COM2, '0' + ((calculated_time / 10) % 10));
     Putstr(COM2, ".");
-    Puti(COM2, calculated_time % 10);
+    Putc(COM2, '0' + (calculated_time % 10));
     Putstr(COM2, "s");
   }
   int dist_sum = 0;
@@ -151,24 +153,19 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 
     int remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
     int eta_to_node = remaining_mm_to_node * 10 / velo;
-
-    // skip printing this node if we're already past it
-    // and also only skip if navigating
-    if (remaining_mm_to_node < 0 && train != -2) {
-      continue;
-    }
-
-    path_display_pos++;
-    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
+    if (eta_to_node < 0) eta_to_node = 0;
 
     if (p->nodes[i-1]->type == NODE_BRANCH) {
+      path_display_pos++;
+      MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
       Putstr(COM2, "    switch=");
       Puti(COM2, p->nodes[i-1]->num);
       Putstr(COM2, " needs to be ");
       Putc(COM2, dir);
-      path_display_pos++;
-      MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
     }
+
+    path_display_pos++;
+    MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
 
     Putstr(COM2, "  node=");
     Putstr(COM2, p->nodes[i]->name);
@@ -182,10 +179,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
     // only show ETA for navigating
     if (train != -2) {
       Putstr(COM2, "  eta=");
-      Puti(COM2, (eta_to_node / 100) % 10);
-      Puti(COM2, (eta_to_node / 10) % 10);
+      Putc(COM2, '0' + ((eta_to_node / 100) % 10));
+      Putc(COM2, '0' + ((eta_to_node / 10) % 10));
       Putstr(COM2, ".");
-      Puti(COM2, eta_to_node % 10);
+      Putc(COM2, '0' + (eta_to_node % 10));
       Putstr(COM2, "s");
     }
   }
@@ -194,7 +191,7 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 }
 
 void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr_time) {
-  Putstr(COM2, SAVE_CURSOR);
+  Putstr(COM2, SAVE_CURSOR HIDE_CURSOR);
   int i;
   path_display_pos = 0;
 
@@ -207,18 +204,18 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   int dist_to_dest = p->dist;
   int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
   int calculated_time = remaining_mm * 10 / velo;
+  if (calculated_time < 0) calculated_time = 0;
+  if (remaining_mm < 0) remaining_mm = -stop_dist;
 
-  MoveTerminalCursor(100 + 5, PATH_LOG_Y + path_display_pos);
-  Puti(COM2, p->dist);
-  // only show ETA for navigation
-  if (train == -2) {
-    Putstr(COM2, ". eta=");
-    Puti(COM2, (calculated_time / 100) % 10);
-    Puti(COM2, (calculated_time / 10) % 10);
-    Putstr(COM2, ".");
-    Puti(COM2, calculated_time % 10);
-    Putstr(COM2, "s" CLEAR_LINE_AFTER);
-  }
+  MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
+  Putstr(COM2, "dist=");
+  Puti(COM2, remaining_mm + stop_dist);
+  Putstr(COM2, "mm  eta=");
+  Putc(COM2, '0' + ((calculated_time / 100) % 10));
+  Putc(COM2, '0' + ((calculated_time / 10) % 10));
+  Putstr(COM2, ".");
+  Putc(COM2, '0' + (calculated_time % 10));
+  Putstr(COM2, "s" CLEAR_LINE_AFTER);
   int dist_sum = 0;
 
   // don't start at the first because it's easier
@@ -243,34 +240,30 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
 
     int remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
     int eta_to_node = remaining_mm_to_node * 10 / velo;
-
-    // skip printing this node if we're already past it
-    // and also only skip if navigating
-    // if (remaining_mm_to_node < 0 && train != -2) {
-    //   continue;
-    // }
-
-    path_display_pos++;
+    if (eta_to_node < 0) eta_to_node = 0;
+    if (remaining_mm_to_node < 0) remaining_mm_to_node = -stop_dist;
 
     if (p->nodes[i-1]->type == NODE_BRANCH) {
       path_display_pos++;
     }
 
-    MoveTerminalCursor(100 + 5, PATH_LOG_Y + path_display_pos);
-    Puti(COM2, dist_sum);
+    path_display_pos++;
+
+    // print distance to individual node and time to it
+    MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
+    Putstr(COM2, "dist=");
+    Puti(COM2, remaining_mm_to_node + stop_dist);
     Putstr(COM2, "mm");
     // only show ETA for navigating
-    if (train != -2) {
-      Putstr(COM2, "  eta=");
-      Puti(COM2, (eta_to_node / 100) % 10);
-      Puti(COM2, (eta_to_node / 10) % 10);
-      Putstr(COM2, ".");
-      Puti(COM2, eta_to_node % 10);
-      Putstr(COM2, "s" CLEAR_LINE_AFTER);
-    }
+    Putstr(COM2, "  eta=");
+    Putc(COM2, '0' + ((eta_to_node / 100) % 10));
+    Putc(COM2, '0' + ((eta_to_node / 10) % 10));
+    Putstr(COM2, ".");
+    Putc(COM2, '0' + (eta_to_node % 10));
+    Putstr(COM2, "s" CLEAR_LINE_AFTER);
   }
 
-  Putstr(COM2, RECOVER_CURSOR);
+  Putstr(COM2, RECOVER_CURSOR SHOW_CURSOR);
 }
 
 void ClearLastCmdMessage() {
@@ -1534,6 +1527,7 @@ void interactive() {
         // only print every 2 * 100ms, too much printing otherwise
         if (is_pathing && path_update_counter >= 2) {
           path_update_counter = 0;
+          // DisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
           UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
         } else {
           path_update_counter++;
