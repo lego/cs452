@@ -121,9 +121,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
   Putstr(COM2, "dist=");
   Puti(COM2, p->dist);
+  Putstr(COM2, "mm");
   // only show ETA for navigation
-  if (train == -2) {
-    Putstr(COM2, "mm eta=");
+  if (train != -2) {
+    Putstr(COM2, " eta=");
     Putc(COM2, '0' + ((calculated_time / 100) % 10));
     Putc(COM2, '0' + ((calculated_time / 10) % 10));
     Putstr(COM2, ".");
