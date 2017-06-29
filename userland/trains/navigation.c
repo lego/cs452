@@ -79,6 +79,8 @@ void InitNavigation() {
   //velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
 
   stopping_distance[69][10] = 280 + 56 + 30; // reasonably accurate
+  stopping_distance[71][10] = 700; // reasonably accurate
+  stopping_distance[71][12] = 400; // reasonably accurate
   stopping_distance[71][14] = -140; // reasonably accurate
 
   #if defined(USE_TRACKA)
