@@ -63,6 +63,7 @@ enum command_t {
   COMMAND_PRINT_VELOCITY,
   COMMAND_SET_VELOCITY,
   COMMAND_SET_STOPPING_DISTANCE,
+  COMMAND_SET_STOPPING_DISTANCEN,
   COMMAND_UPTIME,
   COMMAND_STATUS,
   COMMAND_NAVIGATE,
@@ -309,6 +310,9 @@ command_t get_command_type(char *command) {
   } else if (jstrcmp(command, "stopdist")) {
     // manually sets the stopdistance for a train speed
     return COMMAND_SET_STOPPING_DISTANCE;
+  } else if (jstrcmp(command, "stopdistn")) {
+    // manually sets the stopdistance for a train speed
+    return COMMAND_SET_STOPPING_DISTANCEN;
   } else if (jstrcmp(command, "stopfrom")) {
     // moves the train to a node and sends the stop command on arrival
     // (only works for sensor nodes)
@@ -1488,6 +1492,54 @@ void interactive() {
                 Putstr(COM2, req.arg3);
                 Putstr(COM2, "mm ");
                 set_stopping_distance(train, speed, stopping_distance);
+              }
+              break;
+          case COMMAND_SET_STOPPING_DISTANCEN:
+            {
+                int status;
+                int train = jatoui(req.arg1, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid train provided: got ");
+                  Putstr(COM2, req.arg1);
+                  break;
+                }
+
+                if (train < 0 || train > 80) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg1);
+                  Putstr(COM2, " expected 1-80");
+                  break;
+                }
+
+                int speed = jatoui(req.arg2, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg2);
+                  break;
+                }
+
+                if (speed < 0 || speed > 14) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg2);
+                  Putstr(COM2, " expected 0-14");
+                  break;
+                }
+
+                int stopping_distance = jatoui(req.arg3, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid stopping distance provided: got ");
+                  Putstr(COM2, req.arg3);
+                  break;
+                }
+
+                Putstr(COM2, "Set stopping distance train=");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " speed=");
+                Putstr(COM2, req.arg2);
+                Putstr(COM2, " to -");
+                Putstr(COM2, req.arg3);
+                Putstr(COM2, "mm ");
+                set_stopping_distance(train, speed, -stopping_distance);
               }
               break;
           default:
