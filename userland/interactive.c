@@ -63,6 +63,7 @@ enum command_t {
   COMMAND_PRINT_VELOCITY,
   COMMAND_SET_VELOCITY,
   COMMAND_SET_STOPPING_DISTANCE,
+  COMMAND_SET_STOPPING_DISTANCEN,
   COMMAND_UPTIME,
   COMMAND_STATUS,
   COMMAND_NAVIGATE,
@@ -94,14 +95,14 @@ int path_display_pos;
 void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time) {
   Putstr(COM2, SAVE_CURSOR);
   int i;
-  for (i = 0; i < path_display_pos; i++) {
+  for (i = 0; i < path_display_pos + 1; i++) {
     MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + i);
     Putstr(COM2, CLEAR_LINE_AFTER);
   }
   path_display_pos = 0;
 
-  int stop_dist = StoppingDistance(train, speed);
-  int velo = Velocity(train, speed);
+  int stop_dist = train == -2 ? 0 : StoppingDistance(train, speed);
+  int velo = train == -2 ? 0 : Velocity(train, speed);
 
   // amount of mm travelled at this speed for the amount of time passed
   int travelled_dist = ((curr_time - start_time) * velo) / 100;
@@ -120,9 +121,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
   Putstr(COM2, "dist=");
   Puti(COM2, p->dist);
+  Putstr(COM2, "mm");
   // only show ETA for navigation
-  if (train == -2) {
-    Putstr(COM2, "mm eta=");
+  if (train != -2) {
+    Putstr(COM2, " eta=");
     Putc(COM2, '0' + ((calculated_time / 100) % 10));
     Putc(COM2, '0' + ((calculated_time / 10) % 10));
     Putstr(COM2, ".");
@@ -268,8 +270,8 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
 
 void ClearLastCmdMessage() {
   Putstr(COM2, SAVE_CURSOR);
-  MoveTerminalCursor(0, COMMAND_LOCATION + 1);
-  Putstr(COM2, RECOVER_CURSOR);
+  MoveTerminalCursor(40, COMMAND_LOCATION + 1);
+  Putstr(COM2, CLEAR_LINE RECOVER_CURSOR);
 }
 
 command_t get_command_type(char *command) {
@@ -309,6 +311,9 @@ command_t get_command_type(char *command) {
   } else if (jstrcmp(command, "stopdist")) {
     // manually sets the stopdistance for a train speed
     return COMMAND_SET_STOPPING_DISTANCE;
+  } else if (jstrcmp(command, "stopdistn")) {
+    // manually sets the stopdistance for a train speed
+    return COMMAND_SET_STOPPING_DISTANCEN;
   } else if (jstrcmp(command, "stopfrom")) {
     // moves the train to a node and sends the stop command on arrival
     // (only works for sensor nodes)
@@ -1028,8 +1033,8 @@ void interactive() {
         break;
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
+        ClearLastCmdMessage();
         MoveTerminalCursor(0, COMMAND_LOCATION + 1);
-        Putstr(COM2, CLEAR_LINE);
         switch (req.command_type) {
           case COMMAND_QUIT:
             Putstr(COM2, "\033[2J\033[HRunning quit");
@@ -1490,13 +1495,62 @@ void interactive() {
                 set_stopping_distance(train, speed, stopping_distance);
               }
               break;
+          case COMMAND_SET_STOPPING_DISTANCEN:
+            {
+                int status;
+                int train = jatoui(req.arg1, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid train provided: got ");
+                  Putstr(COM2, req.arg1);
+                  break;
+                }
+
+                if (train < 0 || train > 80) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg1);
+                  Putstr(COM2, " expected 1-80");
+                  break;
+                }
+
+                int speed = jatoui(req.arg2, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg2);
+                  break;
+                }
+
+                if (speed < 0 || speed > 14) {
+                  Putstr(COM2, "Invalid speed provided: got ");
+                  Putstr(COM2, req.arg2);
+                  Putstr(COM2, " expected 0-14");
+                  break;
+                }
+
+                int stopping_distance = jatoui(req.arg3, &status);
+                if (status != 0) {
+                  Putstr(COM2, "Invalid stopping distance provided: got ");
+                  Putstr(COM2, req.arg3);
+                  break;
+                }
+
+                Putstr(COM2, "Set stopping distance train=");
+                Putstr(COM2, req.arg1);
+                Putstr(COM2, " speed=");
+                Putstr(COM2, req.arg2);
+                Putstr(COM2, " to -");
+                Putstr(COM2, req.arg3);
+                Putstr(COM2, "mm ");
+                set_stopping_distance(train, speed, -stopping_distance);
+              }
+              break;
           default:
             Putstr(COM2, "Got invalid command=");
             Putstr(COM2, global_command_buffer + global_command_buffer[0]);
             break;
         }
-        Putstr(COM2, "\n\r");
-        Putstr(COM2, CLEAR_LINE);
+        MoveTerminalCursor(40, COMMAND_LOCATION + 2);
+        Putstr(COM2, CLEAR_LINE_BEFORE);
+        MoveTerminalCursor(0, COMMAND_LOCATION + 2);
         Putstr(COM2, "# ");
         break;
       case INT_REQ_TIME:
@@ -1505,24 +1559,28 @@ void interactive() {
         int cur_time = Time();
         DrawTime(cur_time);
         DrawIdlePercent();
-        MoveTerminalCursor(20, COMMAND_LOCATION + 4);
-        Putstr(COM2, CLEAR_LINE);
-        char buf[12];
-        ji2a((1000*predictionAccuracy), buf);
-        Putstr(COM2, buf);
-        MoveTerminalCursor(30, COMMAND_LOCATION + 4);
-        ji2a((1000*offset), buf);
-        Putstr(COM2, buf);
+
+        // This was printing predictionAccuracy stuff, commented out for UI cleanliness
+        // MoveTerminalCursor(20, COMMAND_LOCATION + 4);
+        // Putstr(COM2, CLEAR_LINE);
+        // char buf[12];
+        // ji2a((1000*predictionAccuracy), buf);
+        // Putstr(COM2, buf);
+        // MoveTerminalCursor(30, COMMAND_LOCATION + 4);
+        // ji2a((1000*offset), buf);
+        // Putstr(COM2, buf);
 
         int sum = 0; int i;
         for (i = 0; i < samples; i++) sum += sample_points[i];
         sum /= samples;
+        MoveTerminalCursor(40, COMMAND_LOCATION + 8);
+        Putstr(COM2, CLEAR_LINE_BEFORE);
         MoveTerminalCursor(0, COMMAND_LOCATION + 8);
         Putstr(COM2, "Velocity sample avg. ");
         Puti(COM2, sum);
         Putstr(COM2, "mm/s for ");
         Puti(COM2, samples);
-        Putstr(COM2, " samples." CLEAR_LINE_AFTER);
+        Putstr(COM2, " samples.");
         Putstr(COM2, RECOVER_CURSOR);
         // only print every 2 * 100ms, too much printing otherwise
         if (is_pathing && path_update_counter >= 2) {

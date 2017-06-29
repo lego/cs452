@@ -302,8 +302,8 @@ int CalculateTime(int distance, int velocity) {
 }
 
 int Velocity(int train, int speed) {
-  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when recording sample. Got %d", train);
-  KASSERT(speed >= 0 && speed <= 14, "Invalid speed when recording sample. Got %d", speed);
+  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when getting velocity. Got %d", train);
+  KASSERT(speed >= 0 && speed <= 14, "Invalid speed when getting velocity. Got %d", speed);
   return velocity[train][speed];
 }
 
