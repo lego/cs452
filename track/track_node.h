@@ -38,4 +38,7 @@ struct track_node {
   int dist;
   int prev;
   bool visited;
+
+  // For displaying the actual vs. expected sensor stuff
+  int actual_sensor_trip;
 };

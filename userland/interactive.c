@@ -133,6 +133,11 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
     MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + i);
     Putstr(COM2, CLEAR_LINE_AFTER);
   }
+
+  for (i = 0; i < p->len; i++) {
+    p->nodes[i]->actual_sensor_trip = -1;
+  }
+
   path_display_pos = 0;
 
   int stop_dist = train == -2 ? 0 : StoppingDistance(train, speed);
@@ -285,7 +290,11 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
     // only show ETA for navigating
     MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
     Putstr(COM2, "eta=");
-    PrintTicks(eta_to_node);
+    PrintTicks(eta_to_node + start_time);
+    if (p->nodes[i]->type == NODE_SENSOR && p->nodes[i]->actual_sensor_trip != -1) {
+      Putstr(COM2, " actual=");
+      PrintTicks(p->nodes[i]->actual_sensor_trip);
+    }
   }
 
   Putstr(COM2, RECOVER_CURSOR SHOW_CURSOR);
@@ -380,6 +389,7 @@ void PrintSensorTrigger(int sensor_num, int sensor_time) {
 }
 
 void TriggerSensor(int sensor_num, int sensor_time) {
+  track[sensor_num].actual_sensor_trip = sensor_time;
   PrintSensorTrigger(sensor_num, sensor_time);
 }
 
