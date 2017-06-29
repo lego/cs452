@@ -1034,6 +1034,7 @@ void interactive() {
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
         ClearLastCmdMessage();
+        MoveTerminalCursor(0, COMMAND_LOCATION + 1);
         switch (req.command_type) {
           case COMMAND_QUIT:
             Putstr(COM2, "\033[2J\033[HRunning quit");
