@@ -95,7 +95,7 @@ int path_display_pos;
 void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time) {
   Putstr(COM2, SAVE_CURSOR);
   int i;
-  for (i = 0; i < path_display_pos; i++) {
+  for (i = 0; i < path_display_pos + 1; i++) {
     MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + i);
     Putstr(COM2, CLEAR_LINE_AFTER);
   }
