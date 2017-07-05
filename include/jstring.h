@@ -26,6 +26,8 @@ void ji2a(int num, char *bf);
 unsigned int jatoui( char *str, int *status );
 
 
+void jformat ( char *buf, int buf_size, char *fmt, va_list va );
+
 // __attribute format does compile time checks for the format argument
 // see format in https://gcc.gnu.org/onlinedocs/gcc-4.3.2/gcc/Function-Attributes.html#Function-Attributes
 void jformatf(char *buf, int buf_size, char* fmt, ...) __attribute__ ((format (printf, 3, 4)));

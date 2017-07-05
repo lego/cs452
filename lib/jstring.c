@@ -251,7 +251,8 @@ int jstrappendw( char *dest_buf, int n, char fc, char *bf ) {
 }
 
 
-static inline void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
+void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
+  buf[0] = '\0';
   char bf[12];
   char ch, lz;
   int w;
@@ -322,10 +323,7 @@ static inline void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
 }
 
 void jformatf( char *buf, int buf_size, char *fmt, ... ) {
-  buf[0] = '\0';
-
   va_list va;
-
   va_start(va,fmt);
   jformat( buf, buf_size, fmt, va );
   va_end(va);
