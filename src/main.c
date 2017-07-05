@@ -70,7 +70,12 @@ void print_stats() {
   bwprintf(COM2, "Execution time\n\r");
   int i;
   for (i = 0; i < ctx->used_descriptors; i++) {
+    #if defined(DEBUG_MODE)
+    // This is sadly done due to io_time_t being unsigned long locally
+    bwprintf(COM2, " Task %d used %lu (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
+    #else
     bwprintf(COM2, " Task %d used %d (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
+    #endif
   }
 }
 

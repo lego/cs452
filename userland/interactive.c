@@ -36,10 +36,6 @@ bool set_to_stop;
 bool set_to_stop_from;
 bool stop_on_node;
 
-
-
-
-
 static void insert_two_char_int(int b, char *buf) {
   KASSERT(0 <= b && b < 100, "Provided number was outside of range: got %d", b);
   buf[0] = '0' + (b / 10);
