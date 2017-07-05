@@ -279,7 +279,6 @@ static inline void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
       case '8':
       case '9':
         ch = a2i( ch, &fmt, 10, &w );
-        KASSERT(false, "formatf padding not implemented");
         break;
       }
       switch( ch ) {
@@ -289,21 +288,26 @@ static inline void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
         used_buf++;
         break;
       case 's':
-        used_buf += jstrappendw( buf, w, 0, va_arg( va, char* ) );
+        lz = ' ';
+        used_buf += jstrappendw( buf, w, lz, va_arg( va, char* ) );
         break;
       case 'u':
+        lz = '0';
         ui2a( va_arg( va, unsigned int ), 10, bf );
         used_buf += jstrappendw( buf, w, lz, bf );
         break;
       case 'd':
+        lz = '0';
         i2a( va_arg( va, int ), bf );
         used_buf += jstrappendw( buf, w, lz, bf );
         break;
       case 'l':
+        lz = '0';
         l2a( va_arg( va, long int ), bf );
         used_buf += jstrappendw( buf, w, lz, bf );
         break;
       case 'x':
+        lz = '0';
         ui2a( va_arg( va, unsigned int ), 16, bf );
         used_buf += jstrappendw( buf, w, lz, bf );
         break;
@@ -318,8 +322,7 @@ static inline void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
 }
 
 void jformatf( char *buf, int buf_size, char *fmt, ... ) {
-  int i = 0;
-  while (i < buf_size) buf[i++] = '\0';
+  buf[0] = '\0';
 
   va_list va;
 

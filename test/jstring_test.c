@@ -73,13 +73,22 @@ START_TEST (jformatf_unsigned_int)
 END_TEST
 
 
-// START_TEST (jformatf_padded_int)
-// {
-//   char str[1024];
-//   jformatf(str, 1024, "val=%20d", 2);
-//   ck_assert_str_eq(str, "val=02");
-// }
-// END_TEST
+START_TEST (jformatf_padded_int)
+{
+  char str[1024];
+  jformatf(str, 1024, "val=%12d", 2);
+  ck_assert_str_eq(str, "val=000000000002");
+}
+END_TEST
+
+
+START_TEST (jformatf_padded_string)
+{
+  char str[1024];
+  jformatf(str, 1024, "val=%8s", "bye");
+  ck_assert_str_eq(str, "val=     bye");
+}
+END_TEST
 
 
 START_TEST (jformatf_clears_buffer)
@@ -104,7 +113,8 @@ int main(void)
   tcase_add_test(tc, jformatf_escaped_modulo);
   tcase_add_test(tc, jformatf_clears_buffer);
   tcase_add_test(tc, jformatf_hex);
-  // tcase_add_test(tc, jformatf_padded_int);
+  tcase_add_test(tc, jformatf_padded_int);
+  tcase_add_test(tc, jformatf_padded_string);
   tcase_add_test(tc, jformatf_long);
   tcase_add_test(tc, jformatf_unsigned_int);
 
