@@ -66,8 +66,8 @@ static inline void task_post_activate(task_descriptor_t *task) {
 }
 
 void print_stats() {
-  bwprintf(COM2, "\n\r===== STATS\n\r");
-  bwprintf(COM2, "Execution time\n\r");
+  bwputstr(COM2, "\n\r===== STATS\n\r");
+  bwputstr(COM2, "Execution time\n\r");
   int i;
   for (i = 0; i < ctx->used_descriptors; i++) {
     #if defined(DEBUG_MODE)
@@ -81,8 +81,8 @@ void print_stats() {
 
 void print_logs() {
   logs[log_length] = 0;
-  bwprintf(COM2, "\n\r===== LOGS\n\r");
-  bwprintf(COM2, logs);
+  bwputstr(COM2, "\n\r===== LOGS\n\r");
+  bwputstr(COM2, logs);
 }
 
 void cleanup() {
