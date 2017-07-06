@@ -69,6 +69,9 @@ int Receive( int *tid, volatile void *msg, int msglen );
 
 int Reply( int tid, void *reply, int replylen );
 
+void *Malloc( unsigned int size );
+int Free(void * ptr);
+
 enum await_event_t {
   EVENT_TIMER,
   EVENT_UART2_TX,

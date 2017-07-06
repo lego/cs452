@@ -7,12 +7,12 @@ void debugger() {
 
 
 // See basic.h for why these are commented out
-// void *memcpy(void *destination, const void *source, size_t num) {
+// void *memcpy(void *destination, const void *source, unsigned num) {
 //   jmemcpy(destination, source, num);
 //   return destination;
 // }
 //
-// void *memmove(void *destination, const void *source, size_t num) {
+// void *memmove(void *destination, const void *source, unsigned num) {
 //   jmemmove(destination, source, num);
 //   return destination;
 // }
@@ -20,7 +20,7 @@ void debugger() {
 /**
  * This memcpy will copy over a word at a time, but this has crashing issues due to pre-alignment
  */
-void jfastmemcpy(void *dest, const void *src, size_t num) {
+void jfastmemcpy(void *dest, const void *src, unsigned num) {
   // log_debug("num=%d num/4=%d vsrc=%x vdest=%x", num, num / 4, src, dest);
   char *cdest = (char *) dest;
   char *csrc = (char *) src;
@@ -55,7 +55,7 @@ void jfastmemcpy(void *dest, const void *src, size_t num) {
 /**
  * This memcpy will copy over a multiple words at a time, but also has some issues
  */
-void jasmmemcpy(unsigned int *dest, const unsigned int *src, size_t num) {
+void jasmmemcpy(unsigned int *dest, const unsigned int *src, unsigned num) {
   #ifdef DEBUG_MODE
   char *cdest = (char *) dest;
   char *csrc = (char *) src;
@@ -87,7 +87,7 @@ void jasmmemcpy(unsigned int *dest, const unsigned int *src, size_t num) {
   #endif
 }
 
-void jslowmemcpy(void *dest, const void *src, size_t num) {
+void jslowmemcpy(void *dest, const void *src, unsigned num) {
   char *cdest = (char *) dest;
   char *csrc = (char *) src;
   int i;
@@ -98,7 +98,7 @@ void jslowmemcpy(void *dest, const void *src, size_t num) {
 }
 
 
-void jmemcpy(void *dest, const void *src, size_t num) {
+void jmemcpy(void *dest, const void *src, unsigned num) {
   // phase 1: align dest AND src. how do we deal with very offset things?
   // FIXME: not done, so for now we fall back to jmemcpy
   bool aligned = !(((unsigned int) src | (unsigned int) dest) & 0xFF);
@@ -121,7 +121,7 @@ void jmemcpy(void *dest, const void *src, size_t num) {
   }
 }
 
-void jmemmove(void *destination, const void *source, size_t num) {
+void jmemmove(void *destination, const void *source, unsigned num) {
   char *csrc = (char *)source;
   char *cdest = (char *)destination;
   char temp[num];

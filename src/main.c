@@ -32,6 +32,8 @@
 #include <entry/navigation_test.h>
 #elif defined(USE_CLOCK_SERVER_TEST)
 #include <entry/clock_server_test.h>
+#elif defined(USE_MALLOC_TEST)
+#include <entry/malloc_test.h>
 #elif defined(USE_BENCHMARK)
 #include <entry/benchmark.h>
 #else

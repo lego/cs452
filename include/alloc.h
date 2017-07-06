@@ -29,6 +29,12 @@ void *alloc(unsigned int size);
  */
 int jfree(void * ptr);
 
+typedef struct {
+  // serves as the pointer to the next free block
+  // also when a chunk is allocated, it stores the size of the chunk
+  void *next;
+} memory_allocation_t;
+
 #define RECORD_ALLOCATION_METRICS 1
 
 #define MAX_HEAP_SIZE 1048576 // 2^20

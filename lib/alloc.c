@@ -1,7 +1,7 @@
 #include <debug.h>
 #include <alloc.h>
 #include <null.h>
-#include <string.h>
+#include <stdlib/string.h>
 
 #if RECORD_ALLOCATION_METRICS
 /* Allocation metrics */
@@ -25,12 +25,6 @@ unsigned int memory_returned_count;
 static char memory[MAX_HEAP_SIZE];
 static unsigned int next_location;
 static void *next_free_chunk[MAX_REALLOCATION_SIZE];
-
-typedef struct {
-  // serves as the pointer to the next free block
-  // also when a chunk is allocated, it stores the size of the chunk
-  void *next;
-} memory_allocation_t;
 
 void allocator_init() {
   next_location = 0;
@@ -64,7 +58,7 @@ void *alloc(unsigned int size) {
     #endif
     return NULL;
   } else if (actual_size <= MAX_REALLOCATION_SIZE && next_free_chunk[actual_size - 1] != NULL) {
-    chunk =(memory_allocation_t *) next_free_chunk[actual_size - 1];
+    chunk = (memory_allocation_t *) next_free_chunk[actual_size - 1];
     next_free_chunk[actual_size - 1] = chunk->next;
   } else {
     // FIXME: align memory
@@ -88,7 +82,7 @@ void *alloc(unsigned int size) {
     disbursed_reallocatable_count++;
   }
   #endif
-  debugger();
+
   chunk->next = (void *) actual_size;
   return ((char *) chunk) + sizeof(memory_allocation_t);
 }
