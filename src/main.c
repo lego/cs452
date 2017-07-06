@@ -107,6 +107,8 @@ int main() {
   ctx = NULL;
   log_length = 0;
 
+  allocator_init();
+
   /* initialize various kernel components */
   context_switch_init();
   io_init();
