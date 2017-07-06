@@ -90,10 +90,16 @@ void cleanup() {
   // NOTE: others were having this issue too
   interrupts_clear_all();
   bwputc(COM1, 0x61);
-  bwsetfifo(COM2, ON);
+
+  // Make sure to clear out any pending packet data, also sends a signal that the program has finished
+  for (int i = 0; i < 260; i++) {
+    bwputc(COM2, 0x0);
+  }
 
   print_logs();
   print_stats();
+
+  bwsetfifo(COM2, ON);
 }
 
 int main() {

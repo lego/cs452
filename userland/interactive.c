@@ -120,6 +120,8 @@ void PrintTicks(int ticks) {
   char buf[12];
   ticks2a(ticks, buf, 12);
   Putstr(COM2, buf);
+
+  Logs(100, buf);
 }
 
 #define PATH_LOG_X 60
@@ -687,6 +689,15 @@ void DrawIdlePercent() {
   Putc(COM2, '.');
   Putc(COM2, '0' + idle_percent % 10);
   Putc(COM2, '%');
+
+  char buf[6];
+  buf[0] = '0' + (idle_percent / 100) % 10;
+  buf[1] = '0' + (idle_percent / 10) % 10;
+  buf[2] = '.';
+  buf[3] = '0' + idle_percent % 10;
+  buf[4] = '%';
+  buf[5] = '\0';
+  Logs(101, buf);
 }
 
 void SetSwitchAndRender(int sw, int state) {

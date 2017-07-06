@@ -46,6 +46,10 @@ void ts7200_uart2_init() {
   bwsetfifo(COM2, OFF);
   bwsetspeed(COM2, 115200);
   VMEM(UART2_BASE + UART_CTLR_OFFSET) &= ~(TIEN_MASK | RIEN_MASK);
+#if NONTERMINAL_OUTPUT
+  // Signal packet reading
+  bwputc(COM2, 0x2);
+#endif
 }
 
 void io_init() {

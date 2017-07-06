@@ -8,6 +8,10 @@
  * Debug tooling
  */
 
+// A switch to limit output to only terminal information
+// This must be set to false to use gtkterm
+#define NONTERMINAL_OUTPUT true
+
 #define DEBUG_LOGGING_ARM true
 #define DEBUG_LOGGING_X86 true
 // Enable various log_debug statements in the code
