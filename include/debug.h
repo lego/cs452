@@ -86,7 +86,6 @@ void debugger();
 #endif
 
 
-
 #if DEBUG_SCHEDULER
 #define log_scheduler_kern(format, ...) log_debug(" [-]{SC}  " format, ## __VA_ARGS__)
 #define log_scheduler_task(format, ...) log_debug(" [-]{ST}  " format, ## __VA_ARGS__)

@@ -10,7 +10,7 @@ void malloc_test_task();
 void navigation_test_task();
 void train_control_entry_task();
 void backtrace_test_task();
-
+void typed_message_test();
 
 #if defined(USE_K1)
 #define ENTRY_FUNC k1_entry_task
@@ -30,6 +30,8 @@ void backtrace_test_task();
 #define ENTRY_FUNC malloc_test_task
 #elif defined(USE_BENCHMARK)
 #define ENTRY_FUNC benchmark_entry_task
+#elif defined(USE_TYPED_MESSAGE_TEST)
+#define ENTRY_FUNC typed_message_test_task
 #elif defined(USE_BACKTRACE_TEST)
 #define ENTRY_FUNC backtrace_test_task
 #else
