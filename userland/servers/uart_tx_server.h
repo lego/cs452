@@ -7,6 +7,7 @@ int Putc(int channel, const char c );
 int Putstr(int channel, const char *str);
 int Putcs(int channel, const char *c, int len);
 int Puti(int channel, int i);
+int Putf(int channel, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 void MoveTerminalCursor(unsigned int x, unsigned int y);
 int GetRxQueueLength(int channel);
 

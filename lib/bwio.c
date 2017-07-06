@@ -51,7 +51,6 @@ void bwformat ( int channel, char *fmt, va_list va ) {
   char ch, lz;
   int w;
 
-
   while ( ( ch = *(fmt++) ) ) {
     if ( ch != '%' )
       bwputc( channel, ch );

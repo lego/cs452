@@ -23,6 +23,6 @@ int bwputr( int channel, unsigned int reg );
 
 void bwputw( int channel, int n, char fc, char *bf );
 
-void bwprintf( int channel, char *format, ... );
+void bwprintf( int channel, char *format, ... ) __attribute__ ((format (printf, 2, 3)));
 
 #endif

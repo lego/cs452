@@ -6,6 +6,7 @@
 #include <heap.h>
 #include <bwio.h>
 #include <priorities.h>
+#include <jstring.h>
 
 static int uart1_tx_server_tid = -1;
 static int uart2_tx_server_tid = -1;
@@ -248,4 +249,13 @@ int GetTxQueueLength( int channel ) {
   int result;
   SendS(server_tid, req, result);
   return result;
+}
+
+int Putf(int channel, char *fmt, ...) {
+  char buf[2048];
+  va_list va;
+  va_start(va,fmt);
+  jformat(buf, 2048, fmt, va);
+  va_end(va);
+  return Putstr(channel, buf);
 }

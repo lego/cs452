@@ -75,13 +75,13 @@ int cpsr;
 // ExitProgram if in user mode, to cleanly exit!
 // Or maybe in kernel move it can jump to a label at the end of main?
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %s\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
   bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
   exit();} } while(0)
 #else
 #include <stdlib.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %d\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %s\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
   exit(1); } } while(0)
 #endif
 
