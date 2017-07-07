@@ -14,6 +14,10 @@ ifndef TRACK
 TRACK=B
 endif
 
+ifndef PACKETS
+PACKETS=true
+endif
+
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
@@ -21,7 +25,7 @@ CC     = ./armcheck; gcc
 AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -37,7 +41,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -finline-functions -Wno-undefined-inline  -Werror -Wno-unused-variable -Wno-int-to-void-pointer-cast -Wno-format-security
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -Wno-undefined-inline  -Werror -Wno-unused-variable -Wno-int-to-void-pointer-cast -Wno-format-security
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, same as possible on the school ARM GCC
