@@ -21,6 +21,8 @@ typedef int syscall_t;
 #define SYSCALL_REPLY (syscall_t) 8
 #define SYSCALL_AWAIT (syscall_t) 9
 #define SYSCALL_EXIT_KERNEL (syscall_t) 10
+#define SYSCALL_MALLOC (syscall_t) 11
+#define SYSCALL_FREE (syscall_t) 12
 
 #define SYSCALL_HW_INT (syscall_t) 99
 

@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <alloc.h>
 #include <debug.h>
 #include <bwio.h>
 #include <kern/syscall.h>
@@ -42,6 +43,12 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_AWAIT:
     syscall_await(task, arg);
     break;
+  case SYSCALL_MALLOC:
+    syscall_malloc(task, arg);
+    break;
+  case SYSCALL_FREE:
+    syscall_free(task, arg);
+    break;
   case SYSCALL_HW_INT:
     hwi(task, arg);
     break;
@@ -76,6 +83,20 @@ void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg) {
 
 void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Pass", task->tid);
+  scheduler_requeue_task(task);
+}
+
+void syscall_malloc(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("Malloc", task->tid);
+  unsigned int size = (unsigned int) arg->arguments;
+  *(void **) arg->ret_val = alloc(size);
+  scheduler_requeue_task(task);
+}
+
+void syscall_free(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("Free", task->tid);
+  void *data = arg->arguments;
+  *(int *) arg->ret_val = jfree(data);
   scheduler_requeue_task(task);
 }
 

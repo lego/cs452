@@ -1,4 +1,5 @@
-#include <basic.h>
+#include <stdlib/stddef.h>
+#include <stdlib/stdint.h>
 #include <heap.h>
 
 heap_t heap_create(heapnode_t *nodes, int size) {

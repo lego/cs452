@@ -189,3 +189,25 @@ void RecordLogf(char *fmt, ...) {
   va_end(va);
   return RecordLog(buf);
 }
+
+void *Malloc( unsigned int size ) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_MALLOC;
+  request.arguments = (void *) size;
+  void *data = NULL;
+  request.ret_val = &data;
+  context_switch(&request);
+  return data;
+}
+
+int Free( void * ptr ) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_FREE;
+  request.arguments = ptr;
+  int ret_val = 0;
+  request.ret_val = &ret_val;
+  context_switch(&request);
+  return ret_val;
+}
