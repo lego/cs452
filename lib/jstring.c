@@ -257,13 +257,15 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
   char ch, lz;
   int w;
   int used_buf = 0;
+  int used_size;
+  int trailing;
 
   while ( ( ch = *(fmt++) ) ) {
     if ( ch != '%' ) {
       jstrappendc( buf, ch, buf );
       used_buf++;
     } else {
-      lz = 0; w = 0;
+      lz = 0; w = 0; trailing = 0;
       ch = *(fmt++);
       switch ( ch ) {
       case '0':
@@ -281,6 +283,11 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
       case '9':
         ch = a2i( ch, &fmt, 10, &w );
         break;
+      case '-':
+        // trailing padding
+        ch = *(fmt++);
+        ch = a2i( ch, &fmt, 10, &trailing );
+        break;
       }
       switch( ch ) {
       case 0: return;
@@ -290,7 +297,13 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
         break;
       case 's':
         lz = ' ';
-        used_buf += jstrappendw( buf, w, lz, va_arg( va, char* ) );
+        used_size = jstrappendw( buf, w, lz, va_arg( va, char* ) );
+        used_buf += used_size;
+        trailing -= used_size;
+        while (trailing-- > 0) {
+          jstrappendc(buf, lz, buf);
+          buf++;
+        }
         break;
       case 'u':
         lz = '0';

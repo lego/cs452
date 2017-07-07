@@ -30,6 +30,9 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
   task->state = STATE_READY;
   task->next_ready_task = NULL;
   task->execution_time = 0;
+  task->send_execution_time = 0;
+  task->recv_execution_time = 0;
+  task->repl_execution_time = 0;
   task->func_name = func_name;
   #ifndef DEBUG_MODE
   task->stack_pointer = _TaskStackStart + (_TaskStackSize * tid);

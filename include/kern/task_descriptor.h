@@ -50,6 +50,9 @@ struct TaskDescriptor {
 
   /* Diagnostics */
   io_time_t execution_time;
+  io_time_t send_execution_time;
+  io_time_t recv_execution_time;
+  io_time_t repl_execution_time;
   const char *func_name;
 };
 
