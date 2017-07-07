@@ -19,6 +19,7 @@
 #include <kernel.h>
 #include <priorities.h>
 
+/* Entries */
 #if defined(USE_K1)
 #include <entry/k1.h>
 #elif defined(USE_K2)

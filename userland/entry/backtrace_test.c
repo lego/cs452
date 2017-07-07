@@ -1,12 +1,58 @@
 #include <basic.h>
 #include <bwio.h>
-#include <backtrace_test.h>
+#include <entry/backtrace_test.h>
 #include <kernel.h>
 
-#define VMEM(x) (*(unsigned int volatile * volatile)(x))
 #define CMEM(x) (*(char volatile * volatile)(x))
 
-static inline print_registers() {
+
+
+// void hex_dump(char *desc, void *addr, int len)  {
+//     int i;
+//     unsigned char buff[17];
+//     unsigned char *pc = (unsigned char*)addr;
+//
+//     // Output description if given.
+//     if (desc != NULL)
+//         printf ("%s:\n", desc);
+//
+//     // Process every byte in the data.
+//     for (i = 0; i < len; i++) {
+//         // Multiple of 16 means new line (with line offset).
+//
+//         if ((i % 16) == 0) {
+//             // Just don't print ASCII for the zeroth line.
+//             if (i != 0)
+//                 printf("  %s\n", buff);
+//
+//             // Output the offset.
+//             printf("  %04x ", i);
+//         }
+//
+//         // Now the hex code for the specific character.
+//         printf(" %02x", pc[i]);
+//
+//         // And store a printable ASCII character for later.
+//         if ((pc[i] < 0x20) || (pc[i] > 0x7e)) {
+//             buff[i % 16] = '.';
+//         } else {
+//             buff[i % 16] = pc[i];
+//         }
+//
+//         buff[(i % 16) + 1] = '\0';
+//     }
+//
+//     // Pad out last line if not exactly 16 characters.
+//     while ((i % 16) != 0) {
+//         printf("   ");
+//         i++;
+//     }
+//
+//     // And print the final ASCII bit.
+//     printf("  %s\n", buff);
+// }
+
+static inline void print_registers() {
   bwprintf(COM2, "\tfp=");
   asm volatile(
     "mov r0, #1 @ COM2\n\t"
@@ -73,20 +119,52 @@ static inline print_registers() {
 // }
 
 char *get_func_name(unsigned int *pc) {
-  unsigned int name_length = *(pc - 2) >> 16;
-  char *chars = (char *) *pc;
-  chars -= name_length + 3;
-  // bwprintf(COM2, "Function name length=%d name=%s\n\r", name_length, chars);
+  unsigned int name_length = *(pc - 1) & 0xFF;
+  char *chars = (char *) (pc - 1);
+  chars -= name_length;
   return chars;
 }
 
-void print_memory(unsigned int fp, int size) {
-  bwprintf(COM2, "region is %x\n\r", fp);
+// void print_memory(unsigned int fp, int size) {
+//   bwprintf(COM2, "region is %x\n\r", fp);
+//   int i;
+//   int j;
+//   for (i = (4 * size) - 4; i >= 0; i -= 4) {
+//     bwprintf(COM2, "%x is %x  ", fp - i, VMEM(fp - i));
+//     for (j = 1; j <= 4; j++) {
+//       char c = CMEM(fp - i - 4 + j);
+//       if (is_alphanumeric(c) || c == '_') bwputc(COM2, c);
+//       else bwputc(COM2, '.');
+//     }
+//     bwputstr(COM2, "\n\r");
+//   }
+// }
+
+void hex_dump(char *description, char *mem, int len) {
+  KASSERT(len % 4 == 0, "Can only dump groups of 4 bytes, expected len%%4==0, got len=%d", len);
   int i;
-  for (i = 4*size; i >= 0; i-=8) {
-    bwprintf(COM2, "%x is %x %x   ", fp - i, VMEM(fp - i), VMEM(fp - i - 4));
-    bwprintf(COM2, "%c.%c.%c.%c.%c.%c.%c.%c\n\r", CMEM(fp - i), CMEM(fp - i - 1), CMEM(fp - i - 2), CMEM(fp - i - 3), CMEM(fp - i - 4), CMEM(fp - i - 5), CMEM(fp - i - 6), CMEM(fp - i - 7));
-    // bwprintf(COM2, "%c.%c.%c.%c.%c.%c.%c.%c\n\r", CMEM(fp - i -7), CMEM(fp - i - 6), CMEM(fp - i - 5), CMEM(fp - i - 4), CMEM(fp - i - 3), CMEM(fp - i - 2), CMEM(fp - i - 1), CMEM(fp - i));
+  int j;
+  char *curr_mem = mem - len;
+  bwprintf(COM2, "%s:\n\r", description);
+  for (i = 0; i < 2*len; i += 4) {
+    if (curr_mem == mem) {
+      // highlight the desired address
+      bwputstr(COM2, WHITE_BG BLACK_FG);
+      bwprintf(COM2, "%08x", (unsigned int) curr_mem);
+      bwputstr(COM2, RESET_ATTRIBUTES);
+    } else {
+      bwprintf(COM2, "%08x", (unsigned int) curr_mem);
+    }
+
+    bwprintf(COM2, " is %08x  ", *(unsigned int *)curr_mem);
+
+    for (j = 0; j < 4; j++) {
+      char c = curr_mem[j];
+      if (is_alphanumeric(c) || c == '_') bwputc(COM2, c);
+      else bwputc(COM2, '.');
+    }
+    bwputstr(COM2, "\n\r");
+    curr_mem += 4;
   }
 }
 
@@ -97,56 +175,51 @@ void print_stack_trace(unsigned int fp) {
   print_registers();
 
 	if (!fp) return;
-	int pc = 0, lr = 0, depth = 20;
+	unsigned int pc = 0, lr = 0, depth = 20;
 
 	if (fp <= 0x218000 || fp >= 0x2000000) {
-		bwprintf(1, "fp out of range: %x\n", fp);
+		bwprintf(COM2, "fp out of range: %08x\n", fp);
 		return;
 	}
 
+  bwprintf(COM2, "Generating backtrace: fp=%08x\n\r", fp);
 	do {
-    print_memory(fp, 16);
+    // hex_dump(fp, 16);
 
 		pc = VMEM(fp) - 16;
+    // hex_dump("FP (stack)", (char *) fp, 18 * 4);
+    // hex_dump("PC (code)", (char *) pc, 32);
 
-    print_memory(pc, 30);
+    // bwprintf(COM2, "====> fp=%08x lr=%08x pc=%08x\n\r", fp, lr, pc);
 
 		int asm_line_num = (lr == 0) ? 0 : ((lr - pc) >> 2);
 		// if (one) {
-		// 	bwprintf(1, "%d\t\t%x\t%s\n", asm_line_num, pc, find_function_name(pc));
+		// 	bwprintf(COM2, "%d\t\t%x\t%s\n", asm_line_num, pc, find_function_name(pc));
 		// } else {
-      // bwprintf(1, "%s @ %x+%d, ", find_function_name(pc), pc, asm_line_num);
-      // char *name = get_func_name((unsigned int *)pc);
-
-      unsigned int name_length = *(((unsigned int *)pc) - 2) >> 16;
-      char *chars = (char *) (pc - 2);
-      chars -= name_length + 3;
-      // bwprintf(COM2, "Function name length=%d name=%s\n\r", name_length, chars);
-
-      bwprintf(1, "====> name location=%x pc=%x len=%d\n\r", chars, pc, name_length);
-      bwprintf(1, "====> char_pre=%x\n\r", (pc - 2));
-
-      bwprintf(1, "====> %s @ %x+%d, \n\r", chars, pc, asm_line_num);
+      // bwprintf(COM2, "%s @ %x+%d, ", find_function_name(pc), pc, asm_line_num);
+      char *name = get_func_name((unsigned int *)pc);
+      bwprintf(COM2, "%s @ %08x+%d, \n\r", name, pc, asm_line_num);
 		// }
 
-		if (lr == (int) Exit) break;
+		if (lr == (unsigned int) Exit) break;
 
 		lr = VMEM(fp - 4);
 		fp = VMEM(fp - 12);
-    break;
+    // break;
 
 		/* if (fp < (int) &_KERNEL_MEM_START || (int) &_KERNEL_MEM_END <= fp) {
 			break;
-		} else */ if (depth-- < 0) {
-			break;
-		}
+		} else */
+    // if (depth-- < 0) {
+		// 	break;
+		// }
 	} while (pc != REDBOOT_ENTRYPOINT);
   // } while (pc != REDBOOT_ENTRYPOINT && pc != (int) main);
 }
 
 
 #ifndef DEBUG_MODE
-volatile void backtrace_callee() {
+void backtrace_callee() {
   bwprintf(COM2, "In backtrace_callee\n\r");
   print_registers();
   unsigned int *fp;
@@ -160,7 +233,7 @@ volatile void backtrace_callee() {
   // get_func_name(fp);
   unsigned long int deadbeef = 0xdeadbeef;
   asm volatile("mov r5, %0" : : "r" (deadbeef) : "r5");
-  print_stack_trace(fp);
+  print_stack_trace((unsigned int) fp);
 
   // asm volatile("mov r0, #1 @ COM2" : : : "r0");
   // asm volatile("mov r1, fp @ fp + 0 => pc" : : : "r1");
@@ -201,6 +274,7 @@ void backtrace_test() {
   print_registers();
 
   first_call();
+  ExitKernel();
 }
 
 #else

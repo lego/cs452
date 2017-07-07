@@ -18,7 +18,7 @@ ifndef PACKETS
 PACKETS=true
 endif
 
-CFLAGS_BACKTRACE = -mpoke-function-name -fverbose-asm -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs
+CFLAGS_BACKTRACE = -mpoke-function-name -fverbose-asm # -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs
 CFLAGS_COMPILE_WARNINGS = -Winline -Werror -Wno-unused-variable -Wno-format-security
 
 ifndef LOCAL
@@ -29,7 +29,7 @@ AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
 
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -174,5 +174,5 @@ clean:
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful
-.PRECIOUS: %.s arm%.s %.map
+.PRECIOUS: %.s arm%.s %.map userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s lib_stdlib_%.s
 endif
