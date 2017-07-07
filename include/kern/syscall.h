@@ -16,6 +16,8 @@ void syscall_receive(task_descriptor_t *task, kernel_request_t *arg);
 void syscall_reply(task_descriptor_t *task, kernel_request_t *arg);
 void syscall_await(task_descriptor_t *task, kernel_request_t *arg);
 void syscall_exit_kernel(task_descriptor_t *task, kernel_request_t *arg);
+void syscall_malloc(task_descriptor_t *task, kernel_request_t *arg);
+void syscall_free(task_descriptor_t *task, kernel_request_t *arg);
 
 void hwi(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_uart1_rx(task_descriptor_t *task, kernel_request_t *arg);

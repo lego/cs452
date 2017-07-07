@@ -15,6 +15,7 @@ int Putc(int channel, const char c );
 int Putstr(int channel, const char *str);
 int Putcs(int channel, const char *c, int len);
 int Puti(int channel, int i);
+int Putf(int channel, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 int Putp(int channel, uart_packet_t *packet);
 int Logp(uart_packet_t *packet);
 int Logs(int type, const char *str);

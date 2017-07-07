@@ -21,7 +21,7 @@ CC     = ./armcheck; gcc
 AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -37,7 +37,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -finline-functions -Wno-undefined-inline  -Werror -Wno-unused-variable -Wno-int-to-void-pointer-cast
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -finline-functions -Wno-undefined-inline  -Werror -Wno-unused-variable -Wno-int-to-void-pointer-cast -Wno-format-security
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, same as possible on the school ARM GCC
@@ -55,7 +55,7 @@ ARFLAGS = rcs
 #
 # When you add a file it will be in the form of -l<filename>
 # NOTE: If you add an ARM specific file, you also need to add -larm<filename>
-LIBRARIES= -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lgcc
+LIBRARIES= -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lstdlib -lgcc
 
 # List of includes for headers that will be linked up in the end
 INCLUDES = -I./include
@@ -66,7 +66,10 @@ USERLAND_INCLUDES = -I./userland
 LIB_SRCS := $(wildcard lib/*.c) $(wildcard lib/$(ARCH)/*.c)
 LIB_BINS := $(LIB_SRCS:.c=.a)
 LIB_BINS := $(patsubst lib/$(ARCH)/%.a,lib$(ARCH)%.a,$(LIB_BINS))
-LIB_BINS := $(patsubst lib/%.a,lib%.a,$(LIB_BINS))
+LIB_BINS := $(patsubst lib/%.a,lib%.a,$(LIB_BINS)) libstdlib.a
+
+STDLIB_SRCS := $(wildcard lib/stdlib/*.c)
+STDLIB_OBJS := $(subst /,_,$(STDLIB_SRCS:.c=.o))
 
 KERNEL_SRCS := $(wildcard src/*.c) $(wildcard src/$(ARCH)/*.c)
 KERNEL_OBJS := $(patsubst src/$(ARCH)/%.c,$(ARCH)%.o,$(KERNEL_SRCS))
@@ -103,13 +106,16 @@ small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
 # NOTE: it just explicitly lists a bunch of folders, this is because the
 # process of .c => .s => .o drops debugging symbols :(
 main.a:
-	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) src/*.c src/x86/*.c lib/*.c lib/x86/*.c userland/*.c userland/**/*.c -lncurses -lpthread -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) src/*.c src/x86/*.c lib/*.c lib/x86/*.c lib/stdlib/*.c  userland/*.c userland/**/*.c -lncurses -lpthread -o $@
 
 # ASM files from various locations
 %.s: src/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
 
 %.s: lib/%.c
+	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
+
+lib_stdlib_%.s: lib/stdlib/%.c
 	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
 
 userland_%.s: userland/%.c
@@ -137,11 +143,16 @@ $(ARCH)%.s: lib/$(ARCH)/%.c
 
 # create binaries for each test file, depending on all lib code
 %.a: test/%.c $(LIB_SRCS)
-	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_SRCS) -lncurses -lpthread -lcheck -o $@
+	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_SRCS) $(STDLIB_SRCS) -lncurses -lpthread -lcheck -o $@
 
 # create library binaries from object files, for ARM bundling
 lib%.a: %.o
 	$(AR) $(ARFLAGS) $@ $<
+
+# create library binaries from object files, for ARM bundling
+libstdlib.a: $(STDLIB_OBJS)
+	$(AR) $(ARFLAGS) $@ $<
+
 
 # clean all files in the top-level, the only place we have temp files
 clean:

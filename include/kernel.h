@@ -69,6 +69,9 @@ int Receive( int *tid, volatile void *msg, int msglen );
 
 int Reply( int tid, void *reply, int replylen );
 
+void *Malloc( unsigned int size );
+int Free(void * ptr);
+
 enum await_event_t {
   EVENT_TIMER,
   EVENT_UART2_TX,
@@ -87,5 +90,8 @@ io_time_t GetIdleTaskExecutionTime();
 
 void RecordLog(const char *msg);
 void RecordLogi(int i);
+
+#include <variadic.h>
+void RecordLogf(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
 
 #endif

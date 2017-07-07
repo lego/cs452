@@ -6,6 +6,7 @@
 #include <alloc.h>
 #include <basic.h>
 #include <bwio.h>
+#include <jstring.h>
 #include <cbuffer.h>
 #include <io.h>
 #include <kern/context.h>
@@ -32,6 +33,8 @@
 #include <entry/navigation_test.h>
 #elif defined(USE_CLOCK_SERVER_TEST)
 #include <entry/clock_server_test.h>
+#elif defined(USE_MALLOC_TEST)
+#include <entry/malloc_test.h>
 #elif defined(USE_BENCHMARK)
 #include <entry/benchmark.h>
 #else
@@ -66,18 +69,34 @@ static inline void task_post_activate(task_descriptor_t *task) {
 }
 
 void print_stats() {
-  bwprintf(COM2, "\n\r===== STATS\n\r");
-  bwprintf(COM2, "Execution time\n\r");
+  bwputstr(COM2, "\n\r===== STATS\n\r");
+  bwputstr(COM2, "Execution time\n\r");
   int i;
+  #if !defined(DEBUG_MODE)
   for (i = 0; i < ctx->used_descriptors; i++) {
-    bwprintf(COM2, " Task %d used %d (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
+    task_descriptor_t *task = &ctx->descriptors[i];
+
+    char task_info[60];
+    char time_info[12];
+    char send_info[12];
+    char recv_info[12];
+    char repl_info[12];
+
+    jformatf(task_info, 60, "Task %d (%s)", i, task->func_name);
+    jformatf(time_info, 12, "%u", io_time_difference_ms(task->execution_time, 0));
+    jformatf(send_info, 12, "%u", io_time_difference_ms(task->send_execution_time, 0));
+    jformatf(recv_info, 12, "%u", io_time_difference_ms(task->recv_execution_time, 0));
+    jformatf(repl_info, 12, "%u", io_time_difference_ms(task->repl_execution_time, 0));
+
+    bwprintf(COM2, " %-40s %10sms (Total) %10sms (Send) %10sms (Recv) %10sms (Repl)\n\r", task_info, time_info, send_info, recv_info, repl_info);
   }
+  #endif
 }
 
 void print_logs() {
   logs[log_length] = 0;
-  bwprintf(COM2, "\n\r===== LOGS\n\r");
-  bwprintf(COM2, logs);
+  bwputstr(COM2, "\n\r===== LOGS\n\r");
+  bwputstr(COM2, logs);
 }
 
 void cleanup() {
@@ -107,6 +126,8 @@ int main() {
   active_task = NULL;
   ctx = NULL;
   log_length = 0;
+
+  allocator_init();
 
   /* initialize various kernel components */
   context_switch_init();

@@ -180,22 +180,18 @@ void PrintPath(path_t *p) {
 
 void SetPathSwitches(path_t *p) {
   int i;
-  RecordLog("SetPathSwitches ");
-  RecordLog(p->src->name);
-  RecordLog(" ~> ");
-  RecordLog(p->dest->name);
-  RecordLog("\n\r");
+  char dir;
+  RecordLogf("SetPathSwitches %s ~> %s\n\r", p->src->name, p->dest->name);
   for (i = 0; i < p->len; i++) {
     if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
-      RecordLog("  Setting switch ");
-      RecordLog(p->nodes[i-1]->name);
       if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
-        RecordLog(" to C\n\r");
+        dir = 'C';
         SetSwitch(p->nodes[i-1]->num, SWITCH_CURVED);
       } else {
-        RecordLog(" to S\n\r");
+        dir = 'S';
         SetSwitch(p->nodes[i-1]->num, SWITCH_STRAIGHT);
       }
+      RecordLogf("  Setting switch %s to %c", p->nodes[i-1]->name, dir);
     }
   }
 }
@@ -231,25 +227,13 @@ void Navigate(int train, int speed, int src, int dest, bool include_stop) {
 
   Putstr(COM2, SAVE_CURSOR);
   MoveTerminalCursor(0, COMMAND_LOCATION + 5);
-  Putstr(COM2, "Setting train=");
-  Puti(COM2, train);
-  Putstr(COM2, " speed=");
-  Puti(COM2, speed);
-  Putstr(COM2, " for remaining_time=");
-  Puti(COM2, remainingTime);
-  Putstr(COM2, "\n\r");
-
+  Putf(COM2, "Setting train=%d speed=%d for remaining_time=%d\n\r", train, speed, remainingTime);
   SetTrainSpeed(train, speed);
 
   if (include_stop) {
     Delay((remainingTime / 10));
-
     MoveTerminalCursor(0, COMMAND_LOCATION + 6);
-    Putstr(COM2, "Stopping train=");
-    Puti(COM2, train);
-    Putstr(COM2, "\n\r");
-    Putstr(COM2, RECOVER_CURSOR);
-
+    Putf(COM2, "Stopping train=%d\n\r" RECOVER_CURSOR, train);
     SetTrainSpeed(train, 0);
   }
   state.train_locations[train] = dest;

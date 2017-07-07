@@ -343,7 +343,7 @@ void rps_server() {
             queue_to_play[queue_start] = -1;
             queue_start = (queue_start + 1) % play_queue_length;
           } else {
-            bwprintf(COM2, "Queue Empty, waiting on more players...\n\r", queue_to_play[queue_start]);
+            bwprintf(COM2, "Queue Empty, waiting on more players...\n\r");
             sendMessage.type = OK;
             ReplyS(request_tid, sendMessage);
           }

@@ -9,12 +9,6 @@
  *
  */
 
-#ifndef DEBUG_MODE
-// Size of memory region, normally a builtin
-// normally builtin
-typedef unsigned size_t;
-#endif
-
 /*
  * A set of standard C defitions
  * - COMPILE_ASSERT and INLINE
@@ -61,8 +55,8 @@ typedef unsigned size_t;
 // void *memmove(void *destination, const void *source, size_t num);
 
 // these memory copies are explicitly called, we use them for message passing
-void jmemcpy(void *destination, const void *source, size_t num);
-void jmemmove(void *destination, const void *source, size_t num);
+void jmemcpy(void *destination, const void *source, unsigned num);
+void jmemmove(void *destination, const void *source, unsigned num);
 
 /*
  * Utilty functions

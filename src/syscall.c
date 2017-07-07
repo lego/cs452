@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <alloc.h>
 #include <debug.h>
 #include <bwio.h>
 #include <kern/syscall.h>
@@ -42,6 +43,12 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_AWAIT:
     syscall_await(task, arg);
     break;
+  case SYSCALL_MALLOC:
+    syscall_malloc(task, arg);
+    break;
+  case SYSCALL_FREE:
+    syscall_free(task, arg);
+    break;
   case SYSCALL_HW_INT:
     hwi(task, arg);
     break;
@@ -76,6 +83,20 @@ void syscall_my_parent_tid(task_descriptor_t *task, kernel_request_t *arg) {
 
 void syscall_pass(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Pass", task->tid);
+  scheduler_requeue_task(task);
+}
+
+void syscall_malloc(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("Malloc", task->tid);
+  unsigned int size = (unsigned int) arg->arguments;
+  *(void **) arg->ret_val = alloc(size);
+  scheduler_requeue_task(task);
+}
+
+void syscall_free(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("Free", task->tid);
+  void *data = arg->arguments;
+  *(int *) arg->ret_val = jfree(data);
   scheduler_requeue_task(task);
 }
 
@@ -132,7 +153,23 @@ bool is_valid_task(int tid) {
   return ctx->used_descriptors > tid;
 }
 
+io_time_t *expected_ptr;
+io_time_t beginning_recording_time;
+
+void pre_time_recording(io_time_t *recording_time) {
+  expected_ptr = recording_time;
+  beginning_recording_time = io_get_time();
+}
+
+void post_time_recording(io_time_t *recording_time) {
+  KASSERT(expected_ptr == recording_time, "Something happened. Recording times failed as the beginning is not the same as the end.");
+  expected_ptr = NULL;
+  io_time_t now = io_get_time();
+  *recording_time = now - beginning_recording_time;
+}
+
 void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
+  pre_time_recording(&task->send_execution_time);
   log_syscall("Send", task->tid);
   task->state = STATE_RECEIVE_BLOCKED;
   syscall_message_t *msg = arg->arguments;
@@ -163,9 +200,11 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
     /* int status = */ cbuffer_add(&target_task->send_queue, task);
     // FIXME: handle bad status of cbuffer, likely panic
   }
+  post_time_recording(&task->send_execution_time);
 }
 
 void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
+  pre_time_recording(&task->recv_execution_time);
   log_syscall("Receive", task->tid);
   task->state = STATE_SEND_BLOCKED;
 
@@ -182,9 +221,11 @@ void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
     // reply block the sending task
     sending_task->state = STATE_REPLY_BLOCKED;
   }
+  post_time_recording(&task->recv_execution_time);
 }
 
 void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
+  pre_time_recording(&task->repl_execution_time);
   log_syscall("Reply", task->tid);
   syscall_message_t *msg = arg->arguments;
 
@@ -214,6 +255,7 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
     scheduler_requeue_task(task);
     return;
   }
+  post_time_recording(&task->repl_execution_time);
 }
 
 void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
