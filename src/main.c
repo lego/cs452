@@ -6,6 +6,7 @@
 #include <alloc.h>
 #include <basic.h>
 #include <bwio.h>
+#include <jstring.h>
 #include <cbuffer.h>
 #include <io.h>
 #include <kern/context.h>
@@ -69,14 +70,25 @@ void print_stats() {
   bwputstr(COM2, "\n\r===== STATS\n\r");
   bwputstr(COM2, "Execution time\n\r");
   int i;
+  #if !defined(DEBUG_MODE)
   for (i = 0; i < ctx->used_descriptors; i++) {
-    #if defined(DEBUG_MODE)
-    // This is sadly done due to io_time_t being unsigned long locally
-    bwprintf(COM2, " Task %d used %lu (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
-    #else
-    bwprintf(COM2, " Task %d used %d (%s)\n\r", i, ctx->descriptors[i].execution_time, ctx->descriptors[i].func_name);
-    #endif
+    task_descriptor_t *task = &ctx->descriptors[i];
+
+    char task_info[60];
+    char time_info[12];
+    char send_info[12];
+    char recv_info[12];
+    char repl_info[12];
+
+    jformatf(task_info, 60, "Task %d (%s)", i, task->func_name);
+    jformatf(time_info, 12, "%u", io_time_difference_ms(task->execution_time, 0));
+    jformatf(send_info, 12, "%u", io_time_difference_ms(task->send_execution_time, 0));
+    jformatf(recv_info, 12, "%u", io_time_difference_ms(task->recv_execution_time, 0));
+    jformatf(repl_info, 12, "%u", io_time_difference_ms(task->repl_execution_time, 0));
+
+    bwprintf(COM2, " %-40s %10sms (Total) %10sms (Send) %10sms (Recv) %10sms (Repl)\n\r", task_info, time_info, send_info, recv_info, repl_info);
   }
+  #endif
 }
 
 void print_logs() {

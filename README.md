@@ -11,9 +11,7 @@ CS452-Codebase
   - [ ] Generic warehouse
   - [ ] Generic administrator
   - [ ] Generic shopkeeper / courier
-  - [ ] `Putf`, format style `Put`
 - Idle task metrics tracking
-  - [ ] Idling time
   - [ ] SendQ depth
   - [ ] Task stack sizes
   - [ ] Kernel stack size (compile time / once? it won't grow)
