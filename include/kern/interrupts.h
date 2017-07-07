@@ -19,6 +19,7 @@ void interrupts_disable_irq(await_event_t event_type);
 
 
 void interrupts_clear_all();
+void interrupts_disable();
 
 
 #endif

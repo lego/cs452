@@ -22,6 +22,7 @@
 
 #define WHITE_BG "\x1b" "[47m"
 #define RED_BG "\x1b" "[41m"
+#define GREY_BG "\x1b" "[48;5;244m"
 #define GREEN_BG "\x1b" "[42m"
 
 #define BLACK_FG "\x1b" "[30m"

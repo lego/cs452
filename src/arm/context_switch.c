@@ -66,10 +66,26 @@ asm (
   // save return-to-user lr to r5 so it's not overwritten by r0-r3
   "mov r5, lr\n\t"
 
+  // shim for KASSERT. only KASSERT will swi #5 and we return as SVC
+  // so the KASSERT isn't interrupted after swi #5
+    // save scratch register
+    "stmfd sp!, {r0}\n\t"
+    // load the SWI instr machine code
+    "ldr r0, [lr, #-4]\n\t"
+    // take the last 8 bits, the number in SWI
+    "and r0, r0, #0xFF\n\t"
+    // check that swi #5 was called
+    "cmp r0, #5\n\t"
+    // if it was, just return to the kassert
+    "beq ret_back_to_kassert\n\t"
+    // recover scratch register
+    "ldmfd sp!, {r0}\n\t"
+
   // in system mode
   "msr cpsr_c, #223\n\t"
     "stmfd sp!, {r4, r5}\n\t"
     "mov r4, sp\n\t"
+
   "msr cpsr_c, #211\n\t"
 
   // set up args for syscall
@@ -86,9 +102,12 @@ asm (
   "mov pc, lr\n\t"
 
 "\n"
+// returns immediately to lr, which is the KASSERT locaiton
+"ret_back_to_kassert:\n\t"
+  "mov pc, lr\n\r"
+
 "__asm_hwi_handler:\n\t"
   // start in irq mode
-
   "sub lr, lr, #4\n\r"
 
   // in system mode

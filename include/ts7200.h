@@ -5,6 +5,8 @@
  *
  */
 
+#include <stdlib/stdint.h>
+
 #define	TIMER1_BASE	0x80810000
 #define	TIMER2_BASE	0x80810020
 #define	TIMER3_BASE	0x80810080
@@ -86,7 +88,7 @@
 
 // Memory access. This is here to make it easy to find code that is
 // TS7200 specific, when it hits memory
-#define VMEM(x) *((volatile unsigned int *)(x))
+#define VMEM(x) *((volatile uint32_t *)(x))
 
 // Interrupt stuff
 #define VIC1_BASE 0x800B0000

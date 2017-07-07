@@ -34,6 +34,9 @@ io_time_t io_get_time();
  */
 unsigned int io_time_difference_ms(io_time_t current, io_time_t previous);
 
+#define io_time_ms(t) io_time_difference_ms(t, 0)
+
+
 /**
  * Calculates the microsecond difference between two timing values
  */

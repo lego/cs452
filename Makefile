@@ -45,7 +45,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -Wno-undefined-inline -Wno-int-to-void-pointer-cast $(CFLAGS_COMPILE_WARNINGS)
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -Wno-undefined-inline -Wno-int-to-void-pointer-cast $(CFLAGS_COMPILE_WARNINGS) -Wno-int-to-pointer-cast
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, same as possible on the school ARM GCC
@@ -63,7 +63,7 @@ ARFLAGS = rcs
 #
 # When you add a file it will be in the form of -l<filename>
 # NOTE: If you add an ARM specific file, you also need to add -larm<filename>
-LIBRARIES= -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lstdlib -lgcc
+LIBRARIES= -ldebug -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lstdlib -lgcc
 
 # List of includes for headers that will be linked up in the end
 INCLUDES = -I./include
@@ -110,11 +110,14 @@ small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
 	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
 
+LOCAL_SRCS=$(filter-out src/main.c, $(wildcard src/*.c)) src/x86/*.c lib/*.c lib/x86/*.c lib/stdlib/*.c  userland/*.c userland/**/*.c
+LOCAL_LIBS=-lncurses -lpthread
+
 # Local simulation binary
 # NOTE: it just explicitly lists a bunch of folders, this is because the
 # process of .c => .s => .o drops debugging symbols :(
 main.a:
-	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) src/*.c src/x86/*.c lib/*.c lib/x86/*.c lib/stdlib/*.c  userland/*.c userland/**/*.c -lncurses -lpthread -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) $(LOCAL_SRCS) src/main.c $(LOCAL_LIBS) -o $@
 
 # ASM files from various locations
 %.s: src/%.c
@@ -151,7 +154,7 @@ $(ARCH)%.s: lib/$(ARCH)/%.c
 
 # create binaries for each test file, depending on all lib code
 %.a: test/%.c $(LIB_SRCS)
-	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_SRCS) $(STDLIB_SRCS) -lncurses -lpthread -lcheck -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) $< $(LOCAL_SRCS) $(LOCAL_LIBS) -lcheck -o $@
 
 # create library binaries from object files, for ARM bundling
 lib%.a: %.o

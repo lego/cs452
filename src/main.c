@@ -44,13 +44,6 @@
 #error Bad PROJECT value provided to Makefile. Expected "K1-4", "TC1", "BENCHMARK", "CLOCK_SERVER_TEST", "NAVIGATION_TEST"
 #endif
 
-volatile task_descriptor_t *active_task;
-context_t *ctx;
-bool should_exit;
-char logs[LOG_SIZE];
-volatile int log_length;
-
-
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
 }
@@ -71,60 +64,12 @@ static inline void task_post_activate(task_descriptor_t *task) {
   task->execution_time += (execution_time_end - execution_time_start);
 }
 
-void print_stats() {
-  bwputstr(COM2, "\n\r===== STATS\n\r");
-  bwputstr(COM2, "Execution time\n\r");
-  int i;
-  #if !defined(DEBUG_MODE)
-  for (i = 0; i < ctx->used_descriptors; i++) {
-    task_descriptor_t *task = &ctx->descriptors[i];
-
-    char task_info[60];
-    char time_info[12];
-    char send_info[12];
-    char recv_info[12];
-    char repl_info[12];
-
-    jformatf(task_info, 60, "Task %d (%s)", i, task->func_name);
-    jformatf(time_info, 12, "%u", io_time_difference_ms(task->execution_time, 0));
-    jformatf(send_info, 12, "%u", io_time_difference_ms(task->send_execution_time, 0));
-    jformatf(recv_info, 12, "%u", io_time_difference_ms(task->recv_execution_time, 0));
-    jformatf(repl_info, 12, "%u", io_time_difference_ms(task->repl_execution_time, 0));
-
-    bwprintf(COM2, " %-40s %10sms (Total) %10sms (Send) %10sms (Recv) %10sms (Repl)\n\r", task_info, time_info, send_info, recv_info, repl_info);
-  }
-  #endif
-}
-
-void print_logs() {
-  logs[log_length] = 0;
-  bwputstr(COM2, "\n\r===== LOGS\n\r");
-  bwputstr(COM2, logs);
-}
-
-void cleanup() {
-  // Clear out any interrupt bits
-  // This is needed because for some reason if we run our program more than
-  //   once, on the second time we immediately hit the interrupt handler
-  //   before starting a user task, even though we should start with
-  //   interrupts disabled
-  // TODO: figure out why ^
-  // NOTE: others were having this issue too
-  interrupts_clear_all();
-  bwputc(COM1, 0x61);
-
-  // Make sure to clear out any pending packet data, also sends a signal that the program has finished
-  for (int i = 0; i < 260; i++) {
-    bwputc(COM2, 0x0);
-  }
-
-  print_logs();
-  print_stats();
-
-  bwsetfifo(COM2, ON);
-}
-
 int main() {
+  #ifndef DEBUG_MODE
+  // saves FP to be able to clean exit to redboot
+  asm volatile("mov %0, fp @ save fp" : "=r" (main_fp));
+  #endif
+
   should_exit = false;
   active_task = NULL;
   ctx = NULL;

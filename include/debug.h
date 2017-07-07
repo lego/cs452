@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <terminal.h>
 
+void cleanup();
+
 /*
  * Debug tooling
  */
@@ -70,21 +72,23 @@ void debugger();
 #endif
 
 #ifndef DEBUG_MODE
-void cleanup();
 #define REDBOOT_LR 0x174c8
+extern unsigned int main_fp;
 static inline void exit() {
-  cleanup();
-  asm volatile ("mov pc, %0" : : "r" (REDBOOT_LR));
+  // return to redboot, this is just a fcn return for the main fcn
+  asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
+  asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
 }
-int lr;
-int cpsr;
-// TODO: it would be cool if our KASSERT was sensitive to user/kernel mode
-// It can check the CPSR, and exit() if in the kernel or call
-// ExitProgram if in user mode, to cleanly exit!
-// Or maybe in kernel move it can jump to a label at the end of main?
+
+#include <kern/task_descriptor.h>
+
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %s\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-  bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
+  bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+  asm volatile ("swi #5"); cleanup(); \
+  bwputstr(COM2, "\n\r\n\r"); \
+  if (active_task) PrintAllTaskStacks(active_task->tid); \
+  else PrintAllTaskStacks(-1); \
+  bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
   exit();} } while(0)
 #else
 #include <stdlib.h>
@@ -147,6 +151,21 @@ int cpsr;
 #define log_nameserver(format, ...) log_debug("  [N]  " format, ## __VA_ARGS__)
 #else
 #define log_nameserver(format, ...) NOP
+#endif
+
+
+// Prints the stack trace, following memory (only on ARM)
+void print_stack_trace(unsigned int fp, int lr);
+
+void PrintTaskBacktrace(int tid);
+
+// prints all task stacks, and puts the focused one on the end
+void PrintAllTaskStacks(int focused_task);
+
+#if DEBUG_MODE
+#define PrintBacktrace()
+#else
+#define PrintBacktrace() do { unsigned int fp; asm volatile("mov %0, fp @ save fp" : "=r" (fp)); bwprintf(COM2, "Generating backtrace: fp=%08x\n\r", fp); print_stack_trace(fp, 0); } while(0);
 #endif
 
 #endif
