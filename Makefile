@@ -29,7 +29,7 @@ AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
 
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -finstrument-functions $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -63,7 +63,7 @@ ARFLAGS = rcs
 #
 # When you add a file it will be in the form of -l<filename>
 # NOTE: If you add an ARM specific file, you also need to add -larm<filename>
-LIBRARIES= -ldebug -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lstdlib -lgcc
+LIBRARIES= -lcbuffer -lmap -larmio -lbwio -larmbwio -ljstring -lbasic -lheap -lalloc -lstdlib -lgcc
 
 # List of includes for headers that will be linked up in the end
 INCLUDES = -I./include
@@ -106,6 +106,10 @@ install: main.elf
 main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
 
+%.elf: standalone_%.o $(LIB_BINS)
+	$(LD) $(LDFLAGS) $< -o $@ $(LIBRARIES) && ./upload.sh $<
+
+
 small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
 	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
@@ -122,6 +126,10 @@ main.a:
 # ASM files from various locations
 %.s: src/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+
+standalone_%.s: standalone/%.c
+	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
+
 
 %.s: lib/%.c
 	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
@@ -174,5 +182,5 @@ clean:
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful
-.PRECIOUS: %.s arm%.s %.map userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s lib_stdlib_%.s
+.PRECIOUS: %.s arm%.s %.map userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s lib_stdlib_%.s standalone_%.s
 endif
