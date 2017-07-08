@@ -1,5 +1,4 @@
-#ifndef __BASIC_H__
-#define __BASIC_H__
+#pragma once
 
 /*
  * set of basic helper functions and other C primitives
@@ -148,5 +147,3 @@ unsigned long hash(unsigned char *str);
 
 float minf(float a, float b);
 float maxf(float a, float b);
-
-#endif

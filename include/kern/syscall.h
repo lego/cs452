@@ -1,5 +1,4 @@
-#ifndef __SYSCALL_H__
-#define __SYSCALL_H__
+#pragma once
 
 // for syscall_t definition
 #include <kern/context.h>
@@ -26,5 +25,3 @@ void hwi_uart1_modem(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_uart2_rx(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_uart2_tx(task_descriptor_t *task, kernel_request_t *arg);
 void hwi_timer2(task_descriptor_t *task, kernel_request_t *arg);
-
-#endif

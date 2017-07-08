@@ -1,5 +1,4 @@
-#ifndef __KERNEL_H__
-#define __KERNEL_H__
+#pragma once
 
 #include <io.h>
 
@@ -93,5 +92,3 @@ void RecordLogi(int i);
 
 #include <variadic.h>
 void RecordLogf(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
-
-#endif

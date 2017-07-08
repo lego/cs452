@@ -1,5 +1,4 @@
-#ifndef __WAREHOUSE_H__
-#define __WAREHOUSE_H__
+#pragma once
 
 #include <courier.h>
 
@@ -14,5 +13,3 @@ int createWarehouseWithModifier(
 );
 
 #define createWarehouse(priority, forwardTo, warehouseSize, courierPriority, structLength) createWarehouseWithModifier(priority, forwardTo, warehouseSize, courierPriority, structLength, structLength, NULL)
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef __DEBUG_H__
-#define __DEBUG_H__
+#pragma once
 
 #include <stdbool.h>
 #include <terminal.h>
@@ -147,6 +146,4 @@ int cpsr;
 #define log_nameserver(format, ...) log_debug("  [N]  " format, ## __VA_ARGS__)
 #else
 #define log_nameserver(format, ...) NOP
-#endif
-
 #endif

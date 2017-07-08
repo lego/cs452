@@ -1,6 +1,3 @@
-#ifndef __INTERACTIVE_H__
-#define __INTERACTIVE_H__
+#pragma once
 
 void interactive();
-
-#endif

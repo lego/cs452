@@ -1,5 +1,4 @@
-#ifndef __INTERRUPTS_H__
-#define __INTERRUPTS_H__
+#pragma once
 
 #include <kernel.h>
 #include <kern/task_descriptor.h>
@@ -19,6 +18,3 @@ void interrupts_disable_irq(await_event_t event_type);
 
 
 void interrupts_clear_all();
-
-
-#endif

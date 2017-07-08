@@ -1,5 +1,4 @@
-#ifndef __TASK_DESCRIPTOR_H__
-#define __TASK_DESCRIPTOR_H__
+#pragma once
 
 #include <cbuffer.h>
 #include <kern/kernel_request.h>
@@ -59,5 +58,3 @@ struct TaskDescriptor {
 typedef struct TaskDescriptor task_descriptor_t;
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name);
-
-#endif

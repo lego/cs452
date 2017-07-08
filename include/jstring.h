@@ -1,3 +1,5 @@
+#pragma once
+
 #include <basic.h>
 
 unsigned int jstrlen(const char *c);

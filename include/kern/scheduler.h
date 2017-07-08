@@ -1,5 +1,4 @@
-#ifndef __SCHEDULER_H__
-#define __SCHEDULER_H__
+#pragma once
 
 #include <basic.h>
 #include <kern/task_descriptor.h>
@@ -79,6 +78,3 @@ task_descriptor_t *scheduler_next_task();
  * NOTE: should only be used for debugging
  */
 int scheduler_ready_queue_size();
-
-
-#endif

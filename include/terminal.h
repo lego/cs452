@@ -1,5 +1,4 @@
-#ifndef __TERMINAL_H__
-#define __TERMINAL_H__
+#pragma once
 
 // Terminal codes
 #define CLEAR_TERMINAL "\x1b" "\x5b" "\x32" "\x4a"
@@ -34,5 +33,3 @@
 #define DELETE_CH 0x7f
 #define NEWLINE_CH '\n'
 #define CARRIAGE_RETURN_CH '\r'
-
-#endif

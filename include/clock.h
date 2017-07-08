@@ -1,5 +1,4 @@
-#ifndef __CLOCK_H__
-#define __CLOCK_H__
+#pragma once
 
 #ifdef DEBUG_MODE
 // If we're compiling locally, we use built-in clock types
@@ -27,5 +26,3 @@ ktime_t clock_get_ticks();
  * Gets the ms difference between two clock values
  */
 unsigned int clock_ms_difference(ktime_t current, ktime_t prev);
-
-#endif

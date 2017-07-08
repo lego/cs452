@@ -1,5 +1,4 @@
-#ifndef __KERNEL_REQUEST_H__
-#define __KERNEL_REQUEST_H__
+#pragma once
 
 #include <kernel.h>
 
@@ -41,5 +40,3 @@ typedef struct {
   void *ret_val;
 
 } kernel_request_t;
-
-#endif
