@@ -77,7 +77,25 @@ START_TEST (jformatf_padded_int)
 {
   char str[1024];
   jformatf(str, 1024, "val=%12d", 2);
+  ck_assert_str_eq(str, "val=           2");
+}
+END_TEST
+
+
+START_TEST (jformatf_padded_int_with_zeros)
+{
+  char str[1024];
+  jformatf(str, 1024, "val=%012d", 2);
   ck_assert_str_eq(str, "val=000000000002");
+}
+END_TEST
+
+
+START_TEST (jformatf_trailing_padded_int)
+{
+  char str[1024];
+  jformatf(str, 1024, "val=%-4d", 2);
+  ck_assert_str_eq(str, "val=2   ");
 }
 END_TEST
 
@@ -87,6 +105,14 @@ START_TEST (jformatf_padded_string)
   char str[1024];
   jformatf(str, 1024, "val=%8s", "bye");
   ck_assert_str_eq(str, "val=     bye");
+}
+END_TEST
+
+START_TEST (jformatf_trailing_padding)
+{
+  char str[1024];
+  jformatf(str, 1024, "val=%-8s", "bye");
+  ck_assert_str_eq(str, "val=bye     ");
 }
 END_TEST
 
@@ -114,11 +140,15 @@ int main(void)
   tcase_add_test(tc, jformatf_clears_buffer);
   tcase_add_test(tc, jformatf_hex);
   tcase_add_test(tc, jformatf_padded_int);
+  tcase_add_test(tc, jformatf_padded_int_with_zeros);
   tcase_add_test(tc, jformatf_padded_string);
   tcase_add_test(tc, jformatf_long);
   tcase_add_test(tc, jformatf_unsigned_int);
+  tcase_add_test(tc, jformatf_trailing_padding);
+  tcase_add_test(tc, jformatf_trailing_padded_int);
 
   SRunner *sr = srunner_create(s1);
+  srunner_set_fork_status(sr, CK_NOFORK);
   srunner_run_all(sr, CK_NORMAL);
   int nf = srunner_ntests_failed(sr);
   srunner_free(sr);

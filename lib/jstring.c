@@ -257,10 +257,11 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
   char ch, lz;
   int w;
   int used_buf = 0;
-  int used_size;
-  int trailing;
+  int used_size = 0;
+  int trailing = 0;
 
   while ( ( ch = *(fmt++) ) ) {
+    used_size = 0;
     if ( ch != '%' ) {
       jstrappendc( buf, ch, buf );
       used_buf++;
@@ -270,8 +271,6 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
       switch ( ch ) {
       case '0':
         lz = 1; ch = *(fmt++);
-        KASSERT(false, "formatf padding not implemented");
-        break;
       case '1':
       case '2':
       case '3':
@@ -282,13 +281,17 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
       case '8':
       case '9':
         ch = a2i( ch, &fmt, 10, &w );
+        if (lz == 1) lz = '0';
+        else lz = ' ';
         break;
       case '-':
         // trailing padding
         ch = *(fmt++);
         ch = a2i( ch, &fmt, 10, &trailing );
+        lz = ' ';
         break;
       }
+
       switch( ch ) {
       case 0: return;
       case 'c':
@@ -296,39 +299,39 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
         used_buf++;
         break;
       case 's':
-        lz = ' ';
         used_size = jstrappendw( buf, w, lz, va_arg( va, char* ) );
         used_buf += used_size;
-        trailing -= used_size;
-        while (trailing-- > 0) {
-          jstrappendc(buf, lz, buf);
-          buf++;
-        }
         break;
       case 'u':
-        lz = '0';
         ui2a( va_arg( va, unsigned int ), 10, bf );
-        used_buf += jstrappendw( buf, w, lz, bf );
+        used_size = jstrappendw( buf, w, lz, bf );
+        used_buf += used_size;
         break;
       case 'd':
-        lz = '0';
         i2a( va_arg( va, int ), bf );
-        used_buf += jstrappendw( buf, w, lz, bf );
+        used_size = jstrappendw( buf, w, lz, bf );
+        used_buf += used_size;
         break;
       case 'l':
-        lz = '0';
         l2a( va_arg( va, long int ), bf );
-        used_buf += jstrappendw( buf, w, lz, bf );
+        used_size = jstrappendw( buf, w, lz, bf );
+        used_buf += used_size;
         break;
       case 'x':
-        lz = '0';
         ui2a( va_arg( va, unsigned int ), 16, bf );
-        used_buf += jstrappendw( buf, w, lz, bf );
+        used_size = jstrappendw( buf, w, lz, bf );
+        used_buf += used_size;
         break;
       case '%':
         jstrappendc(buf, ch, buf);
         used_buf++;
         break;
+      }
+      trailing -= used_size;
+      while (trailing-- > 0) {
+        jstrappendc(buf, lz, buf);
+        buf++;
+        used_buf++;
       }
     }
     KASSERT(used_buf < buf_size, "jformatf provided buffer overflowed: fmt=\"%s\"", fmt);
