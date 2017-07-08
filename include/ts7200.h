@@ -88,7 +88,7 @@
 
 // Memory access. This is here to make it easy to find code that is
 // TS7200 specific, when it hits memory
-#define VMEM(x) *((volatile uint32_t *)(x))
+#define VMEM(x) *((volatile unsigned int *)(x))
 
 // Interrupt stuff
 #define VIC1_BASE 0x800B0000

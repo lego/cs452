@@ -164,16 +164,13 @@ lib%.a: %.o
 libstdlib.a: $(STDLIB_OBJS)
 	$(AR) $(ARFLAGS) $@ $<
 
-funcmapgen: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
-	./funcmapgen.sh
-
 # clean all files in the top-level, the only place we have temp files
 clean:
 	rm -rf *.o *.s *.elf *.a *.a.dSYM/ *.map
 
 # always run clean (it doesn't produce files)
 # also always run main.a because it implicitly depends on all C files
-.PHONY: clean main.a funcmapgen
+.PHONY: clean main.a
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful

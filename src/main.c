@@ -19,6 +19,13 @@
 #include <kernel.h>
 #include <priorities.h>
 
+volatile task_descriptor_t *active_task;
+context_t *ctx;
+unsigned int main_fp;
+bool should_exit;
+char logs[LOG_SIZE];
+volatile int log_length;
+
 /* Entries */
 #if defined(USE_K1)
 #include <entry/k1.h>

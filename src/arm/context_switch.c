@@ -68,18 +68,18 @@ asm (
 
   // shim for KASSERT. only KASSERT will swi #5 and we return as SVC
   // so the KASSERT isn't interrupted after swi #5
-    // save scratch register
-    "stmfd sp!, {r0}\n\t"
-    // load the SWI instr machine code
-    "ldr r0, [lr, #-4]\n\t"
-    // take the last 8 bits, the number in SWI
-    "and r0, r0, #0xFF\n\t"
-    // check that swi #5 was called
-    "cmp r0, #5\n\t"
-    // if it was, just return to the kassert
-    "beq ret_back_to_kassert\n\t"
-    // recover scratch register
-    "ldmfd sp!, {r0}\n\t"
+    // // save scratch register
+    // "stmfd sp!, {r0}\n\t"
+    // // load the SWI instr machine code
+    // "ldr r0, [lr, #-4]\n\t"
+    // // take the last 8 bits, the number in SWI
+    // "and r0, r0, #0xFF\n\t"
+    // // check that swi #5 was called
+    // "cmp r0, #5\n\t"
+    // // if it was, just return to the kassert
+    // "beq ret_back_to_kassert\n\t"
+    // // recover scratch register
+    // "ldmfd sp!, {r0}\n\t"
 
   // in system mode
   "msr cpsr_c, #223\n\t"
