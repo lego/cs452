@@ -29,7 +29,7 @@ AS     = ./armcheck; as
 AR     = ./armcheck; ar
 LD     = ./armcheck; ld
 
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -finstrument-functions $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture

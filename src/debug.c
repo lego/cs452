@@ -166,6 +166,7 @@ void print_logs() {
 
 void exit_kernel() {
   // return to redboot, this is just a fcn return for the main fcn
+  bwputr(COM2, main_fp);
   asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
   asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
 }
