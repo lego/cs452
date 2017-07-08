@@ -1,4 +1,3 @@
-#include <entry/k4.h>
 #include <basic.h>
 #include <bwio.h>
 #include <servers/nameserver.h>
