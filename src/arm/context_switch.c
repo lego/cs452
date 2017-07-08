@@ -6,11 +6,40 @@
 #include <kern/task_descriptor.h>
 
 typedef int (*interrupt_handler)(int);
+typedef void (*debugger_func)(void);
+
+
+#ifndef DEBUG_MODE
+
+unsigned int deathwish;
+
+#define DEATHWISH_LOCATION (unsigned int *) 0x280000
+
+void __cyg_profile_func_enter (void *, void *) __attribute__((no_instrument_function));
+void __cyg_profile_func_exit (void *, void *) __attribute__((no_instrument_function));
+
+void __cyg_profile_func_enter (void *func,  void *caller)
+{
+  // unsigned int *loc =  DEATHWISH_LOCATION;
+  deathwish = (unsigned int) func;
+}
+
+void __cyg_profile_func_exit (void *func, void *caller)
+{
+}
+#endif
+
+void __debug_handler();
 
 void context_switch_init() {
+  *((debugger_func*)0x24) = &__debug_handler;  // undefined instr
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
+  *((debugger_func*)0x2c) = &__debug_handler;  // prefetch abort
+  *((debugger_func*)0x30) = &__debug_handler; // data abort
+  // none
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
 }
+
 
 int cpsr;
 int lr;
@@ -20,11 +49,39 @@ void save(int r0, int r1) {
   lr = r1;
 }
 
+char *kernel_fail = "Kernel LR: ";
+char *task_fail = "   Task LR: ";
+
 asm (
 "\n"
 // export of the function
 ".global __asm_start_task\n"
 ".global __asm_switch_to_task\n"
+
+
+"__debug_handler:\n\t"
+  // print kernel lr
+  "msr cpsr_c, #211\n\t"
+  "stmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "ldr r1, kernel_fail\n\t"
+  "bl bwputstr\n\t"
+  "ldmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "mov r1, lr\n\t"
+  "bl bwputr\n\t"
+
+  // print task lr
+  "msr cpsr_c, #223\n\t"
+  "stmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "ldr r1, task_fail\n\t"
+  "bl bwputstr\n\t"
+  "ldmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "mov r1, lr\n\t"
+  "bl bwputr\n\t"
+  "b exit_kernel\n\t"
 
 "__asm_switch_to_task:\n\t"
   // save the return-to-kernel lr + registers

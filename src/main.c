@@ -51,26 +51,6 @@ volatile int log_length;
 #error Bad PROJECT value provided to Makefile. Expected "K1-4", "TC1", "BENCHMARK", "CLOCK_SERVER_TEST", "NAVIGATION_TEST"
 #endif
 
-#ifndef DEBUG_MODE
-
-unsigned int deathwish;
-
-#define DEATHWISH_LOCATION (unsigned int *) 0x280000
-
-void __cyg_profile_func_enter (void *, void *) __attribute__((no_instrument_function));
-void __cyg_profile_func_exit (void *, void *) __attribute__((no_instrument_function));
-
-void __cyg_profile_func_enter (void *func,  void *caller)
-{
-  // unsigned int *loc =  DEATHWISH_LOCATION;
-  deathwish = (unsigned int) func;
-}
-
-void __cyg_profile_func_exit (void *func, void *caller)
-{
-}
-#endif
-
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
 }

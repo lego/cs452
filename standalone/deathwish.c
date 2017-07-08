@@ -17,6 +17,7 @@ void __cyg_profile_func_exit (void *func, void *caller)
 void *active_task;
 void *main_fp;
 void cleanup() {}
+void exit_kernel() {}
 void PrintAllTaskStacks() {}
 
 int main() {

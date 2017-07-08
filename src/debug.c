@@ -164,6 +164,12 @@ void print_logs() {
   bwputstr(COM2, logs);
 }
 
+void exit_kernel() {
+  // return to redboot, this is just a fcn return for the main fcn
+  asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
+  asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
+}
+
 void cleanup() {
   interrupts_disable();
   // Clear out any interrupt bits

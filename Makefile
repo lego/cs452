@@ -15,7 +15,7 @@ TRACK=B
 endif
 
 ifndef PACKETS
-PACKETS=true
+PACKETS=false
 endif
 
 CFLAGS_BACKTRACE = -mpoke-function-name -fverbose-asm # -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs

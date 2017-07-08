@@ -13,9 +13,9 @@ void cleanup();
 // A switch to limit output to only terminal information
 // This must be set to false to use gtkterm
 #if USE_PACKETS
-  #define NONTERMINAL_OUTPUT false
-#else
   #define NONTERMINAL_OUTPUT true
+#else
+  #define NONTERMINAL_OUTPUT false
 #endif
 
 #define DEBUG_LOGGING_ARM true
@@ -74,11 +74,7 @@ void debugger();
 #ifndef DEBUG_MODE
 #define REDBOOT_LR 0x174c8
 extern unsigned int main_fp;
-static inline void exit() {
-  // return to redboot, this is just a fcn return for the main fcn
-  asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
-  asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
-}
+void exit_kernel();
 
 #include <kern/task_descriptor.h>
 
@@ -89,7 +85,7 @@ static inline void exit() {
   if (active_task) PrintAllTaskStacks(active_task->tid); \
   else PrintAllTaskStacks(-1); \
   bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-  exit();} } while(0)
+  exit_kernel();} } while(0)
 #else
 #include <stdlib.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
