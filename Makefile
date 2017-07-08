@@ -33,7 +33,7 @@ CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc
 AS     = $(GCC_ROOT)/bin/$(GCC_TYPE)-as
 AR     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ar
 LD     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security -Wno-error=unused-but-set-variable -Wno-unused-but-set-variable
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security -Wno-error=unused-but-set-variable -Wno-unused-but-set-variable
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture

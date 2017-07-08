@@ -90,5 +90,5 @@ io_time_t GetIdleTaskExecutionTime();
 void RecordLog(const char *msg);
 void RecordLogi(int i);
 
-#include <variadic.h>
+#include <stdarg.h>
 void RecordLogf(char *fmt, ...) __attribute__ ((format (printf, 1, 2)));

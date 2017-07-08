@@ -1,5 +1,5 @@
 #include <stdlib/string.h>
-#include <stdlib/stdint.h>
+#include <stdint.h>
 
 void *memset(void *dest, int c, size_t n)
 {

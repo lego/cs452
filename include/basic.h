@@ -24,7 +24,7 @@
 /*
  * Built-in C variadic defitions for variadic functions such as bwprintf
  */
-#include <variadic.h>
+#include <stdarg.h>
 /*
  * Helpful debugging macros and functions
  * - only applicable to local development
