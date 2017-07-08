@@ -18,14 +18,22 @@ ifndef PACKETS
 PACKETS=true
 endif
 
+
+ifndef GCC_ROOT
+GCC_ROOT=/u3/j5pereira/arm-gcc-6.3.1/
+endif
+
+GCC_TYPE=arm-none-eabi
+GCC_VERSION=6.3.1
+
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
-CC     = ./armcheck; gcc
-AS     = ./armcheck; as
-AR     = ./armcheck; ar
-LD     = ./armcheck; ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
+CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc
+AS     = $(GCC_ROOT)/bin/$(GCC_TYPE)-as
+AR     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ar
+LD     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ld
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security -Wno-error=unused-but-set-variable -Wno-unused-but-set-variable
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -35,7 +43,7 @@ CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT)
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L.
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) -L.
 # TODO: Document what these mean... heh
 else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
@@ -98,12 +106,15 @@ endif
 install: main.elf
 	cp $< $(TRACK).elf && ./upload.sh $(TRACK).elf && ./upload.sh $<
 
+remote_install: main.elf
+	cp $< $(TRACK).elf && ./remote_upload.sh $(TRACK).elf && ./remote_upload.sh $<
+
 # ARM binary
 main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
 
 small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
-	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
+	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
 
 # Local simulation binary
