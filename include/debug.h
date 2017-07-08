@@ -80,12 +80,14 @@ void exit_kernel();
 
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
   bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-  asm volatile ("swi #5"); cleanup(); \
-  bwputstr(COM2, "\n\r\n\r"); \
-  if (active_task) PrintAllTaskStacks(active_task->tid); \
-  else PrintAllTaskStacks(-1); \
-  bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-  exit_kernel();} } while(0)
+  for(;;);} } while(0)
+
+  // asm volatile ("swi #5"); cleanup();
+  // bwputstr(COM2, "\n\r\n\r");
+  // if (active_task) PrintAllTaskStacks(active_task->tid);
+  // else PrintAllTaskStacks(-1);
+  // bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__);
+
 #else
 #include <stdlib.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \

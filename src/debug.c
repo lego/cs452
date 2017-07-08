@@ -147,7 +147,7 @@ void print_stats() {
   #if !defined(DEBUG_MODE)
   for (i = 0; i < ctx->used_descriptors; i++) {
     task_descriptor_t *task = &ctx->descriptors[i];
-    bwprintf(COM2, " Task %d:%-40s %10ums (Total) %10ums (Send) %10ums (Recv) %10ums (Repl)\n\r",
+    bwprintf(COM2, " Task %3d:%-40s %10ums (Total) %10ums (Send) %10ums (Recv) %10ums (Repl)\n\r",
       i, task->func_name,
       io_time_ms(task->execution_time),
       io_time_ms(task->send_execution_time),
@@ -164,9 +164,12 @@ void print_logs() {
   bwputstr(COM2, logs);
 }
 
+extern int main_lr;
+
 void exit_kernel() {
   // return to redboot, this is just a fcn return for the main fcn
   bwputr(COM2, main_fp);
+  bwputr(COM2, main_lr);
   asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
   asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
 }

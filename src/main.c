@@ -71,10 +71,13 @@ static inline void task_post_activate(task_descriptor_t *task) {
   task->execution_time += (execution_time_end - execution_time_start);
 }
 
+int main_lr;
+
 int main() {
   #ifndef DEBUG_MODE
   // saves FP to be able to clean exit to redboot
   asm volatile("mov %0, fp @ save fp" : "=r" (main_fp));
+  asm volatile("mov %0, lr @ save lr" : "=r" (main_lr));
   #endif
 
   should_exit = false;

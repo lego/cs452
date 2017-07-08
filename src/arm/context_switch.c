@@ -34,8 +34,8 @@ void __debug_handler();
 void context_switch_init() {
   *((debugger_func*)0x24) = &__debug_handler;  // undefined instr
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
-  *((debugger_func*)0x2c) = &__debug_handler;  // prefetch abort
-  *((debugger_func*)0x30) = &__debug_handler; // data abort
+  // *((debugger_func*)0x2c) = &__debug_handler;  // prefetch abort
+  // *((debugger_func*)0x30) = &__debug_handler; // data abort
   // none
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
 }
@@ -125,7 +125,7 @@ asm (
 
   // shim for KASSERT. only KASSERT will swi #5 and we return as SVC
   // so the KASSERT isn't interrupted after swi #5
-    // // save scratch register
+    // save scratch register
     // "stmfd sp!, {r0}\n\t"
     // // load the SWI instr machine code
     // "ldr r0, [lr, #-4]\n\t"
