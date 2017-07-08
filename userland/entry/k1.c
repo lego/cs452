@@ -1,6 +1,5 @@
 #include <basic.h>
 #include <bwio.h>
-#include <entry/k1.h>
 #include <kernel.h>
 #include <ts7200.h>
 

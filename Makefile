@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
 ifndef PROJECT
-PROJECT=K4
+PROJECT=TC
 endif
 
 ifndef TRACK

@@ -1,4 +1,3 @@
-#include <entry/malloc_test.h>
 #include <basic.h>
 #include <bwio.h>
 #include <alloc.h>
