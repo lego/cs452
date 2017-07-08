@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <util.h>
 #include <kernel.h>
 #include <jstring.h>
 #include <terminal.h>

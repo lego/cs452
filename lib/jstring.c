@@ -1,5 +1,7 @@
-#include <basic.h>
+#include <stddef.h>
+#include <kassert.h>
 #include <jstring.h>
+#include <util.h>
 
 unsigned int jstrlen(const char *c) {
   int len = 0;

@@ -1,4 +1,3 @@
-#include <basic.h>
 #include <bwio.h>
 #include <kernel.h>
 #include <ts7200.h>

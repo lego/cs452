@@ -1,4 +1,6 @@
-#include <basic.h>
+#include <stddef.h>
+#include <kassert.h>
+
 #include <bwio.h>
 #include <kern/context.h>
 #include <kern/context_switch.h>
@@ -8,7 +10,7 @@
 #include <jstring.h>
 
 int CreateWithName(int priority, void (*entrypoint)(), const char *func_name) {
-  assert(0 <= priority && priority < 32);
+  KASSERT(0 <= priority && priority < 32, "Invalid priority provided.");
 
   kernel_request_t request;
   request.tid = active_task->tid;

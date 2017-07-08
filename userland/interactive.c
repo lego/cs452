@@ -1,5 +1,6 @@
 #include <io.h>
 #include <basic.h>
+#include <util.h>
 #include <bwio.h>
 #include <interactive.h>
 #include <servers/nameserver.h>
