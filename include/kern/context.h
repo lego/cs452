@@ -1,5 +1,4 @@
-#ifndef __CONTEXT_H__
-#define __CONTEXT_H__
+#pragma once
 
 #include <kern/task_descriptor.h>
 
@@ -73,5 +72,3 @@ extern bool should_exit;
 #define LOG_SIZE 16384
 extern char logs[LOG_SIZE];
 extern volatile int log_length;
-
-#endif

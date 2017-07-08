@@ -1,5 +1,4 @@
-#ifndef __IO_H__
-#define __IO_H__
+#pragma once
 
 #include <ts7200.h>
 
@@ -74,5 +73,3 @@ int io_putc(int channel, char c);
  *                 -2 => ERROR: invalid channel
  */
 int io_getc(int channel);
-
-#endif

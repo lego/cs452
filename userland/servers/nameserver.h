@@ -1,5 +1,4 @@
-#ifndef __NAMESERVER_H__
-#define __NAMESERVER_H__
+#pragma once
 
 #define REGISTER_CALL 0
 #define WHOIS_CALL 1
@@ -33,5 +32,3 @@ void nameserver();
 /* Nameserver calls */
 int RegisterAs( task_name_t name );
 int WhoIs( task_name_t name );
-
-#endif
