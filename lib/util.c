@@ -1,4 +1,5 @@
-#include <basic.h>
+#include <util.h>
+#include <kassert.h>
 
 #ifdef DEBUG_MODE
 void debugger() {
@@ -229,16 +230,6 @@ bool is_alphanumeric( char ch ) {
   return is_alpha(ch) || is_digit(ch);
 }
 
-unsigned long hash(unsigned char *str) {
-  unsigned long hash = 5381;
-  int c;
-
-  while ((c = *str++))
-    hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-
-  return hash;
-}
-
 float minf(float a, float b) {
   if (a < b) {
     return a;
@@ -253,4 +244,14 @@ float maxf(float a, float b) {
   } else {
     return b;
   }
+}
+
+unsigned long hash(unsigned char *str) {
+  unsigned long hash = 5381;
+  int c;
+
+  while ((c = *str++))
+    hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+  return hash;
 }

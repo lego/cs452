@@ -3,8 +3,8 @@
  * this is the entrypoint to the kernel and the bulk of magic
  */
 
-#include <alloc.h>
 #include <basic.h>
+#include <alloc.h>
 #include <bwio.h>
 #include <jstring.h>
 #include <cbuffer.h>

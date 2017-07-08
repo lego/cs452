@@ -1,5 +1,6 @@
 #include <basic.h>
 #include <jstring.h>
+#include <util.h>
 #include <kernel.h>
 #include <servers/uart_tx_server.h>
 #include <servers/nameserver.h>

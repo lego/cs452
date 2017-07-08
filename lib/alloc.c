@@ -1,6 +1,5 @@
-#include <debug.h>
+#include <basic.h>
 #include <alloc.h>
-#include <null.h>
 #include <stdlib/string.h>
 
 #if RECORD_ALLOCATION_METRICS

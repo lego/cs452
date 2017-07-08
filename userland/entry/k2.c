@@ -1,4 +1,7 @@
-#include <basic.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <debug.h>
+
 #include <bwio.h>
 #include <servers/nameserver.h>
 #include <kernel.h>

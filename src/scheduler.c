@@ -1,4 +1,7 @@
-#include <basic.h>
+#include <stddef.h>
+#include <kassert.h>
+#include <util.h>
+
 #include <bwio.h>
 #include <kern/context.h>
 #include <kern/scheduler.h>
@@ -51,7 +54,7 @@ task_descriptor_t *scheduler_next_task() {
 
   // If this is null, we're screwed, other logic should
   // check scheduler_any_task first
-  assert(next_task != NULL);
+  KASSERT(next_task != NULL, "There should be a next task.");
 
   // replace the next task in the queue
   ready_queues[next_task->priority] = next_task->next_ready_task;

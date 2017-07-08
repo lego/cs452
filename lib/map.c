@@ -1,4 +1,5 @@
-#include <basic.h>
+#include <stddef.h>
+#include <util.h>
 #include <map.h>
 
 void map_init(map_t *map, map_val_t *buf, int buf_size) {

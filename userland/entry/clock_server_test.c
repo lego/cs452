@@ -1,4 +1,6 @@
-#include <basic.h>
+#include <stddef.h>
+#include <debug.h>
+
 #include <bwio.h>
 #include <kernel.h>
 #include <servers/nameserver.h>

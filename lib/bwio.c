@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <util.h>
 #include <bwio.h>
 #include <jstring.h>
 
