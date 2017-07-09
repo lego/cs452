@@ -1,6 +1,7 @@
 # General compilation output
 *.i
 *.bak
+*.d
 *.o
 *.s
 *.a

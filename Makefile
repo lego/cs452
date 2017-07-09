@@ -18,13 +18,17 @@ ifndef PACKETS
 PACKETS=true
 endif
 
+GCC_ROOT := /u/wbcowan/gnuarm-4.0.2
+GCC_TYPE := arm-elf
+GCC_VERSION := 4.0.2
+
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
-CC     = ./armcheck; gcc
-AS     = ./armcheck; as
-AR     = ./armcheck; ar
-LD     = ./armcheck; ld
+CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc
+AS     = $(GCC_ROOT)/bin/$(GCC_TYPE)-as
+AR     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ar
+LD     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ld
 CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
@@ -35,7 +39,7 @@ CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT)
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 -L.
+LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) -L.
 # TODO: Document what these mean... heh
 else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
@@ -70,6 +74,7 @@ USERLAND_INCLUDES = -I./userland
 LIB_SRCS := $(wildcard lib/*.c) $(wildcard lib/$(ARCH)/*.c)
 LIB_BINS := $(LIB_SRCS:.c=.a)
 LIB_BINS := $(patsubst lib/$(ARCH)/%.a,lib$(ARCH)%.a,$(LIB_BINS))
+LIB_OBJS := $(patsubst lib%.a,%.o,$(LIB_BINS))
 LIB_BINS := $(patsubst lib/%.a,lib%.a,$(LIB_BINS)) libstdlib.a
 
 STDLIB_SRCS := $(wildcard lib/stdlib/*.c)
@@ -85,6 +90,8 @@ TEST_BINS := $(TEST_OBJS:.o=.a)
 
 USERLAND_SRCS := $(wildcard userland/**/*.c) $(wildcard userland/*.c)
 USERLAND_OBJS := $(subst /,_,$(USERLAND_SRCS:.c=.o))
+
+OBJS := $(USERLAND_OBJS) $(LIB_OBJS) $(KERNEL_OBJS) $(STDLIB_OBJS) $(TEST_OBJS)
 
 ifdef LOCAL
 # If were compiling locally, we care about main.a and test binaries
@@ -103,7 +110,7 @@ main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
 
 small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
-	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L/u/wbcowan/gnuarm-4.0.2/lib/gcc/arm-elf/4.0.2 $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
+	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
 
 # Local simulation binary
@@ -114,32 +121,32 @@ main.a:
 
 # ASM files from various locations
 %.s: src/%.c
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 
 %.s: lib/%.c
-	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 
 lib_stdlib_%.s: lib/stdlib/%.c
-	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 
 userland_%.s: userland/%.c
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_trains_%.s: userland/trains/%.c
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_interactive_%.s: userland/interactive/%.c
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_servers_%.s: userland/servers/%.c
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_entry_%.s: userland/entry/%.c
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 
 # architecture specific ASM gets prefixed
 # this is done to have both a src/bwio.c and src/arm/bwio.c
 $(ARCH)%.s: src/$(ARCH)/%.c
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 
 $(ARCH)%.s: lib/$(ARCH)/%.c
-	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
+	$(CC) $(INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 
 # all object files from ASM files
 %.o: %.s
@@ -160,7 +167,13 @@ libstdlib.a: $(STDLIB_OBJS)
 
 # clean all files in the top-level, the only place we have temp files
 clean:
-	rm -rf *.o *.s *.elf *.a *.a.dSYM/ *.map
+	rm -rf *.o *.s *.elf *.a *.a.dSYM/ *.map *.d
+
+
+DEP = $(OBJS:%.o=%.d)
+
+-include $(DEP)
+
 
 # always run clean (it doesn't produce files)
 # also always run main.a because it implicitly depends on all C files
@@ -168,5 +181,5 @@ clean:
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful
-.PRECIOUS: %.s arm%.s %.map
+.PRECIOUS: %.s arm%.s %.map lib_stdlib_%.s userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s
 endif
