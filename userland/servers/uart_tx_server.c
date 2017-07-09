@@ -64,9 +64,9 @@ void uart_tx_notifier() {
   }
 }
 
-int createNotifier(int channel) {
+int createNotifier(int channel, char * name) {
   int notifier_priority = ((channel == COM1) ? PRIORITY_UART1_TX_NOTIFIER : PRIORITY_UART2_TX_NOTIFIER);
-  int notifier_tid = Create(notifier_priority, uart_tx_notifier);
+  int notifier_tid = CreateWithName(notifier_priority, uart_tx_notifier, name);
   SendSN(notifier_tid, channel);
   return notifier_tid;
 }
@@ -187,8 +187,8 @@ void uart_tx_server() {
 void uart_tx() {
   uart_request_t request;
 
-  uart1_tx_notifier_tid = createNotifier(COM1);
-  uart2_tx_notifier_tid = createNotifier(COM2);
+  uart1_tx_notifier_tid = createNotifier(COM1, "UART1 TX notifier");
+  uart2_tx_notifier_tid = createNotifier(COM2, "UART2 TX notifier");
 
   uart1_tx_warehouse_tid = createWarehouse(
       PRIORITY_UART1_TX_SERVER,

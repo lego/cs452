@@ -28,6 +28,8 @@ void io_disable_caches();
  */
 io_time_t io_get_time();
 
+#define io_time_ms(t) io_time_difference_ms(t, 0)
+
 /**
  * Calculates the millisecond difference between two timing values
  */

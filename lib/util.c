@@ -213,7 +213,7 @@ void l2a( long int num, char *bf ) {
 
 
 char c2x( char ch ) {
-  assert(ch < 16);
+  KASSERT(ch < 16, "Bad character given. Got ch=%c", ch);
   if ( (ch <= 9) ) return '0' + ch;
   return 'a' + ch - 10;
 }
