@@ -4,7 +4,6 @@
 #include <kern/context_switch.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
-#include <kern/arm/linker.h>
 
 void scheduler_arch_init() {
   log_scheduler_kern("would initalize schedule");
@@ -28,7 +27,7 @@ kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
   // assert here to make sure the task stack pointer does not
   // extend into other task stacks
   // NOTE: casted to char * so we get the byte size count
-  if ((_TaskStackStart - (char *) task->stack_pointer) > _TaskStackSize) {
+  if ((char *) task->stack_pointer < TaskStack + (_TaskStackSize * task->tid)) {
     KASSERT(false, "WARNING: TASK STACK OVERFLOWED. tid=%d", task->tid);
   }
   log_scheduler_kern("activating task tid=%d", task->tid);

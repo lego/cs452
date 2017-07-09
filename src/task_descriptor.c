@@ -5,7 +5,6 @@
 #include <kern/task_descriptor.h>
 
 #ifndef DEBUG_MODE
-#include <kern/arm/linker.h>
 #else
 #include <stdlib.h>
 #endif
