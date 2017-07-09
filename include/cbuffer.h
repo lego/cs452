@@ -1,5 +1,4 @@
-#ifndef __CBUFFER_H__
-#define __CBUFFER_H__
+#pragma once
 
 /*
  * Circular buffer, using a pre-allocated buffer
@@ -71,5 +70,3 @@ bool cbuffer_empty(cbuffer_t *cbuffer);
  * Gets the buffers size
  */
 int cbuffer_size(cbuffer_t *cbuffer);
-
-#endif

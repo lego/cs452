@@ -1,6 +1,7 @@
-#include <entry/k4.h>
-#include <basic.h>
+#include <stddef.h>
+
 #include <bwio.h>
+#include <kernel.h>
 #include <servers/nameserver.h>
 #include <idle_task.h>
 #include <servers/clock_server.h>

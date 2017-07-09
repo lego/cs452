@@ -1,5 +1,4 @@
-#ifndef __HEAP__H
-#define __HEAP__H
+#pragma once
 
 typedef struct {
   int priority;
@@ -50,5 +49,3 @@ int heap_peek_priority (heap_t *h);
  * Gets the lowest priority value (which is a single peek)
  */
 void *heap_peek (heap_t *h);
-
-#endif

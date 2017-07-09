@@ -1,9 +1,9 @@
-#include <entry/malloc_test.h>
-#include <basic.h>
+#include <stddef.h>
+
 #include <bwio.h>
 #include <alloc.h>
 #include <kernel.h>
-#include <stdlib/stdint.h>
+#include <stdint.h>
 #include <stdlib/string.h>
 
 #define PRINT_INT(var) bwprintf(COM2, "%s=%d\n\r", #var, var)

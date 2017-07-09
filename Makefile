@@ -7,7 +7,7 @@ MAKEFLAGS += --no-builtin-rules
 .SUFFIXES:
 
 ifndef PROJECT
-PROJECT=K4
+PROJECT=TC
 endif
 
 ifndef TRACK
@@ -22,6 +22,8 @@ GCC_ROOT := /u/wbcowan/gnuarm-4.0.2
 GCC_TYPE := arm-elf
 GCC_VERSION := 4.0.2
 
+STANDARD_INCLUDES=-include stdbool.h -include stddef.h -include stdint.h
+
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
@@ -29,7 +31,7 @@ CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc
 AS     = $(GCC_ROOT)/bin/$(GCC_TYPE)-as
 AR     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ar
 LD     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security $(STANDARD_INCLUDES)
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -63,7 +65,7 @@ ARFLAGS = rcs
 #
 # When you add a file it will be in the form of -l<filename>
 # NOTE: If you add an ARM specific file, you also need to add -larm<filename>
-LIBRARIES= -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lbasic -lheap -lalloc -lstdlib -lgcc
+LIBRARIES= -lcbuffer -ljstring -lmap -larmio -lbwio -larmbwio -lutil -lheap -lalloc -lstdlib -lgcc
 
 # List of includes for headers that will be linked up in the end
 INCLUDES = -I./include

@@ -3,8 +3,8 @@
  * this is the entrypoint to the kernel and the bulk of magic
  */
 
-#include <alloc.h>
 #include <basic.h>
+#include <alloc.h>
 #include <bwio.h>
 #include <jstring.h>
 #include <cbuffer.h>
@@ -18,28 +18,7 @@
 #include <kern/syscall.h>
 #include <kernel.h>
 #include <priorities.h>
-
-#if defined(USE_K1)
-#include <entry/k1.h>
-#elif defined(USE_K2)
-#include <entry/k2.h>
-#elif defined(USE_K3)
-#include <entry/k3.h>
-#elif defined(USE_K4)
-#include <entry/k4.h>
-#elif defined(USE_TC1)
-#include <entry/tc1.h>
-#elif defined(USE_NAVIGATION_TEST)
-#include <entry/navigation_test.h>
-#elif defined(USE_CLOCK_SERVER_TEST)
-#include <entry/clock_server_test.h>
-#elif defined(USE_MALLOC_TEST)
-#include <entry/malloc_test.h>
-#elif defined(USE_BENCHMARK)
-#include <entry/benchmark.h>
-#else
-#error Bad PROJECT value provided to Makefile. Expected "K1-4", "TC1", "BENCHMARK", "CLOCK_SERVER_TEST", "NAVIGATION_TEST"
-#endif
+#include <entries.h>
 
 volatile task_descriptor_t *active_task;
 context_t *ctx;

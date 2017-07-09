@@ -1,5 +1,4 @@
-#ifndef __TASK_DESCRIPTOR_H__
-#define __TASK_DESCRIPTOR_H__
+#pragma once
 
 #include <cbuffer.h>
 #include <kern/kernel_request.h>
@@ -62,5 +61,3 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
 
 #define _TaskStackSize 0x10000
 extern char TaskStack[_TaskStackSize * (MAX_TASKS + 2)];
-
-#endif

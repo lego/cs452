@@ -1,5 +1,4 @@
-#ifndef __TRAIN_CONTROLLER_H__
-#define __TRAIN_CONTROLLER_H__
+#pragma once
 
 enum {
   SWITCH_CURVED,
@@ -13,5 +12,3 @@ int MoveTrain(int train, int speed, int node_id);
 int ReverseTrain(int train, int currentSpeed);
 int InstantStop(int train);
 int SetSwitch(int sw, int state);
-
-#endif

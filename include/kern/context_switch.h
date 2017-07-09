@@ -1,5 +1,4 @@
-#ifndef __CONTEXT_SWITCH_H__
-#define __CONTEXT_SWITCH_H__
+#pragma once
 
 #include <kern/context_switch.h>
 #include <kern/kernel_request.h>
@@ -20,5 +19,3 @@ void __asm_swi_handler();
 void __asm_hwi_handler();
 void __asm_start_task(void* task_sp, void* task_pc);
 void __asm_switch_to_task(void* task_sp);
-
-#endif

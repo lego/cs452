@@ -1,8 +1,7 @@
-#ifndef __BWIO_H__
-#define __BWIO_H__
+#pragma once
 
 #include <ts7200.h>
-#include <variadic.h>
+#include <stdarg.h>
 
 #define ON  1
 #define OFF 0
@@ -27,5 +26,3 @@ int bwputr( int channel, unsigned int reg );
 void bwputw( int channel, int n, char fc, char *bf );
 
 void bwprintf( int channel, char *format, ... ) __attribute__ ((format (printf, 2, 3)));
-
-#endif

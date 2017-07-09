@@ -1,6 +1,7 @@
 #include <basic.h>
+#include <util.h>
+
 #include <alloc.h>
-#include <debug.h>
 #include <bwio.h>
 #include <kern/syscall.h>
 #include <kern/kernel_request.h>

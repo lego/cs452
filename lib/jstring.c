@@ -1,5 +1,7 @@
-#include <basic.h>
+#include <stddef.h>
+#include <kassert.h>
 #include <jstring.h>
+#include <util.h>
 
 unsigned int jstrlen(const char *c) {
   int len = 0;
@@ -295,7 +297,7 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
       switch( ch ) {
       case 0: return;
       case 'c':
-        jstrappendc(buf, va_arg( va, char ), buf);
+        jstrappendc(buf, (char) va_arg( va, int ), buf);
         used_buf++;
         break;
       case 's':

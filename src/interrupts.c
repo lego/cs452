@@ -1,4 +1,5 @@
-#include <basic.h>
+#include <stddef.h>
+#include <kassert.h>
 #include <kernel.h>
 #include <kern/interrupts.h>
 
@@ -20,16 +21,16 @@ void interrupts_init() {
 
 
 void interrupts_set_waiting_task(await_event_t event_type, task_descriptor_t *task) {
-  assert(0 <= event_type && event_type < EVENT_NUM_TYPES);
+  KASSERT(0 <= event_type && event_type < EVENT_NUM_TYPES, "Event type is invalid");
   waiting_tasks[event_type] = task;
 }
 
 void interrupts_clear_waiting_task(await_event_t event_type) {
-  assert(0 <= event_type && event_type < EVENT_NUM_TYPES);
+  KASSERT(0 <= event_type && event_type < EVENT_NUM_TYPES, "Event type is invalid");
   waiting_tasks[event_type] = NULL;
 }
 
 task_descriptor_t *interrupts_get_waiting_task(await_event_t event_type) {
-  assert(0 <= event_type && event_type < EVENT_NUM_TYPES);
+  KASSERT(0 <= event_type && event_type < EVENT_NUM_TYPES, "Event type is invalid");
   return waiting_tasks[event_type];
 }

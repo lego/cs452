@@ -1,5 +1,4 @@
-#ifndef __MAP_H__
-#define __MAP_H__
+#pragma once
 
 typedef struct {
   char *key;
@@ -17,5 +16,3 @@ void map_init(map_t *map, map_val_t *buf, int buf_size);
 int map_insert(map_t *map, char *key, void *val);
 
 void *map_get(map_t *map, char *key);
-
-#endif

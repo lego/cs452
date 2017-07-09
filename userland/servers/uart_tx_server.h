@@ -1,5 +1,4 @@
-#ifndef __UART_TX_SERVER_H__
-#define __UART_TX_SERVER_H__
+#pragma once
 
 #define RESPONSE_BUFFER_SIZE 32
 
@@ -26,5 +25,3 @@ int GetRxQueueLength(int channel);
 #define SWITCH_LOCATION 3
 #define SENSOR_HISTORY_LOCATION 10
 #define COMMAND_LOCATION 23
-
-#endif
