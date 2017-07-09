@@ -7,8 +7,8 @@
 #include <kern/task_descriptor.h>
 #include <terminal.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  asm volatile ("swi #5"); cleanup(); \
-  bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+  cleanup(); \
+  bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "\n\rin %s:%d\n\r", ## __VA_ARGS__, __FILE__, __LINE__); \
   PrintBacktrace() \
   exit_kernel(); \
   } } while(0)

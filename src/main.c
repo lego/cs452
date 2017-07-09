@@ -87,6 +87,8 @@ int main() {
   bwputc(COM1, 0x60);
   #endif
 
+
+
   // start executing user tasks
   while (!should_exit) {
     task_descriptor_t *next_task = scheduler_next_task();

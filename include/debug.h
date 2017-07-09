@@ -19,7 +19,7 @@ void PrintAllTaskStacks(int focused_task);
 #if DEBUG_MODE
 #define PrintBacktrace()
 #else
-#define PrintBacktrace() do { unsigned int fp; asm volatile("mov %0, fp @ save fp" : "=r" (fp)); bwprintf(COM2, "Generating backtrace: fp=%08x\n\r", fp); print_stack_trace(fp, 0); } while(0);
+#define PrintBacktrace() do { unsigned int fp; asm volatile("mov %0, fp @ save fp" : "=r" (fp)); bwprintf(COM2, "Backtrace:\n\r"); print_stack_trace(fp, 0); } while(0);
 #endif
 
 
