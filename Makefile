@@ -15,7 +15,7 @@ TRACK=B
 endif
 
 ifndef PACKETS
-PACKETS=true
+PACKETS=false
 endif
 
 GCC_ROOT := /u/wbcowan/gnuarm-4.0.2
@@ -23,6 +23,9 @@ GCC_TYPE := arm-elf
 GCC_VERSION := 4.0.2
 
 STANDARD_INCLUDES=-include stdbool.h -include stddef.h -include stdint.h
+CFLAGS_BACKTRACE :=
+CFLAGS_COMPILE_WARNINGS := -Winline -Werror -Wno-unused-variable -Wno-format-security
+CFLAGS_OPTIMIZATIONS := -O2 -finline-functions -finline-functions-called-once
 
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
@@ -31,7 +34,7 @@ CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc
 AS     = $(GCC_ROOT)/bin/$(GCC_TYPE)-as
 AR     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ar
 LD     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security $(STANDARD_INCLUDES)
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) $(CFLAGS_OPTIMIZATIONS) $(STANDARD_INCLUDES) $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -47,7 +50,7 @@ else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
 ARCH   = x86
 CC     = gcc
-CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -Wno-undefined-inline  -Werror -Wno-unused-variable -Wno-int-to-void-pointer-cast -Wno-format-security
+CFLAGS = -Wall -msoft-float --std=gnu99 -Wno-comment -DDEBUG_MODE -g -Wno-varargs -Wno-typedef-redefinition -DUSE_$(PROJECT)  -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -Wno-undefined-inline -Wno-int-to-void-pointer-cast $(CFLAGS_COMPILE_WARNINGS) -Wno-int-to-pointer-cast
 # -Wall: report all warnings
 # -msoft-float: use software for floating point
 # --std=gnu99: use C99, same as possible on the school ARM GCC
@@ -110,16 +113,18 @@ install: main.elf
 # ARM binary
 main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS) orex.ld
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
-
 small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
 	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
+
+LOCAL_SRCS=$(filter-out src/main.c, $(wildcard src/*.c)) src/x86/*.c lib/*.c lib/x86/*.c lib/stdlib/*.c  userland/*.c userland/**/*.c
+LOCAL_LIBS=-lncurses -lpthread
 
 # Local simulation binary
 # NOTE: it just explicitly lists a bunch of folders, this is because the
 # process of .c => .s => .o drops debugging symbols :(
 main.a:
-	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) src/*.c src/x86/*.c lib/*.c lib/x86/*.c lib/stdlib/*.c  userland/*.c userland/**/*.c -lncurses -lpthread -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) $(USERLAND_INCLUDES) $(LOCAL_SRCS) src/main.c $(LOCAL_LIBS) -o $@
 
 # ASM files from various locations
 %.s: src/%.c
@@ -156,7 +161,7 @@ $(ARCH)%.s: lib/$(ARCH)/%.c
 
 # create binaries for each test file, depending on all lib code
 %.a: test/%.c $(LIB_SRCS)
-	$(CC) $(INCLUDES) $(CFLAGS) $< $(LIB_SRCS) $(STDLIB_SRCS) -lncurses -lpthread -lcheck -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) $< $(LOCAL_SRCS) $(LOCAL_LIBS) -lcheck -o $@
 
 # create library binaries from object files, for ARM bundling
 lib%.a: %.o
@@ -165,7 +170,6 @@ lib%.a: %.o
 # create library binaries from object files, for ARM bundling
 libstdlib.a: $(STDLIB_OBJS)
 	$(AR) $(ARFLAGS) $@ $<
-
 
 # clean all files in the top-level, the only place we have temp files
 clean:
@@ -183,5 +187,5 @@ DEP = $(OBJS:%.o=%.d)
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful
-.PRECIOUS: %.s arm%.s %.map lib_stdlib_%.s userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s
+.PRECIOUS: %.s arm%.s %.map lib_stdlib_%.s userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s standalone_%.s
 endif

@@ -10,9 +10,9 @@
 // A switch to limit output to only terminal information
 // This must be set to false to use gtkterm
 #if USE_PACKETS
-  #define NONTERMINAL_OUTPUT false
-#else
   #define NONTERMINAL_OUTPUT true
+#else
+  #define NONTERMINAL_OUTPUT false
 #endif
 
 #define DEBUG_LOGGING_ARM true
