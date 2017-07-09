@@ -20,6 +20,14 @@ void interrupts_arch_init() {
   INTERRUPT_ENABLE(INTERRUPT_UART2);
 }
 
+void interrupts_disable() {
+  interrupts_clear_all();
+  INTERRUPT_DISABLE(INTERRUPT_TIMER2);
+  INTERRUPT_DISABLE(INTERRUPT_UART1);
+  INTERRUPT_DISABLE(INTERRUPT_UART2);
+}
+
+
 void interrupts_enable_irq(await_event_t event_type) {
   if (event_type == EVENT_TIMER) {
     INTERRUPT_ENABLE(INTERRUPT_TIMER2);

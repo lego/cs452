@@ -285,6 +285,8 @@ void syscall_await(task_descriptor_t *task, kernel_request_t *arg) {
 }
 
 void hwi(task_descriptor_t *task, kernel_request_t *arg) {
+  task->was_interrupted = true;
+
   if (IS_INTERRUPT_ACTIVE(INTERRUPT_TIMER2)) {
     hwi_timer2(task, arg);
   } else if (IS_INTERRUPT_ACTIVE(INTERRUPT_UART1)) {
