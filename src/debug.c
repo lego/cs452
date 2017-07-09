@@ -123,7 +123,7 @@ void PrintAllTaskStacks(int focused_task) {
   for (i = 0; i < ctx->used_descriptors; i++) {
     task = &ctx->descriptors[i];
     if (i == focused_task) continue;
-    bwprintf(COM2, "Task %d (%s) stack\n\r", i, task->func_name);
+    bwprintf(COM2, "Task %d (%s) stack\n\r", i, task->name);
     if (task->state == STATE_ZOMBIE) {
       bwprintf(COM2, "  task has ended\n\r");
       continue;
@@ -134,7 +134,7 @@ void PrintAllTaskStacks(int focused_task) {
 
   if (focused_task >= 0) {
     task = &ctx->descriptors[focused_task];
-    bwprintf(COM2, GREY_BG BLACK_FG "CURRENT" RESET_ATTRIBUTES " Task %d (%s) backtrace\n\r", focused_task, task->func_name);
+    bwprintf(COM2, GREY_BG BLACK_FG "CURRENT" RESET_ATTRIBUTES " Task %d (%s) backtrace\n\r", focused_task, task->name);
     // get fp
     unsigned int fp;
     asm volatile("mov %0, fp @ save fp" : "=r" (fp));
@@ -187,7 +187,7 @@ void print_stats() {
   for (i = 0; i < ctx->used_descriptors; i++) {
     task_descriptor_t *task = &ctx->descriptors[i];
     bwprintf(COM2, " Task %3d:%-40s %10ums (Total) %10ums (Send) %10ums (Recv) %10ums (Repl)\n\r",
-      i, task->func_name,
+      i, task->name,
       io_time_ms(task->execution_time),
       io_time_ms(task->send_execution_time),
       io_time_ms(task->recv_execution_time),

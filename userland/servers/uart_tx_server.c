@@ -120,7 +120,9 @@ void uart_tx_server() {
   int warehouse_tid = ((channel == COM1) ? uart1_tx_warehouse_tid : uart2_tx_warehouse_tid);
   int ready = false;
 
-  int courier_tid = createCourier(courier_priority, warehouse_tid, tid, sizeof(uart_packet_t));
+  char * courier_name = (channel == COM1) ? "UART1 TX courier" : "UART2 TX courier";
+
+  int courier_tid = createCourier(courier_priority, warehouse_tid, tid, sizeof(uart_packet_t), courier_name);
 
   log_uart_server("uart_server initialized channel=%d tid=%d", channel, tid);
 
@@ -195,14 +197,16 @@ void uart_tx() {
       uart1_tx_notifier_tid,
       PACKET_QUEUE_MAX,
       PRIORITY_UART1_TX_SERVER,
-      sizeof(uart_packet_t));
+      sizeof(uart_packet_t),
+      "UART1 TX warehouse");
 
   uart2_tx_warehouse_tid = createWarehouse(
       PRIORITY_UART2_TX_SERVER,
       uart2_tx_notifier_tid,
       PACKET_QUEUE_MAX,
       PRIORITY_UART2_TX_SERVER,
-      sizeof(uart_packet_t));
+      sizeof(uart_packet_t),
+      "UART2 TX warehouse");
 
   uart1_tx_server_tid = Create(PRIORITY_UART1_TX_SERVER, uart_tx_server);
   request.channel = COM1;
@@ -217,7 +221,8 @@ void uart_tx() {
       uart2_tx_warehouse_tid,
       LOGGING_PACKET_QUEUE,
       PRIORITY_LOGGING_COURIER,
-      sizeof(uart_packet_t));
+      sizeof(uart_packet_t),
+      "UART2 TX logging warehouse");
 }
 
 int Putcs( int channel, const char* c, int len ) {

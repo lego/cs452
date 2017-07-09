@@ -1,5 +1,6 @@
 #include <basic.h>
 #include <kernel.h>
+#include <jstring.h>
 #include <warehouse.h>
 #include <courier.h>
 
@@ -25,10 +26,13 @@ void warehouse() {
   int start = 0;
   int queueLength = 0;
 
+  char courier_name[100];
+  jstrappend(MyTaskName(), "- courier", courier_name);
+
   int courier_tid = createCourierAndModify(
       setup.courierPriority,
       setup.forwardTo, MyTid(),
-      setup.structLength, setup.forwardToLength, setup.modifyFcn);
+      setup.structLength, setup.forwardToLength, courier_name, setup.modifyFcn);
   bool courier_ready = false;
 
   while (true) {
@@ -57,9 +61,10 @@ int createWarehouseWithModifier(
   int courierPriority,
   int structLength,
   int forwardToLength,
+  char * name,
   courier_modify_fcn modifyFcn
 ) {
-  int tid = Create(priority, &warehouse);
+  int tid = CreateWithName(priority, &warehouse, name);
   warehouse_setup_t setup;
   setup.forwardTo = forwardTo;
   setup.warehouseSize = warehouseSize;

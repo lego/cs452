@@ -19,7 +19,7 @@ bool jstrcmp(const char *str1, const char *str2) {
   return false;
 }
 
-void jstrappend(char *str1, char *str2, char *buf) {
+void jstrappend(const char *str1, const char *str2, char *buf) {
   // FIXME: assert size doesn't overflow buffer
   if (buf == str1) {
     // optimization if str1 is also a buffer with space
@@ -39,7 +39,7 @@ void jstrappend(char *str1, char *str2, char *buf) {
   *buf = '\0';
 }
 
-void jstrappendc(char *str1, char c, char *buf) {
+void jstrappendc(const char *str1, const char c, char *buf) {
   // FIXME: assert size doesn't overflow buffer
   if (buf == str1) {
     // optimization if str1 is also a buffer

@@ -32,8 +32,8 @@ void courier() {
   }
 }
 
-int createCourierAndModify(int priority, int dst, int src, int srcLen, int dstLen, courier_modify_fcn fcn) {
-  int tid = Create(priority, &courier);
+int createCourierAndModify(int priority, int dst, int src, int srcLen, int dstLen, char * name, courier_modify_fcn fcn) {
+  int tid = CreateWithName(priority, &courier, name);
   courier_setup_t setup;
   setup.dst = dst;
   setup.src = src;

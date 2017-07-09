@@ -6,8 +6,8 @@
 unsigned int jstrlen(const char *c);
 
 bool jstrcmp(const char *str1, const char *str2);
-void jstrappend(char *str1, char *str2, char *buf);
-void jstrappendc(char *str1, char c, char *buf);
+void jstrappend(const char *str1, const char *str2, char *buf);
+void jstrappendc(const char *str1, const char c, char *buf);
 
 
 // Count amount of substrings

@@ -16,9 +16,7 @@ CS452-Codebase
   - [ ] Task stack sizes
   - [ ] Kernel stack size (compile time / once? it won't grow)
 - Backtraces (joey/backtrace)
-  - [ ] Working backtraces
   - [ ] Cross-task backtraces
-  - [ ] Backtrace on `KASSERT` or other errors
 - Improved `KASSERT`
   - [ ] Log more information about the state of the kernel and tasks
   - [ ] Add far more `KASSERT`s, and maybe a mechanism for levels which are enabled (performance reasons)

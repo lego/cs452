@@ -25,6 +25,9 @@
 int CreateWithName(int priority, void (*code)( ), const char *name);
 
 
+
+const char * MyTaskName( );
+
 /**
  * Gets the current task ID
  * @return a task ID

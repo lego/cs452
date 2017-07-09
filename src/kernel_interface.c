@@ -31,14 +31,14 @@ int CreateWithName(int priority, void (*entrypoint)(), const char *func_name) {
 }
 
 int MyTid( ) {
-  // Don't make data syscall, but still reschedule
-  Pass();
   return active_task->tid;
 }
 
+const char * MyTaskName( ) {
+  return active_task->name;
+}
+
 int MyParentTid( ) {
-  // Don't make data syscall, but still reschedule
-  Pass();
   return active_task->parent_tid;
 }
 
