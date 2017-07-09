@@ -18,9 +18,13 @@ ifndef PACKETS
 PACKETS=true
 endif
 
-GCC_ROOT := /u/wbcowan/gnuarm-4.0.2
-GCC_TYPE := arm-elf
-GCC_VERSION := 4.0.2
+ifndef GCC_ROOT
+GCC_ROOT=/u3/j5pereira/arm-gcc-6.3.1/
+endif
+
+GCC_TYPE=arm-none-eabi
+GCC_VERSION=6.3.1
+
 
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment
@@ -29,7 +33,7 @@ CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc
 AS     = $(GCC_ROOT)/bin/$(GCC_TYPE)-as
 AR     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ar
 LD     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security
+CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) -finline-functions -finline-functions-called-once -Winline -Werror -Wno-unused-variable -Wno-format-security -Wno-error=unused-but-set-variable -Wno-unused-but-set-variable
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
