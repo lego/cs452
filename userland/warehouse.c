@@ -27,7 +27,7 @@ void warehouse() {
   int queueLength = 0;
 
   char courier_name[100];
-  jstrappend(MyTaskName(), "- courier", courier_name);
+  jstrappend(MyTaskName(), " - courier", courier_name);
 
   int courier_tid = createCourierAndModify(
       setup.courierPriority,

@@ -120,7 +120,7 @@ void uart_tx_server() {
   int warehouse_tid = ((channel == COM1) ? uart1_tx_warehouse_tid : uart2_tx_warehouse_tid);
   int ready = false;
 
-  char * courier_name = (channel == COM1) ? "UART1 TX courier" : "UART2 TX courier";
+  char * courier_name = (channel == COM1) ? "UART1 TX server courier" : "UART2 TX server courier";
 
   int courier_tid = createCourier(courier_priority, warehouse_tid, tid, sizeof(uart_packet_t), courier_name);
 
