@@ -8,21 +8,21 @@
  *
  */
 
-/*
- * A set of standard C defitions
- * - NULL
- * - COMPILE_ASSERT and INLINE
- */
-#include <stddef.h>
-/*
- * Built-in C boolean types
- */
-#include <stdbool.h>
-
-/*
- * Built-in C fixed size ints. Important for size critical operations
- */
-#include <stdint.h>
+// /*
+//  * A set of standard C defitions
+//  * - NULL
+//  * - COMPILE_ASSERT and INLINE
+//  */
+// #include <stddef.h>
+// /*
+//  * Built-in C boolean types
+//  */
+// #include <stdbool.h>
+//
+// /*
+//  * Built-in C fixed size ints. Important for size critical operations
+//  */
+// #include <stdint.h>
 /*
  * Helpful debugging macros and functions
  * - only applicable to local development
