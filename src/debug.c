@@ -216,7 +216,7 @@ void __exit_kernel_svc() {
   }
 
   interrupts_clear_all();
-  bwputc(COM2, 0x61);
+  bwputc(COM1, 0x61);
   bwsetfifo(COM2, ON);
 
   asm volatile ("msr cpsr_c, #211");
