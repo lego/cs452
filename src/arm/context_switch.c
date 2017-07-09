@@ -9,18 +9,22 @@
 typedef int (*interrupt_handler)(int);
 typedef void (*debugger_func)(void);
 
-void __debug_handler();
+void __undefined_instruction_handler();
+void __prefetch_abort_handler();
+void __data_abort_handler();
 
 void context_switch_init() {
-  *((debugger_func*)0x24) = &__debug_handler;  // undefined instr
+  *((debugger_func*)0x24) = &__undefined_instruction_handler;  // undefined instr
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
-  *((debugger_func*)0x2c) = &__debug_handler;  // prefetch abort
-  *((debugger_func*)0x30) = &__debug_handler; // data abort
+  *((debugger_func*)0x2c) = &__prefetch_abort_handler;  // prefetch abort
+  *((debugger_func*)0x30) = &__data_abort_handler; // data abort
   // none
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
 }
-
-char *kernel_fail = RED_BG "EXCEPTION" RESET_ATTRIBUTES "  Kernel LR: ";
+char *undefined_instr_msg = RED_BG "UNDEFINED INSTRUCTION EXCEPTION";
+char *prefetch_abort_msg = RED_BG "PREFETCH ABORT";
+char *data_abort_msg = RED_BG "DATA ABORT";
+char *kernel_fail = RESET_ATTRIBUTES "  Kernel LR: ";
 char *task_fail = "   Task LR: ";
 
 asm (
@@ -29,7 +33,30 @@ asm (
 ".global __asm_start_task\n"
 ".global __asm_switch_to_task\n"
 
-"__debug_handler:\n\t"
+
+"__undefined_instruction_handler:\n\t"
+  "mov r0, #1\n\t"
+  "ldr r1, =undefined_instr_msg\n\t"
+  "ldr r1, [r1]\n\t"
+  "bl bwputstr\n\t"
+  "b __abort_handler\n\t"
+
+"__prefetch_abort_handler:\n\t"
+  "mov r0, #1\n\t"
+  "ldr r1, =prefetch_abort_msg\n\t"
+  "ldr r1, [r1]\n\t"
+  "bl bwputstr\n\t"
+  "b __abort_handler\n\t"
+
+"__data_abort_handler:\n\t"
+  "mov r0, #1\n\t"
+  "ldr r1, =data_abort_msg\n\t"
+  "ldr r1, [r1]\n\t"
+  "bl bwputstr\n\t"
+  "b __abort_handler\n\t"
+
+
+"__abort_handler:\n\t"
   // print kernel lr
   "msr cpsr_c, #211\n\t"
   "stmfd sp!, {lr}\n\t"
@@ -56,7 +83,6 @@ asm (
 
   "msr cpsr_c, #211\n\t"
   "b exit_kernel\n\t"
-
 
 "__asm_switch_to_task:\n\t"
   // save the return-to-kernel lr + registers
