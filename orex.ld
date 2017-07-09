@@ -8,22 +8,7 @@ MEMORY
 
 SECTIONS
 {
-  /* Initialized data. */
-  .data : {
-    _DataStart = . ;
-    *(.data)
-    *(.data.rel.ro)
-    _DataEnd = . ;
-  } >ram
-
-  /* Uninitialized data. */
-  .bss : {
-    _BssStart = . ;
-    *(.bss)
-    _BssEnd = . ;
-  } >ram
-
-  /* The actual instructions. */
+  /* The actual instructions */
   text : {
     *(.text)
     *(.got)
@@ -33,15 +18,22 @@ SECTIONS
     *(.glue_7t)
   } >ram
 
+  /* Initialized data */
+  .data : {
+    _DataStart = . ;
+    *(.data)
+    *(.data.rel.ro)
+    _DataEnd = . ;
+  } >ram
+
+  /* Uninitialized data */
+  .bss : {
+    _BssStart = . ;
+    *(.bss)
+    _BssEnd = . ;
+  } >ram
+
   rodata : {
     *(.rodata.str1.4)
   } >ram
-
-  /* Begin the task stack */
-  _TaskStackSize = 0x10000 ;
-  _TaskStackStart = ALIGN(0x1000) + _TaskStackSize ;
-  /* Temp this is what is used */
-  . = 0x250000 ;
-  /* Ensure there is enough space for 100 tasks */
-  . += _TaskStackSize * 100 ;
 }

@@ -60,4 +60,7 @@ typedef struct TaskDescriptor task_descriptor_t;
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name);
 
+#define _TaskStackSize 0x10000
+extern char TaskStack[_TaskStackSize * (MAX_TASKS + 2)];
+
 #endif

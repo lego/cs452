@@ -5,10 +5,11 @@
 #include <kern/task_descriptor.h>
 
 #ifndef DEBUG_MODE
-#include <kern/arm/linker.h>
 #else
 #include <stdlib.h>
 #endif
+
+char TaskStack[_TaskStackSize * (MAX_TASKS + 2)];
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name) {
   // TODO: Assert task priority is valid, i.e. in [1,5]
@@ -35,7 +36,7 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
   task->repl_execution_time = 0;
   task->func_name = func_name;
   #ifndef DEBUG_MODE
-  task->stack_pointer = _TaskStackStart + (_TaskStackSize * tid);
+  task->stack_pointer = TaskStack + (_TaskStackSize * tid) + _TaskStackSize * 1/* Offset, because the stack grows down */;
   #endif
 
   cbuffer_init(&task->send_queue, task->send_queue_buf, 100);
