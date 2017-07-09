@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ts7200.h>
-#include <variadic.h>
+#include <stdarg.h>
 
 #define ON  1
 #define OFF 0

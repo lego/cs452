@@ -1,6 +1,7 @@
 #pragma once
 
 #include <basic.h>
+#include <stdarg.h>
 
 unsigned int jstrlen(const char *c);
 

@@ -22,10 +22,6 @@
  */
 #include <stdbool.h>
 /*
- * Built-in C variadic defitions for variadic functions such as bwprintf
- */
-#include <variadic.h>
-/*
  * Helpful debugging macros and functions
  * - only applicable to local development
  */
