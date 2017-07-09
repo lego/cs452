@@ -1,23 +1,36 @@
 #include <basic.h>
 #include <bwio.h>
 #include <kern/context.h>
+#include <kern/interrupts.h>
 #include <kern/context_switch.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
 typedef int (*interrupt_handler)(int);
+typedef void (*debugger_func)(void);
+
+void __debug_handler();
 
 void context_switch_init() {
+  *((debugger_func*)0x24) = &__debug_handler;  // undefined instr
   *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
+  *((debugger_func*)0x2c) = &__debug_handler;  // prefetch abort
+  *((debugger_func*)0x30) = &__debug_handler; // data abort
+  // none
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
 }
 
-int cpsr;
-int lr;
+char *kernel_fail = RED_BG "EXCEPTION" RESET_ATTRIBUTES "  Kernel LR: ";
+char *task_fail = "   Task LR: ";
+extern unsigned int main_fp;
 
-void save(int r0, int r1) {
-  cpsr = r0;
-  lr = r1;
+void exit_kernel() {
+  // return to redboot, this is just a fcn return for the main fcn
+  interrupts_clear_all();
+  bwputc(COM1, 0x61);
+  bwsetfifo(COM2, ON);
+  asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
+  asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
 }
 
 asm (
@@ -25,6 +38,35 @@ asm (
 // export of the function
 ".global __asm_start_task\n"
 ".global __asm_switch_to_task\n"
+
+"__debug_handler:\n\t"
+  // print kernel lr
+  "msr cpsr_c, #211\n\t"
+  "stmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "ldr r1, =kernel_fail\n\t"
+  "ldr r1, [r1]\n\t"
+  "bl bwputstr\n\t"
+  "ldmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "mov r1, lr\n\t"
+  "bl bwputr\n\t"
+
+  // print task lr
+  "msr cpsr_c, #223\n\t"
+  "stmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "ldr r1, =task_fail\n\t"
+  "ldr r1, [r1]\n\t"
+  "bl bwputstr\n\t"
+  "ldmfd sp!, {lr}\n\t"
+  "mov r0, #1\n\t"
+  "mov r1, lr\n\t"
+  "bl bwputr\n\t"
+
+  "msr cpsr_c, #211\n\t"
+  "b exit_kernel\n\t"
+
 
 "__asm_switch_to_task:\n\t"
   // save the return-to-kernel lr + registers
@@ -101,13 +143,6 @@ asm (
   "mrs r4, spsr\n\t"
   // save return-to-user lr to r5 so it's not overwritten by r0-r3
   "mov r5, lr\n\t"
-
-  // Debugging save. Saves the task CPSR and LR to global variables for crashes
-  "stmfd sp!, {r0-r3}\n\t"
-  "mov r0, r4\n\t"
-  "mov r1, r5\n\t"
-  "bl save\n\t"
-  "ldmfd sp!, {r0-r3}\n\t"
 
   // in system mode
   "msr cpsr_c, #223\n\t"

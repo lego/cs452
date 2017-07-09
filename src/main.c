@@ -25,7 +25,7 @@ context_t *ctx;
 bool should_exit;
 char logs[LOG_SIZE];
 volatile int log_length;
-
+unsigned int main_fp;
 
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
@@ -101,6 +101,10 @@ void cleanup() {
 }
 
 int main() {
+  #ifndef DEBUG_MODE
+  // saves FP to be able to clean exit to redboot
+  asm volatile("mov %0, fp @ save fp" : "=r" (main_fp));
+  #endif
   should_exit = false;
   active_task = NULL;
   ctx = NULL;
