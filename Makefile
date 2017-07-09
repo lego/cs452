@@ -23,7 +23,7 @@ GCC_TYPE := arm-elf
 GCC_VERSION := 4.0.2
 
 STANDARD_INCLUDES=-include stdbool.h -include stddef.h -include stdint.h
-CFLAGS_BACKTRACE :=
+CFLAGS_BACKTRACE := -mpoke-function-name -fverbose-asm # -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs
 CFLAGS_COMPILE_WARNINGS := -Winline -Werror -Wno-unused-variable -Wno-format-security
 CFLAGS_OPTIMIZATIONS := -O2 -finline-functions -finline-functions-called-once
 
@@ -113,6 +113,11 @@ install: main.elf
 # ARM binary
 main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS) orex.ld
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
+
+%.elf: standalone_%.o $(LIB_BINS)
+	$(LD) $(LDFLAGS) $< -o $@ $(LIBRARIES) && ./upload.sh $<
+
+
 small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
 	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
@@ -129,6 +134,10 @@ main.a:
 # ASM files from various locations
 %.s: src/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
+
+standalone_%.s: standalone/%.c
+	$(CC) $(INCLUDES) $(CFLAGS) -S -c $< -o $@
+
 
 %.s: lib/%.c
 	$(CC) $(INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@

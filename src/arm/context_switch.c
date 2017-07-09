@@ -22,16 +22,6 @@ void context_switch_init() {
 
 char *kernel_fail = RED_BG "EXCEPTION" RESET_ATTRIBUTES "  Kernel LR: ";
 char *task_fail = "   Task LR: ";
-extern unsigned int main_fp;
-
-void exit_kernel() {
-  // return to redboot, this is just a fcn return for the main fcn
-  interrupts_clear_all();
-  bwputc(COM1, 0x61);
-  bwsetfifo(COM2, ON);
-  asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
-  asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
-}
 
 asm (
 "\n"

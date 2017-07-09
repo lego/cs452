@@ -3,6 +3,26 @@
 #include <stdbool.h>
 #include <terminal.h>
 
+void cleanup();
+
+void exit_kernel();
+
+
+// Prints the stack trace, following memory (only on ARM)
+void print_stack_trace(unsigned int fp, int lr);
+
+void PrintTaskBacktrace(int tid);
+
+// prints all task stacks, and puts the focused one on the end
+void PrintAllTaskStacks(int focused_task);
+
+#if DEBUG_MODE
+#define PrintBacktrace()
+#else
+#define PrintBacktrace() do { unsigned int fp; asm volatile("mov %0, fp @ save fp" : "=r" (fp)); bwprintf(COM2, "Generating backtrace: fp=%08x\n\r", fp); print_stack_trace(fp, 0); } while(0);
+#endif
+
+
 /*
  * Debug tooling
  */
