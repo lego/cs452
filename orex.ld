@@ -8,22 +8,7 @@ MEMORY
 
 SECTIONS
 {
-  /* Initialized data. */
-  .data : {
-    _DataStart = . ;
-    *(.data)
-    *(.data.rel.ro)
-    _DataEnd = . ;
-  } >ram
-
-  /* Uninitialized data. */
-  .bss : {
-    _BssStart = . ;
-    *(.bss)
-    _BssEnd = . ;
-  } >ram
-
-  /* The actual instructions. */
+  /* The actual instructions */
   text : {
     *(.text)
     *(.got)
@@ -31,6 +16,21 @@ SECTIONS
     *(.rodata)
     *(.glue_7)
     *(.glue_7t)
+  } >ram
+
+  /* Initialized data */
+  .data : {
+    _DataStart = . ;
+    *(.data)
+    *(.data.rel.ro)
+    _DataEnd = . ;
+  } >ram
+
+  /* Uninitialized data */
+  .bss : {
+    _BssStart = . ;
+    *(.bss)
+    _BssEnd = . ;
   } >ram
 
   rodata : {
