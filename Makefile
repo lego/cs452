@@ -19,11 +19,11 @@ PACKETS=true
 endif
 
 ifndef GCC_ROOT
-GCC_ROOT=/u3/j5pereira/arm-gcc-6.3.1/
+GCC_ROOT=/u/rs2dsouza/arm-none-eabi-gcc
 endif
 
 GCC_TYPE=arm-none-eabi
-GCC_VERSION=6.3.1
+GCC_VERSION=4.9.0
 
 
 ifndef LOCAL
@@ -43,7 +43,7 @@ CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT)
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) -L.
+LDFLAGS = -init main -Map main.map -N -T orex.ld -L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) -L.
 # TODO: Document what these mean... heh
 else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
@@ -113,7 +113,7 @@ install: main.elf
 main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS) orex.ld
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
 
-small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
+small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS) $(STDLIB_SRCS)
 	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
 
