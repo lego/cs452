@@ -44,7 +44,7 @@ void first_call() {
 }
 
 
-void backtrace_test() {
+void backtrace_test_task() {
   bwprintf(COM2, "In backtrace_test\n\r");
 
   first_call();
