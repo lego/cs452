@@ -106,7 +106,7 @@ install: main.elf
 	cp $< $(TRACK).elf && ./upload.sh $(TRACK).elf && ./upload.sh $<
 
 # ARM binary
-main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS)
+main.elf: $(LIB_BINS) $(KERNEL_OBJS) $(USERLAND_OBJS) orex.ld
 	$(LD) $(LDFLAGS) $(KERNEL_OBJS) $(USERLAND_OBJS) -o $@ $(LIBRARIES)
 
 small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
