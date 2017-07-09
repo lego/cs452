@@ -1,33 +1,27 @@
 #pragma once
 
 #ifndef DEBUG_MODE
-void cleanup();
-#define REDBOOT_LR 0x174c8
-static inline void exit() {
-  cleanup();
-  asm volatile ("mov pc, %0" : : "r" (REDBOOT_LR));
-}
-int lr;
-int cpsr;
-
 #include <bwio.h>
+#include <debug.h>
 
-// TODO: it would be cool if our KASSERT was sensitive to user/kernel mode
-// It can check the CPSR, and exit() if in the kernel or call
-// ExitProgram if in user mode, to cleanly exit!
-// Or maybe in kernel move it can jump to a label at the end of main?
+#include <kern/task_descriptor.h>
+#include <terminal.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %s\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-  bwprintf(COM2, "failed at lr=%x cpsr=%x\n\r", lr, cpsr); \
-  exit();} } while(0)
+  cleanup(); \
+  bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "\n\rin %s:%d\n\r", ## __VA_ARGS__, __FILE__, __LINE__); \
+  PrintBacktrace() \
+  exit_kernel(); \
+  } } while(0)
 
-// Light assert, no big deal
-#define assert(x) ((void) (x))
+  // asm volatile ("swi #5"); cleanup();
+  // bwputstr(COM2, "\n\r\n\r");
+  // if (active_task) PrintAllTaskStacks(active_task->tid);
+  // else PrintAllTaskStacks(-1);
+  // bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "in \n\r%s:%d (%s)\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__);
 
 #else
 #include <stdlib.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
   bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %s\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
   exit(1); } } while(0)
-#include <assert.h>
 #endif

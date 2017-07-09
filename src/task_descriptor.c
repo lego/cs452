@@ -1,8 +1,7 @@
 #include <stddef.h>
-
+#include <kassert.h>
 #include <bwio.h>
 #include <cbuffer.h>
-#include <kassert.h>
 #include <kern/context.h>
 #include <kern/task_descriptor.h>
 
@@ -29,6 +28,7 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
   task->send_execution_time = 0;
   task->recv_execution_time = 0;
   task->repl_execution_time = 0;
+  task->was_interrupted = false;
   task->func_name = func_name;
   #ifndef DEBUG_MODE
   task->stack_pointer = TaskStack + (_TaskStackSize * tid) + _TaskStackSize * 1/* Offset, because the stack grows down */;

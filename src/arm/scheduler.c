@@ -38,6 +38,7 @@ kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
     task->has_started = true;
     __asm_start_task(task->stack_pointer, task->entrypoint);
   } else {
+    task->was_interrupted = false;
     __asm_switch_to_task(task->stack_pointer);
   }
   log_scheduler_kern("returned from task tid=%d", task->tid);

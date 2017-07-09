@@ -38,6 +38,7 @@ struct TaskDescriptor {
   int tid;
   int parent_tid;
   bool has_started;
+  bool was_interrupted;
   int priority;
   kernel_request_t current_request;
   struct TaskDescriptor *next_ready_task;

@@ -107,7 +107,7 @@ int Reply( int tid, void *reply, int replylen ) {
   // FIXME: assert tid is valid, replylen is positive or 0
 
   // Ensure if reply is null, replylen is 0
-  assert(reply != NULL || replylen == 0);
+  KASSERT(reply != NULL || replylen == 0, "Must use size == 0 if sending NULL. got len=%d", replylen);
 
   kernel_request_t request;
   request.tid = active_task->tid;
