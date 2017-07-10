@@ -1,5 +1,5 @@
-#include <detectors/detector.h>
-#include <detectors/delay.h>
+#include <detective/detector.h>
+#include <detective/delay_detector.h>
 #include <priorities.h>
 #include <kernel.h>
 #include <servers/clock_server.h>
@@ -28,11 +28,11 @@ void delay_detector() {
 }
 
 int StartDelayDetector(const char * name, int send_to, int ticks) {
-  int detector_tid = CreateWithName(PRIORITY_DELAY_DETECTOR, delay_detector, name);
+  int tid = CreateWithName(PRIORITY_DELAY_DETECTOR, delay_detector, name);
   delay_detector_init_t init;
   init.send_to = send_to;
   init.ticks = ticks;
   init.identifier = delay_detector_counter++;
-  SendSN(detector_tid, init);
+  SendSN(tid, init);
   return init.identifier;
 }

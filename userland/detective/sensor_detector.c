@@ -1,5 +1,5 @@
-#include <detectors/detector.h>
-#include <detectors/sensor.h>
+#include <detective/detector.h>
+#include <detective/sensor_detector.h>
 #include <priorities.h>
 #include <kernel.h>
 
@@ -28,11 +28,11 @@ void sensor_detector() {
 }
 
 int StartSensorDetector(const char * name, int send_to, int sensor_no) {
-  int detector_tid = CreateWithName(PRIORITY_SENSOR_DETECTOR, sensor_detector, name);
+  int tid = CreateWithName(PRIORITY_SENSOR_DETECTOR, sensor_detector, name);
   sensor_detector_init_t init;
   init.send_to = send_to;
   init.sensor_no = sensor_no;
   init.identifier = sensor_detector_counter++;
-  SendSN(detector_tid, init);
+  SendSN(tid, init);
   return init.identifier;
 }

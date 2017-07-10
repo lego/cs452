@@ -35,7 +35,8 @@ int MyTid( ) {
 }
 
 const char * MyTaskName( ) {
-  return active_task->name;
+  // cast from fixed size array to char *
+  return (const char *) active_task->name;
 }
 
 int MyParentTid( ) {

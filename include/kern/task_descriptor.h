@@ -57,7 +57,7 @@ struct TaskDescriptor {
   io_time_t send_execution_time;
   io_time_t recv_execution_time;
   io_time_t repl_execution_time;
-  const char *name;
+  char name[128];
 };
 
 typedef struct TaskDescriptor task_descriptor_t;
