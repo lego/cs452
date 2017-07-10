@@ -48,16 +48,13 @@ void sensor_timeout_detective() {
   }
 
   sensor_timeout_message_t msg;
-  msg.packet.type = SENSOR_TIMEOUT_DETECTIVE;
+  msg.packet.type = DELAY_DETECT;
   msg.action = activated_action;
   msg.timeout = init.timeout;
   msg.sensor_no = init.sensor_no;
   msg.identifier = init.identifier;
 
   SendSN(init.send_to, msg);
-
-  // Destroy self, in order to clean up children
-  Destroy(tid);
 }
 
 int StartSensorTimeoutDetective(const char * name, int send_to, int timeout, int sensor_no) {
