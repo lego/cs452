@@ -155,6 +155,8 @@ userland_servers_%.s: userland/servers/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_entry_%.s: userland/entry/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
+userland_detectors_%.s: userland/detectors/%.c
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 
 # architecture specific ASM gets prefixed
 # this is done to have both a src/bwio.c and src/arm/bwio.c
@@ -196,5 +198,5 @@ DEP = $(OBJS:%.o=%.d)
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful
-.PRECIOUS: %.s arm%.s %.map lib_stdlib_%.s userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s standalone_%.s
+.PRECIOUS: %.s arm%.s %.map lib_stdlib_%.s userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s standalone_%.s userland_detectors_%.s
 endif
