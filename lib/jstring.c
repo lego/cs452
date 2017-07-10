@@ -19,6 +19,19 @@ bool jstrcmp(const char *str1, const char *str2) {
   return false;
 }
 
+
+char * jstrncpy(char *s1, const char *s2, int n) {
+  char *s = s1;
+  while (n > 1 && *s2 != '\0') {
+    *s++ = *s2++;
+    --n;
+  }
+  // NOTE: the original implementation nulls all other characters
+  // we just null the next one
+  *s = '\0';
+  return s1;
+}
+
 void jstrappend(const char *str1, const char *str2, char *buf) {
   // FIXME: assert size doesn't overflow buffer
   if (buf == str1) {
@@ -141,7 +154,6 @@ int jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
       // move into delimiter
       // add zero byte
       *current_str = '\0';
-      debugger();
     } else if (str[i] != delimiter && !in_delimiter) {
       // in string
       // set string value

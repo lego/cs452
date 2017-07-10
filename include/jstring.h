@@ -9,6 +9,12 @@ bool jstrcmp(const char *str1, const char *str2);
 void jstrappend(const char *str1, const char *str2, char *buf);
 void jstrappendc(const char *str1, const char c, char *buf);
 
+/**
+ * Copies a string from src to dest, for up to n characters
+ * NOTE: n includes the null terminator
+ */
+char * jstrncpy(char *dest, const char * src, int n);
+
 
 // Count amount of substrings
 // NOTE: internal

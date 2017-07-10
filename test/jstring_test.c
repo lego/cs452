@@ -126,11 +126,38 @@ START_TEST (jformatf_clears_buffer)
 }
 END_TEST
 
+START_TEST (jstrncpy_buffer_larger)
+{
+  char str[1024];
+  strcpy(str, "no termination eh");
+  jstrncpy(str, "yep", 1024);
+  ck_assert_str_eq(str, "yep");
+}
+END_TEST
+
+START_TEST (jstrncpy_buffer_smaller)
+{
+  char str[2];
+  jstrncpy(str, "yep", 2);
+  ck_assert_str_eq(str, "y");
+}
+END_TEST
+
+START_TEST (jstrncpy_buffer_equal_size)
+{
+  char str[8];
+  jstrncpy(str, "justright", 8);
+  ck_assert_str_eq(str, "justrig");
+}
+END_TEST
+
+
 int main(void)
 {
   Suite *s1 = suite_create("jstring");
+  TCase *tc;
 
-  TCase *tc = tcase_create("jformatf");
+  tc = tcase_create("jformatf");
   suite_add_tcase(s1, tc);
   tcase_add_test(tc, jformatf_no_format);
   tcase_add_test(tc, jformatf_int);
@@ -146,6 +173,12 @@ int main(void)
   tcase_add_test(tc, jformatf_unsigned_int);
   tcase_add_test(tc, jformatf_trailing_padding);
   tcase_add_test(tc, jformatf_trailing_padded_int);
+
+  tc = tcase_create("jstrncpy");
+  suite_add_tcase(s1, tc);
+  tcase_add_test(tc, jstrncpy_buffer_smaller);
+  tcase_add_test(tc, jstrncpy_buffer_equal_size);
+  tcase_add_test(tc, jstrncpy_buffer_larger);
 
   SRunner *sr = srunner_create(s1);
   srunner_set_fork_status(sr, CK_NOFORK);

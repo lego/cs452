@@ -122,6 +122,7 @@ small_main.elf: $(KERNEL_SRCS) $(LIB_SRCS) $(USERLAND_SRCS)
 	$(CC) $(CFLAGS) -nostdlib -nostartfiles -ffreestanding -Wl,-Map,main.map -Wl,-N -T orex.ld -Wl,-L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) $(INCLUDES) $(USERLAND_INCLUDES) $^ -o $@ -Wl,-lgcc
 
 
+SRCS_FOR_TESTS=lib/*.c lib/x86/*.c lib/stdlib/*.c
 LOCAL_SRCS=$(filter-out src/main.c, $(wildcard src/*.c)) src/x86/*.c lib/*.c lib/x86/*.c lib/stdlib/*.c  userland/*.c userland/**/*.c
 LOCAL_LIBS=-lncurses -lpthread
 
@@ -172,7 +173,7 @@ $(ARCH)%.s: lib/$(ARCH)/%.c
 
 # create binaries for each test file, depending on all lib code
 %.a: test/%.c $(LIB_SRCS)
-	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) $< $(LOCAL_SRCS) $(LOCAL_LIBS) -lcheck -o $@
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) $< $(SRCS_FOR_TESTS) $(LOCAL_LIBS) -Wno-error=unused-function -lcheck -o $@
 
 # create library binaries from object files, for ARM bundling
 lib%.a: %.o

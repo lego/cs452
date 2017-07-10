@@ -6,6 +6,7 @@
  */
 
 #include <basic.h>
+#include <assert.h>
 #include <bwio.h>
 #include <ncurses.h>
 #include <stdio.h>
