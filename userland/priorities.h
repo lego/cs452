@@ -6,6 +6,15 @@
 
 #define PRIORITY_NAMESERVER 1
 
+/**
+ * Detectors
+ */
+#define PRIORITY_SENSOR_DETECTOR 1
+#define PRIORITY_DELAY_DETECTOR 1
+
+/**
+ * Servers
+ */
 #define PRIORITY_CLOCK_SERVER 2
   #define PRIORITY_CLOCK_NOTIFIER 1
 
