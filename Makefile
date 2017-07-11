@@ -11,11 +11,11 @@ PROJECT=TC
 endif
 
 ifndef TRACK
-TRACK=B
+TRACK=A
 endif
 
 ifndef PACKETS
-PACKETS=false
+PACKETS=true
 endif
 
 GCC_ROOT := /u/wbcowan/gnuarm-4.0.2

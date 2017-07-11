@@ -38,6 +38,8 @@ void train_controller_task() {
 
   while (1) {
     SendS(server_tid, notify, request);
+    Logf(90, "Got train command %d: %d to %d!", request.command, request.index, request.value);
+    RecordLogf("Got train command %d: %d to %d!\n", request.command, request.index, request.value);
     buf[1] = request.index;
     if (request.command == TRAIN_SET_SPEED) {
       buf[0] = request.value; Putcs(COM1, buf, 2);
@@ -68,34 +70,64 @@ void train_controller_server() {
   RegisterAs(TRAIN_CONTROLLER_SERVER);
   const int NUM_WORKERS = 4;
   int workers[NUM_WORKERS];
-  bool workerReady[NUM_WORKERS];
+  int workerReady[NUM_WORKERS];
+  int notWorkerReady[NUM_WORKERS];
 
   int receiver;
   train_control_request_t request;
 
   for (int i = 0; i < NUM_WORKERS; i++) {
     workers[i] = Create(PRIORITY_TRAIN_CONTROLLER_TASK, train_controller_task);
-    workerReady[i] = false;
+    notWorkerReady[i] = 0;
+    workerReady[i] = 0;
+    int x = workerReady[i];
+    int y = i;
+    RecordLogf(" Ready[%d] = %d\n", y, x);
+    int j = notWorkerReady[i];
+    int k = i;
+    RecordLogf("!Ready[%d] = %d\n", k, j);
   }
 
   while (1) {
+    for (int i = 0; i < NUM_WORKERS; i++) {
+      //Logf(90, "Ready[%d] = %d", i, workerReady[i]);
+      int x = workerReady[i];
+      int y = i;
+      RecordLogf(" Ready[%d] = %d\n", y, x);
+      int j = notWorkerReady[i];
+      int k = i;
+      RecordLogf("!Ready[%d] = %d\n", k, j);
+    }
     ReceiveS(&receiver, request);
     if (request.type == TRAIN_TASK_READY) {
       for (int i = 0; i < NUM_WORKERS; i++) {
         if (receiver == workers[i]) {
-          workerReady[i] = true;
+          //Logf(90, "Clear worker %d!", i);
+          //RecordLogf("Clear worker %d!\n", i);
+          workerReady[i] = 1;
           break;
         }
       }
     } else if (request.type == TRAIN_COMMAND) {
+      ReplyN(receiver);
+      //Logf(90, "Got train command %d: %d to %d!", request.command, request.index, request.value);
+      //RecordLogf("Got train command %d: %d to %d!\n", request.command, request.index, request.value);
+      //Logf(90, "Looking for ready worker...");
+      //bool foundWorker = false;
       for (int i = 0; i < NUM_WORKERS; i++) {
-        if (workerReady[i]) {
+        if (workerReady[i] == 1) {
+          //Logf(90, "Selected worker %d!", i);
+          //RecordLogf("Selected worker %d!\n", i);
+          workerReady[i] = 0;
           ReplyS(workers[i], request);
-          workerReady[i] = false;
+          //foundWorker = true;
           break;
         }
       }
-      ReplyN(receiver);
+      Delay(20);
+      //if (!foundWorker) {
+      //  Logf(99, "Found no worker for train command %d: %d to %d!", request.command, request.index, request.value);
+      //}
     }
   }
 }
@@ -173,6 +205,12 @@ int SetSwitch(int sw, int state) {
   request.index = sw;
   request.value = state;
   request.command = SWITCH_SET;
+  Logf(90, "SetSwitch %d!", request.index);
+  RecordLogf("SetSwitch %d!\n", request.index);
+  //Logf(90, "Got train command %d: %d to %d!", request.command, request.index, request.value);
+  //RecordLogf("Got train command %d: %d to %d!\n", request.command, request.index, request.value);
   SendSN(train_controller_server_tid, request);
+  Logf(90, "Received!");
+  RecordLogf("Received!\n");
   return 0;
 }

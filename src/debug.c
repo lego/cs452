@@ -203,6 +203,22 @@ void print_logs() {
   bwputstr(COM2, logs);
 }
 
+void print_stack_stats() {
+  bwputstr(COM2, "\n\r" WHITE_BG BLACK_FG "===== TASK STACKS" RESET_ATTRIBUTES "\n\r");
+  int i;
+  #if !defined(DEBUG_MODE)
+  for (i = 0; i < ctx->used_descriptors; i++) {
+    task_descriptor_t *task = &ctx->descriptors[i];
+    int bytes = task->init_stack_pointer-task->stack_pointer;
+    bwprintf(COM2, " Task %3d:%-40s %d bytes, %d remaining\n\r",
+      i, task->name,
+      bytes, _TaskStackSize - bytes
+
+    );
+  }
+  #endif
+}
+
 extern int main_fp;
 typedef void (*interrupt_handler)(void);
 
@@ -246,11 +262,15 @@ void cleanup() {
     bwputc(COM2, 0x0);
   }
 
+  interrupts_clear_all();
+  bwputc(COM1, 0x61);
+  bwsetfifo(COM2, ON);
+
   print_logs();
   print_stats();
 
-  bwputstr(COM2, "\n\r" WHITE_BG BLACK_FG "===== TASK STACKS" RESET_ATTRIBUTES "\n\r");
-  bwputstr(COM2, "Bug Joey to have this implemented :'(\n\t ");
+  print_stack_stats();
+  //bwputstr(COM2, "Bug Joey to have this implemented :'(\n\t ");
   return;
 
   if (active_task) {

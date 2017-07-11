@@ -285,6 +285,18 @@ int Puti(int channel, int i) {
   return Putstr(channel, bf);
 }
 
+int Putp(uart_packet_t *packet) {
+  log_task("Logp str=%d", active_task->tid, packet.type);
+  if (uart2_tx_warehouse_tid == -1) {
+    KASSERT(false, "UART2 Warehouse not initialized");
+    return -1;
+  }
+
+  SendSN(uart2_tx_warehouse_tid, *packet);
+
+  return 0;
+}
+
 int Logp(uart_packet_t *packet) {
   log_task("Logp str=%d", active_task->tid, packet.type);
   if (logging_warehouse_tid == -1) {
@@ -313,6 +325,15 @@ int Logs(int type, const char *str) {
   SendSN(logging_warehouse_tid, packet);
 
   return 0;
+}
+
+int Logf(int type, char *fmt, ...) {
+  char buf[2048];
+  va_list va;
+  va_start(va,fmt);
+  jformat(buf, 2048, fmt, va);
+  va_end(va);
+  return Logs(type, buf);
 }
 
 void MoveTerminalCursor(unsigned int x, unsigned int y) {

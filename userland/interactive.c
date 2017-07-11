@@ -35,7 +35,7 @@ int velocity_reading_delay_until;
 int most_recent_sensor;
 bool set_to_stop;
 bool set_to_stop_from;
-bool stop_on_node;
+int stop_on_node;
 
 // TODO: make time a string format type
 void PrintTicks(int ticks) {
@@ -303,20 +303,30 @@ void sensor_reader() {
   log_task("sensor_reader initialized parent=%d", tid, parent);
   int oldSensors[5];
   int sensors[5];
-  Delay(50); // Wait half a second for old COM1 input to be read
+  for (int i = 0; i < 5; i++) {
+    sensors[i] = 0;
+    oldSensors[i] = 0;
+  }
+  Delay(100); // Wait half a second for old COM1 input to be read
   while (true) {
     log_task("sensor_reader sleeping", tid);
     ClearRx(COM1);
     Putc(COM1, 0x85);
+    int lastQueueLength = 0;
     int queueLength = 0;
-    const int maxTries = 100;
+    const int maxTries = 50;
     int i;
     for (i = 0; i < maxTries && queueLength < 10; i++) {
-      Delay(1);
+      Delay(10);
       queueLength = GetRxQueueLength(COM1);
+      if (queueLength > lastQueueLength) {
+        i = 0;
+      }
+      lastQueueLength = queueLength;
     }
     // We tried to read but failed to get the correct number of bytes, ABORT
     if (i == maxTries) {
+      Logs(99, "Sensor reading timed out!");
       continue;
     }
     log_task("sensor_reader reading", tid);
@@ -465,107 +475,7 @@ void initSwitches(int *initSwitches) {
   }
 }
 
-#define BUCKETS 10
-#define SAMPLES 3
-
-const int bucketSensors[BUCKETS] = {
-  16*(3-1)+(14-1), // C14
-  16*(1-1)+( 4-1), // A 4
-  16*(2-1)+(16-1), // B16
-  16*(3-1)+( 5-1), // C 5
-  16*(3-1)+(15-1), // C15
-  16*(4-1)+(12-1), // D12
-  16*(5-1)+(11-1), // E11
-  16*(4-1)+(10-1), // D10
-  16*(4-1)+( 8-1), // D 8
-  16*(5-1)+( 8-1)  // E 8
-};
-
-const int sensorDistances[BUCKETS] = {
-  785,
-  589,
-  440,
-  485,
-  293,
-  404,
-  284,
-  277,
-  774,
-  375
-};
-
-int bucketSamples[BUCKETS*SAMPLES];
-int bucketSize[BUCKETS];
-float bucketAvg[BUCKETS];
-float speedMultipliers[BUCKETS*SAMPLES];
-int speedMultSize[BUCKETS];
 int lastTrain = 58;
-
-float predictions[BUCKETS*SAMPLES];
-int predictionSize[BUCKETS];
-
-int count = 0;
-float prediction = 0;
-float offset = 0;
-float predictionAccuracy = 0;
-
-void clearBuckets() {
-  count = 0;
-  for (int i = 0; i < BUCKETS; i++) {
-    bucketSize[i] = 0;
-    speedMultSize[i] = 0;
-    predictionSize[i] = 0;
-    prediction = 0.0f;
-    for (int j = 0; j < SAMPLES; j++) {
-      bucketSamples[i*SAMPLES+j] = 0;
-      speedMultipliers[i*SAMPLES+j] = 1.0f;
-      predictions[i*SAMPLES+j] = 1.0f;
-    }
-  }
-}
-
-void registerSample(int sensor, int prevSensor, int sample, int time) {
-  for (int i = 0; i < BUCKETS; i++) {
-    if (bucketSensors[i] == sensor) {
-      if (bucketSize[i] < SAMPLES) {
-        int j = (i == 0 ? BUCKETS : i) - 1;
-        if (bucketSensors[j] == prevSensor) {
-          bucketSamples[i*SAMPLES+bucketSize[i]] = sample;
-          bucketSize[i]++;
-        }
-      }
-      if (count > 1) {
-        int total = 0;
-        for (int j = 0; j < bucketSize[i]; j++) {
-          total += bucketSamples[i*SAMPLES+j];
-        }
-        bucketAvg[i] = total/(float)bucketSize[i];
-        speedMultipliers[i*SAMPLES+speedMultSize[i]] = ((float)sample)/(float)bucketAvg[i];
-        speedMultSize[i]++;
-        int sampleWithLastOffset = sample - offset;
-        int predictedSample = prediction - (time-sampleWithLastOffset);
-        offset = ((float)sample - predictedSample);
-        float maxO = 5.0f;
-        offset = minf(maxf(offset, -maxO), maxO);
-        if (prediction != 0.0f) {
-          predictionAccuracy = ((float)predictedSample) / ((float)sample);
-        }
-        prediction = (float)time + bucketAvg[(i+1)%BUCKETS] + offset;
-      }
-      // if (i == 7) {
-      //   if (count > 3) {
-      //     //DelayUntil(prediction-2);
-      //     //clearBuckets();
-      //     //DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + minf(maxf(offset, -20.0f), 20.0f)));
-      //     DelayUntil((int)((float)time + bucketAvg[(i+1)%BUCKETS] + offset));
-      //     SetTrainSpeed(lastTrain, 0);
-      //   }
-      //   count++;
-      // }
-      break;
-    }
-  }
-}
 
 int lastSensor = -1;
 
@@ -598,7 +508,9 @@ void stopper() {
     ReplyN(sender);
     Receive(&sender, &delay, sizeof(int));
     ReplyN(sender);
+    Logf(90, "Stopper stopping %d in %d ticks", train, delay);
     Delay(delay);
+    Logf(90, "Stopper stopping!!!");
     SetTrainSpeed(train, 0);
     velocity_reading_delay_until = Time();
     is_pathing = false;
@@ -606,21 +518,17 @@ void stopper() {
   }
 }
 
+int stop_time;
+int total_dist;
+
 void sensor_saver() {
+  stop_time = 0;
+  total_dist = 0;
   int stopper_tid = Create(2, stopper);
   RegisterAs(SENSOR_SAVER);
   interactive_req_t req;
   int lastSensorTime = -1;
   int sender;
-
-  int C14 = Name2Node("C14");
-  int D12 = Name2Node("D12");
-  int C8 = Name2Node("C8");
-  int C15 = Name2Node("C15");
-  int E8 = Name2Node("E8");
-  int C10 = Name2Node("C10");
-  int B1 = Name2Node("B1");
-  int E14 = Name2Node("E14");
 
   int prevSensor[NUM_SENSORS][2];
   int sensorDistances[NUM_SENSORS][2];
@@ -677,27 +585,6 @@ void sensor_saver() {
     }
   }
 
-  GetPath(&p, Name2Node("E8"), Name2Node("C14"));
-  int E8_C14_dist = p.dist;
-
-  GetPath(&p, Name2Node("C15"), Name2Node("D12"));
-  int C15_D12_dist = p.dist;
-
-  GetPath(&p, Name2Node("E14"), Name2Node("E8"));
-  int E14_E8_dist = p.dist;
-
-  GetPath(&p, Name2Node("B1"), Name2Node("E14"));
-  int B1_E14_dist = p.dist;
-
-  GetPath(&p, Name2Node("E14"), Name2Node("E9"));
-  int E14_E9_dist = p.dist;
-
-  GetPath(&p, Name2Node("E14"), Name2Node("C14"));
-  int E14_C14_dist = p.dist;
-
-  GetPath(&p, Name2Node("C14"), Name2Node("C10"));
-  int C14_C10_dist = p.dist;
-
   DECLARE_BASIS_NODE(basis_node);
 
   while (true) {
@@ -707,7 +594,18 @@ void sensor_saver() {
           int curr_time = Time();
           set_location(active_train, req.argc);
           sensor_reading_timestamps[req.argc] = curr_time;
+          {
+            uart_packet_t packet;
+            packet.type = 10;
+            packet.len = 5;
+            *((int*)&packet.data[0]) = curr_time;
+            packet.data[4] = req.argc;
+            Putp(&packet);
+          }
           TriggerSensor(req.argc, curr_time);
+          if (set_to_stop) {
+            Logf(90, "set_to_stop, but waiting for %d, got %d", basis_node, req.argc);
+          }
           if (req.argc == basis_node && set_to_stop) {
             set_to_stop = false;
             GetPath(&p, basis_node, stop_on_node);
@@ -717,35 +615,56 @@ void sensor_saver() {
             int velocity = Velocity(active_train, active_speed);
             // * 100 in order to get the amount of ticks (10ms) we need to wait
             int wait_ticks = remaining_mm * 100 / velocity;
+            Logf(90, "Hit basis node, waiting %d ticks to stop!", wait_ticks);
             RecordLogf("waiting %6d ticks to reach %4s\n\r", wait_ticks, p.dest->name);
             Send(stopper_tid, &active_train, sizeof(int), NULL, 0);
             Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
           }
 
-          if (set_to_stop_from && req.argc == stop_on_node) {
-            set_to_stop_from = false;
-            SetTrainSpeed(active_train, 0);
+          if (set_to_stop_from) {
+            if (set_to_stop_from && req.argc == stop_on_node) {
+              set_to_stop_from = false;
+              stop_time = curr_time;
+              total_dist = 0;
+              SetTrainSpeed(active_train, 0);
+            }
           }
 
           int velocity = 0;
+          int lastDist = 0;
           if (lastSensor != -1) {
             for (int i = 0; i < 2; i++) {
               if (prevSensor[req.argc][i] == lastSensor) {
                 int time_diff = sensor_reading_timestamps[req.argc] - sensor_reading_timestamps[lastSensor];
+                lastDist = sensorDistances[req.argc][i];
                 velocity = (sensorDistances[req.argc][i] * 100) / time_diff;
-                RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[req.argc][i], req.argc, time_diff*10, velocity);
+                //RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[req.argc][i], req.argc, time_diff*10, velocity);
               }
             }
           }
-          if (velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
+          if (stop_time == 0 && velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
             record_velocity_sample(active_train, active_speed, velocity);
           }
+          if (stop_time > 0 && velocity > 0) {
+            if (req.argc != stop_on_node) {
+              total_dist += lastDist;
+            }
+            uart_packet_t packet;
+            packet.type = 102;
+            packet.len = 13;
+            {
+              int tmp = curr_time-stop_time;
+              jmemcpy(&packet.data[0], &tmp, sizeof(int));
+            }
+            packet.data[4] = req.argc;
+            jmemcpy(&packet.data[5], &velocity, sizeof(int));
+            {
+              int tmp = total_dist-lastDist/2;
+              jmemcpy(&packet.data[9], &tmp, sizeof(int));
+            }
+            Logp(&packet);
+          }
 
-          // int time = Time();
-          // int diffTime = time - lastSensorTime;
-          // if (lastSensor > 0) {
-          //   registerSample(req.argc, lastSensor, diffTime, time);
-          // }
           lastSensor = req.argc;
           lastSensorTime = curr_time;
         break;
@@ -777,8 +696,6 @@ void interactive() {
   int tid = MyTid();
   int command_parser_tid = Create(7, command_parser);
   int time_keeper_tid = Create(7, time_keeper);
-  int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
-  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, sensor_reader);
   int sender;
   idle_execution_time = 0;
   last_time_idle_displayed = 0;
@@ -816,11 +733,10 @@ void interactive() {
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
 
-  interactive_req_t req;
+  int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
+  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, sensor_reader);
 
-  int lastSensor = -1;
-  int lastSensorTime = -1;
-  clearBuckets();
+  interactive_req_t req;
 
   ClearLastCmdMessage();
 
@@ -875,6 +791,7 @@ void interactive() {
               active_train = train;
               active_speed = speed;
               velocity_reading_delay_until = Time();
+              stop_time = 0;
             }
             break;
           case COMMAND_TRAIN_REVERSE:
@@ -929,60 +846,6 @@ void interactive() {
                 SetSwitchAndRender(switchNumber, state);
                 Delay(6);
               }
-            }
-            break;
-          case COMMAND_CLEAR_SENSOR_SAMPLES:
-            clearBuckets();
-            break;
-          case COMMAND_CLEAR_SENSOR_OFFSET:
-            prediction = 0.0f;
-            offset = 0;
-            lastSensor = -1;
-            break;
-          case COMMAND_PRINT_SENSOR_SAMPLES: {
-              Putstr(COM2, SAVE_CURSOR);
-              char buf[10];
-              int speedTotal = 0;
-              int n = 0;
-              for (int i = 0; i < BUCKETS; i++) {
-                MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
-                Putstr(COM2, CLEAR_LINE);
-                int total = 0;
-                for (int j = 0; j < bucketSize[i]; j++) {
-                  total += bucketSamples[i*SAMPLES+j];
-                }
-                int avg = (sensorDistances[i]*1000)/(total/bucketSize[i]);
-                if (avg > 0) {
-                  speedTotal += avg;
-                  n++;
-                }
-                Putf(COM2, "%d  -  %d", total/bucketSize[i], (int)(avg*1000));
-
-                //for (int j = 0; j < bucketSize[i]; j++) {
-                //  MoveTerminalCursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
-                //  char buf[10];
-                //  ji2a(bucketSamples[i*SAMPLES+j], buf);
-                //  Putstr(COM2, buf);
-                //}
-              }
-              MoveTerminalCursor(0, COMMAND_LOCATION + 3);
-              Putf(COM2, "%d" RECOVER_CURSOR, speedTotal / n);
-            }
-            break;
-          case COMMAND_PRINT_SENSOR_MULTIPLIERS: {
-              Putstr(COM2, SAVE_CURSOR);
-              char buf[10];
-              for (int i = 0; i < BUCKETS; i++) {
-                MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
-                Putstr(COM2, CLEAR_LINE);
-                float total = 0;
-                for (int j = 0; j < speedMultSize[i]; j++) {
-                  total += speedMultipliers[i*SAMPLES+j];
-                }
-                float avg = total/speedMultSize[i];
-                Puti(COM2, (int)(avg*1000));
-              }
-              Putstr(COM2, RECOVER_CURSOR);
             }
             break;
           case COMMAND_NAVIGATE:
@@ -1040,6 +903,7 @@ void interactive() {
               // up when the train hits BASIS_NODE
               stop_on_node = dest_node_id;
               set_to_stop = true;
+              Logf(90, "routing to %d through %d", stop_on_node, BASIS_NODE_NAME);
             }
             break;
           case COMMAND_STOP_FROM:
@@ -1073,7 +937,7 @@ void interactive() {
                 break;
               }
 
-              if (train != active_train || active_speed <= 0 || WhereAmI(train) != -1) {
+              if (train != active_train || active_speed <= 0 || WhereAmI(train) == -1) {
                 Putf(COM2, "Train must already be in motion and hit a sensor to path.");
                 break;
               }
@@ -1186,7 +1050,7 @@ void interactive() {
                 }
 
                 Putf(COM2, "Ofsetting stopping distance train=%d speed=%d to %smm", active_train, active_speed, req.arg1);
-                set_stopping_distance(active_train, active_speed, offset);
+                offset_stopping_distance(active_train, active_speed, offset);
               }
               break;
           case COMMAND_SET_STOPPING_DISTANCE:
@@ -1292,16 +1156,6 @@ void interactive() {
         DrawTime(cur_time);
         DrawIdlePercent();
 
-        // This was printing predictionAccuracy stuff, commented out for UI cleanliness
-        // MoveTerminalCursor(20, COMMAND_LOCATION + 4);
-        // Putstr(COM2, CLEAR_LINE);
-        // char buf[12];
-        // ji2a((1000*predictionAccuracy), buf);
-        // Putstr(COM2, buf);
-        // MoveTerminalCursor(30, COMMAND_LOCATION + 4);
-        // ji2a((1000*offset), buf);
-        // Putstr(COM2, buf);
-
         int sum = 0; int i;
         for (i = 0; i < samples; i++) sum += sample_points[i];
         sum /= samples;
@@ -1321,22 +1175,6 @@ void interactive() {
           UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
         } else {
           path_update_counter++;
-        }
-        break;
-      case INT_REQ_SENSOR_UPDATE:
-        {
-          Putstr(COM2, SAVE_CURSOR);
-          MoveTerminalCursor(0, SENSOR_HISTORY_LOCATION + 1);
-          Putstr(COM2, CLEAR_LINE);
-          Putstr(COM2, "Sensors read! ");
-          int time = Time();
-          int diffTime = time - lastSensorTime;
-          if (lastSensor > 0) {
-            registerSample(req.argc, lastSensor, diffTime, time);
-          }
-          Putf(COM2, "%s -> %s : %d" RECOVER_CURSOR, track[lastSensor].name, track[req.argc].name, diffTime);
-          lastSensor = req.argc;
-          lastSensorTime = time;
         }
         break;
       default:
