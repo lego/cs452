@@ -24,7 +24,7 @@ struct track_edge {
   track_node *src, *dest;
   int dist;             /* in millimetres */
 
-  // Resevoir data
+  // Reservoir data
   int owner;
 };
 
@@ -36,7 +36,7 @@ struct track_node {
   track_node *reverse;  /* same location, but opposite direction */
   track_edge edge[2];
 
-  // Resevoir data
+  // Reservoir data
   int owner;
 
   // Pathing data, reset on each use of pathing.

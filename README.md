@@ -40,7 +40,7 @@ CS452-Codebase
 ---
 Train Control
 - Navigation server: holds a single place where stuff re-paths
-- Resevoir server: maintains the ownership of the track graph
+- Reservoir server: maintains the ownership of the track graph
 - Train controller: maintains train location, requests new pieces of track, mediates commands for a train
 
 Building

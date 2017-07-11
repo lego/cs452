@@ -25,14 +25,14 @@ typedef enum {
   INTERACTIVE_ECHO,
 
   /**
-   * Resevoir messages
+   * Reservoir messages
    */
-  RESEVOIR_REQUEST,
-  RESEVOIR_RELEASE,
+  RESERVOIR_REQUEST,
+  RESERVOIR_RELEASE,
 } packet_type_t;
 
 typedef struct {
-  int type;
+  packet_type_t type;
   // length of data following this struct
   // int len;
 } packet_t;

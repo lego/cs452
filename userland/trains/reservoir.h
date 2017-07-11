@@ -1,9 +1,15 @@
 #pragma once
 
+/**
+ * The Reservoir is for reserving segments of track.
+ * This is used by train controlers in order to know where
+ * trains can traverse
+ */
+
 #include <packet.h>
 
-#define RESEVOIR_REQUEST_OK 1
-#define RESEVOIR_REQUEST_ERROR 0
+#define RESERVOIR_REQUEST_OK 1
+#define RESERVOIR_REQUEST_ERROR 0
 
 typedef struct {
   // For internal message passing
@@ -14,7 +20,7 @@ typedef struct {
   int len;
 } segment_t;
 
-void resevoir_task();
+void reservoir_task();
 
 int RequestSegment(segment_t * segment);
 
