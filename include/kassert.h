@@ -5,6 +5,9 @@
 #include <bwio.h>
 #ifndef DEBUG_MODE
 #include <debug.h>
+#include <assert.h>
+
+#ifndef DEBUG_MODE
 
 #include <kern/task_descriptor.h>
 #include <terminal.h>

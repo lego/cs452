@@ -37,6 +37,12 @@ CS452-Codebase
   - [ ] Make `memcpy` copy multiple bytes at a time. Problems encountered are memory alignment.
   - [ ] Reduce complexity of all the core data structures (tasks, scheduling, kernel requests) to reduce memory fetching.
 
+---
+Train Control
+- Navigation server: holds a single place where stuff re-paths
+- Resevoir server: maintains the ownership of the track graph
+- Train controller: maintains train location, requests new pieces of track, mediates commands for a train
+
 Building
 --------
 

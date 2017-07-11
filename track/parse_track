@@ -500,6 +500,7 @@ void %s(track_node *track) {
     idx = nd.index
     fh.write("  track[%d].name = \"%s\";\n" % (idx, nd.name))
     fh.write("  track[%d].id = %d;\n" % (idx, idx))
+    fh.write("  track[%d].owner = -1;\n")
     nodetype = 'NODE_' + nd.nodetype.upper()
     fh.write("  track[%d].type = %s;\n" % (idx, nodetype))
     if nd.num != None:
@@ -520,6 +521,7 @@ void %s(track_node *track) {
           (idx, dir.upper(), idx))
         fh.write("  track[%d].edge[DIR_%s].dest = &track[%d];\n" % \
           (idx, dir.upper(), idx2))
+        fh.write("  track[%d].edge[DIR_%s].owner = -1;\n")
         fh.write("  track[%d].edge[DIR_%s].dist = %s;\n" % \
           (idx, dir.upper(), dist))
   fh.write("}\n")

@@ -1,20 +1,38 @@
 #pragma once
 
 typedef enum {
+  /*
+   * Sensor collector messages
+   */
   SENSOR_DATA,
+
+  /*
+   * Detector messages
+   */
   DELAY_DETECT,
   SENSOR_DETECT,
   SENSOR_TIMEOUT_DETECTIVE,
 
+  // Messages from command_parser
   PARSED_COMMAND,
+  // Messages from command_interpreter
   INTERPRETED_COMMAND,
 
+  /*
+   * Messages to Interactive task
+   */
   INTERACTIVE_TIME_UPDATE,
   INTERACTIVE_ECHO,
+
+  /**
+   * Resevoir messages
+   */
+  RESEVOIR_REQUEST,
+  RESEVOIR_RELEASE,
 } packet_type_t;
 
 typedef struct {
-  packet_type_t type;
+  int type;
   // length of data following this struct
   // int len;
 } packet_t;

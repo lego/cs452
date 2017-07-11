@@ -70,6 +70,7 @@ void ExitKernel( );
 #define ReceiveN(tid) Receive(tid, NULL, 0)
 #define ReplyN(tid) Reply(tid, NULL, 0)
 
+#define ReplyStatus(tid, status) do { int n = status; ReplyS(tid, n); } while(0)
 
 int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen);
 
