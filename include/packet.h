@@ -4,6 +4,7 @@ typedef enum {
   SENSOR_DATA,
   DELAY_DETECT,
   SENSOR_DETECT,
+  SENSOR_TIMEOUT_DETECTIVE,
 } packet_type_t;
 
 typedef struct {
