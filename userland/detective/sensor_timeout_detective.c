@@ -57,8 +57,7 @@ void sensor_timeout_detective() {
   SendSN(init.send_to, msg);
 
   // Destroy self, in order to clean up children
-  // FIXME: merge in complete destroy
-  // Destroy(tid);
+  Destroy(tid);
 }
 
 int StartSensorTimeoutDetective(const char * name, int send_to, int timeout, int sensor_no) {
