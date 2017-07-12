@@ -11,14 +11,22 @@
 #endif
 
 char *TaskStack;
+int next_free_stack(task_descriptor_t * task) {
+  if (cbuffer_size(&ctx->freed_stacks) == 0) {
+    return ctx->used_stacks++;
+  } else {
+    return (int) cbuffer_pop(&ctx->freed_stacks, NULL);
+  }
+}
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name) {
   // TODO: Assert task priority is valid, i.e. in [1,5]
   int tid = ctx->used_descriptors++;
-  KASSERT(tid < MAX_TASKS, "Warning: maximum tasks reached.");
+  KASSERT(tid < MAX_TASKS, "Warning: maximum tasks reached tid=%d", tid);
   task_descriptor_t *task = &ctx->descriptors[tid];
   task->priority = priority;
   task->tid = tid;
+  task->stack_id = next_free_stack(task);
   task->has_started = false;
   task->parent_tid = parent_tid;
   task->entrypoint = entrypoint;
@@ -31,10 +39,15 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
   task->was_interrupted = false;
   task->name = func_name;
   #ifndef DEBUG_MODE
-  task->stack_pointer = TaskStack + (_TaskStackSize * tid) + _TaskStackSize * 1/* Offset, because the stack grows down */;
+  KASSERT(task->stack_id < MAX_TASK_STACKS, "Maximum amount of task stacks allocated stack_id=%d used_stacks=%d", task->stack_id, ctx->used_stacks);
+  task->stack_pointer = TaskStack + (_TaskStackSize * task->stack_id) + _TaskStackSize * 1/* Offset, because the stack grows down */;
   #endif
 
   cbuffer_init(&task->send_queue, task->send_queue_buf, 100);
 
   return task;
+}
+
+void td_free_stack(int tid) {
+  cbuffer_add(&ctx->freed_stacks, (void *) ctx->descriptors[tid].stack_id);
 }

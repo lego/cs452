@@ -1,7 +1,9 @@
 #pragma once
 
-#ifndef DEBUG_MODE
+#ifndef NO_KASSERT
+
 #include <bwio.h>
+#ifndef DEBUG_MODE
 #include <debug.h>
 
 #include <kern/task_descriptor.h>
@@ -24,4 +26,10 @@
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
   bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %s\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
   exit(1); } } while(0)
+#endif
+
+#else
+
+#define KASSERT(a, msg, ...)
+
 #endif

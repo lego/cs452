@@ -1,6 +1,7 @@
 #pragma once
 
 #include <kern/task_descriptor.h>
+#include <cbuffer.h>
 
 /*
  * Internal context switch bits
@@ -22,6 +23,7 @@ typedef int syscall_t;
 #define SYSCALL_EXIT_KERNEL (syscall_t) 10
 #define SYSCALL_MALLOC (syscall_t) 11
 #define SYSCALL_FREE (syscall_t) 12
+#define SYSCALL_DESTROY (syscall_t) 13
 
 #define SYSCALL_HW_INT (syscall_t) 99
 
@@ -31,7 +33,10 @@ typedef int syscall_t;
 
 struct Context {
   task_descriptor_t descriptors[MAX_TASKS];
-  char used_descriptors;
+  int used_descriptors;
+  int used_stacks;
+  void *freed_stacks_buffer[MAX_TASK_STACKS];
+  cbuffer_t freed_stacks;
 };
 
 #ifndef __DEFINED_CONTEXT_T

@@ -48,7 +48,7 @@ static inline void task_post_activate(task_descriptor_t *task) {
 }
 
 int main() {
-  char taskStack[_TaskStackSize * (MAX_TASKS + 2)];
+  char taskStack[_TaskStackSize * (MAX_TASK_STACKS + 2)];
   TaskStack = taskStack;
   #ifndef DEBUG_MODE
   // saves FP to be able to clean exit to redboot
@@ -72,6 +72,8 @@ int main() {
   // create shared kernel context memory
   context_t stack_context;
   stack_context.used_descriptors = 0;
+  stack_context.used_stacks = 0;
+  cbuffer_init(&stack_context.freed_stacks, stack_context.freed_stacks_buffer, MAX_TASK_STACKS);
   ctx = &stack_context;
 
   // enable caches here, because these are after initialization
@@ -94,6 +96,10 @@ int main() {
   // start executing user tasks
   while (!should_exit) {
     task_descriptor_t *next_task = scheduler_next_task();
+    // Condition hit if task was rescheduled and then parent or self
+    // was destroyed
+    if (next_task->state == STATE_ZOMBIE) continue;
+    KASSERT(next_task->state == STATE_READY, "Task had non-ready tid=%d state=%d", next_task->tid, next_task->state);
     log_kmain("next task tid=%d", next_task->tid);
     task_pre_activate(next_task);
     kernel_request_t *request = activate(next_task);

@@ -29,7 +29,7 @@ kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
   // assert here to make sure the task stack pointer does not
   // extend into other task stacks
   // NOTE: casted to char * so we get the byte size count
-  if ((char *) task->stack_pointer < TaskStack + (_TaskStackSize * task->tid)) {
+  if ((char *) task->stack_pointer < TaskStack + (_TaskStackSize * task->stack_id)) {
     KASSERT(false, "WARNING: TASK STACK OVERFLOWED. tid=%d", task->tid);
   }
   log_scheduler_kern("activating task tid=%d", task->tid);
