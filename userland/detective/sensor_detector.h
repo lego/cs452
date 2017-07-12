@@ -3,7 +3,7 @@
 /**
  * Begins a sensor detector
  * @param  name      of the detector
- * @param  send_to   [description]
+ * @param  send_to   the tid when detected
  * @param  sensor_no to wait on
  * @return           returns the unique identifier (for sensor detectors)
  */

@@ -2,7 +2,7 @@
 #include <cbuffer.h>
 #include <stdio.h>
 
-#include <basic.h>
+#include <util.h>
 
 #define assert_ctz(e, v) assert(ctz(v) == e)
 

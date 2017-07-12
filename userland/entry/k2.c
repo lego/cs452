@@ -7,7 +7,6 @@
 #include <kernel.h>
 #include <ts7200.h>
 
-#ifndef DEBUG_MODE
 ////
 // From https://stackoverflow.com/a/11946674
 static unsigned int seed = 1;
@@ -19,7 +18,6 @@ int rand (void) {
   return (int)seed;
 }
 ////
-#endif
 
 void _done_send() {
   Send(0, NULL, 0, NULL, 0);

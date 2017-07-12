@@ -9,6 +9,7 @@
 #include <jstring.h>
 #include <cbuffer.h>
 #include <io.h>
+#include <kern/globals.h>
 #include <kern/context.h>
 #include <kern/context_switch.h>
 #include <kern/kernel_request.h>
@@ -19,13 +20,6 @@
 #include <kernel.h>
 #include <priorities.h>
 #include <entries.h>
-
-volatile task_descriptor_t *active_task;
-context_t *ctx;
-bool should_exit;
-char logs[LOG_SIZE];
-volatile int log_length;
-unsigned int main_fp;
 
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);

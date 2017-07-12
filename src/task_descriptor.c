@@ -2,6 +2,7 @@
 #include <kassert.h>
 #include <bwio.h>
 #include <cbuffer.h>
+#include <jstring.h>
 #include <kern/context.h>
 #include <kern/task_descriptor.h>
 
@@ -37,7 +38,7 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
   task->recv_execution_time = 0;
   task->repl_execution_time = 0;
   task->was_interrupted = false;
-  task->name = func_name;
+  jstrncpy(task->name, func_name, 128);
   #ifndef DEBUG_MODE
   KASSERT(task->stack_id < MAX_TASK_STACKS, "Maximum amount of task stacks allocated stack_id=%d used_stacks=%d", task->stack_id, ctx->used_stacks);
   task->stack_pointer = TaskStack + (_TaskStackSize * task->stack_id) + _TaskStackSize * 1/* Offset, because the stack grows down */;

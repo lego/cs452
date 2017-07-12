@@ -13,6 +13,12 @@
 #define PRIORITY_DELAY_DETECTOR 1
 
 /**
+ * Detectives
+ */
+
+#define PRIORITY_SENSOR_TIMEOUT_DETECTIVE 1
+
+/**
  * Servers
  */
 #define PRIORITY_CLOCK_SERVER 2
