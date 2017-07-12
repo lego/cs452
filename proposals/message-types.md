@@ -3,7 +3,6 @@
 ## Goals
 Have an easy to use interface to add typing to all messages passed between tasks. Right now there are complexities around sending multiple struct types, and in general it's hard to send more than type of struct. There should be an easy interface to define custom structs and be able to do a switch case of message types and handle them safely.
 
-
 ## Example interfaces
 
 ### Send and Receive macros

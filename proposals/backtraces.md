@@ -1,5 +1,8 @@
 # Backtraces
 
+*Completed* (partially)
+What still need to be done is interrupt task back traces, as the PC is not the beginning of a function but an arbitrary point.
+
 ## Goal
 
 Have runtime backtraces. Within the scope of this is expanding backtraces to be a major part of the debugging process, and provide the backtrace for other any task stack.

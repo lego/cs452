@@ -3,14 +3,14 @@
 This is a list of more minor improvements to improve the kernel.
 
 ## Printing and strings
-- Generic `formatf` for usage in many places
-- `formatf` support for leading spaces on things such as digits. e.g. `%20d` for `00`, `01`, ...
+- [x] Generic `formatf` for usage in many places
+- [x] `formatf` support for leading spaces on things such as digits. e.g. `%20d` for `00`, `01`, ...
 
 ## Post-execution information
 - Better formatting
-  - Change the background to see headers
+  - [x] Change the background to see headers
 - Stats table is more easily readable, and better information
-  - Formatting
+  - [x] Formatting
   - Current SendQ
 
 ## Diagnostics
