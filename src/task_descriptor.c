@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #endif
 
-char TaskStack[_TaskStackSize * (MAX_TASKS + 2)];
+char *TaskStack;
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name) {
   // TODO: Assert task priority is valid, i.e. in [1,5]

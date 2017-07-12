@@ -48,6 +48,8 @@ static inline void task_post_activate(task_descriptor_t *task) {
 }
 
 int main() {
+  char taskStack[_TaskStackSize * (MAX_TASKS + 2)];
+  TaskStack = taskStack;
   #ifndef DEBUG_MODE
   // saves FP to be able to clean exit to redboot
   asm volatile("mov %0, fp @ save fp" : "=r" (main_fp));
