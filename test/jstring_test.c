@@ -145,9 +145,9 @@ END_TEST
 
 START_TEST (jstrncpy_buffer_equal_size)
 {
-  char str[8];
-  jstrncpy(str, "justright", 8);
-  ck_assert_str_eq(str, "justrig");
+  char str[10];
+  jstrncpy(str, "justright", 10);
+  ck_assert_str_eq(str, "justright");
 }
 END_TEST
 
