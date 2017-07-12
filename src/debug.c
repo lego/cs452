@@ -246,6 +246,10 @@ void cleanup() {
     bwputc(COM2, 0x0);
   }
 
+  interrupts_clear_all();
+  bwputc(COM1, 0x61);
+  bwsetfifo(COM2, ON);
+
   print_logs();
   print_stats();
 

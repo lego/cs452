@@ -35,7 +35,7 @@ int velocity_reading_delay_until;
 int most_recent_sensor;
 bool set_to_stop;
 bool set_to_stop_from;
-bool stop_on_node;
+int stop_on_node;
 
 // TODO: make time a string format type
 void PrintTicks(int ticks) {
@@ -1073,7 +1073,7 @@ void interactive() {
                 break;
               }
 
-              if (train != active_train || active_speed <= 0 || WhereAmI(train) != -1) {
+              if (train != active_train || active_speed <= 0 || WhereAmI(train) == -1) {
                 Putf(COM2, "Train must already be in motion and hit a sensor to path.");
                 break;
               }
@@ -1186,7 +1186,7 @@ void interactive() {
                 }
 
                 Putf(COM2, "Ofsetting stopping distance train=%d speed=%d to %smm", active_train, active_speed, req.arg1);
-                set_stopping_distance(active_train, active_speed, offset);
+                offset_stopping_distance(active_train, active_speed, offset);
               }
               break;
           case COMMAND_SET_STOPPING_DISTANCE:
