@@ -36,6 +36,8 @@ typedef int task_state_t;
 
 struct TaskDescriptor {
   int tid;
+  // For re-allocatable stacks
+  int stack_id;
   int parent_tid;
   bool has_started;
   bool was_interrupted;
@@ -44,6 +46,8 @@ struct TaskDescriptor {
   struct TaskDescriptor *next_ready_task;
   cbuffer_t send_queue;
   void *send_queue_buf[MAX_TASKS];
+  // TID of target task of Send when REPLY_BLOCKED
+  int reply_blocked_on;
   volatile task_state_t state;
   void *stack_pointer;
   void (*entrypoint)();
@@ -59,6 +63,8 @@ struct TaskDescriptor {
 typedef struct TaskDescriptor task_descriptor_t;
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name);
+
+void td_free_stack(int tid);
 
 #define _TaskStackSize 0x10000
 extern char *TaskStack;

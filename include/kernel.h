@@ -5,7 +5,8 @@
 // Hardcoded maximum used in a number of places
 // WARNING: this is also defined in orex.ld
 // if this in increased, you should also increase that one
-#define MAX_TASKS 100
+#define MAX_TASKS 256
+#define MAX_TASK_STACKS 100
 
 /*
  * Kernel system calls
@@ -44,6 +45,11 @@ int MyParentTid( );
  * Yield the current tasks execution, possibly causing the task to get rescheduled
  */
 void Pass( );
+
+/**
+ * Destroys a task and all of it's children
+ */
+void Destroy( int tid );
 
 /**
  * Exit the task, ending execution

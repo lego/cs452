@@ -50,6 +50,9 @@ void syscall_handle(kernel_request_t *arg) {
   case SYSCALL_FREE:
     syscall_free(task, arg);
     break;
+  case SYSCALL_DESTROY:
+    syscall_destroy(task, arg);
+    break;
   case SYSCALL_HW_INT:
     hwi(task, arg);
     break;
@@ -94,6 +97,58 @@ void syscall_malloc(task_descriptor_t *task, kernel_request_t *arg) {
   scheduler_requeue_task(task);
 }
 
+void free_message_blocked_tasks(int tid) {
+  task_descriptor_t *task = &ctx->descriptors[tid];
+  // Free up the sendQ
+  while (!cbuffer_empty(&task->send_queue)) {
+    task_descriptor_t *sending_task = (task_descriptor_t *) cbuffer_pop(&task->send_queue, NULL);
+    syscall_message_t *sending_task_ret = sending_task->current_request.ret_val;
+    sending_task_ret->status = -3; // denotes zombie'd task
+    sending_task->state = STATE_READY;
+    scheduler_requeue_task(sending_task);
+  }
+
+  // Free up REPLY_BLOCKED tasks
+  for (int i = 0; i < ctx->used_descriptors; i++) {
+    task_descriptor_t *task = &ctx->descriptors[i];
+
+    if (task->reply_blocked_on == tid && task->state == STATE_REPLY_BLOCKED) {
+      syscall_message_t *task_msg = task->current_request.ret_val;
+      task_msg->status = -3;
+      task->state = STATE_READY;
+      scheduler_requeue_task(task);
+    }
+  }
+}
+
+void syscall_destroy(task_descriptor_t *task, kernel_request_t *arg) {
+  log_syscall("Destroy", task->tid);
+  unsigned int tid = (unsigned int) arg->arguments;
+  // If this task is getting destroyed, it'll be skipped in main.c
+  scheduler_requeue_task(task);
+
+  void *children_buffer[MAX_TASKS];
+  cbuffer_t children;
+  cbuffer_init(&children, children_buffer, MAX_TASKS);
+  cbuffer_add(&children, (void *) tid);
+  // "recursively" find and destroy all of the children of this task
+  while (cbuffer_size(&children) > 0) {
+    int next_to_kill = (int) cbuffer_pop(&children, NULL);
+    // Is the child not already dead? if so, re-allocate resources
+    if (ctx->descriptors[next_to_kill].state != STATE_ZOMBIE) {
+      ctx->descriptors[next_to_kill].state = STATE_ZOMBIE;
+      td_free_stack(next_to_kill);
+      free_message_blocked_tasks(next_to_kill);
+    }
+    // We still need to recursively search for it's children
+    for (int i = 0; i < ctx->used_descriptors; i++) {
+      if (ctx->descriptors[i].parent_tid == next_to_kill) {
+        cbuffer_add(&children, (void *) i);
+      }
+    }
+  }
+}
+
 void syscall_free(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Free", task->tid);
   void *data = arg->arguments;
@@ -105,6 +160,8 @@ void syscall_exit(task_descriptor_t *task, kernel_request_t *arg) {
   log_syscall("Exit", task->tid);
   // don't reschedule task
   task->state = STATE_ZOMBIE;
+  td_free_stack(task->tid);
+  free_message_blocked_tasks(task->tid);
   // do some cleanup, like remove the thread (x86)
   scheduler_exit_task(task);
 }
@@ -182,7 +239,11 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
     return;
   }
 
-  KASSERT(ctx->descriptors[msg->tid].state != STATE_ZOMBIE, "Attempting to send to a zombie. If this is expected, please remove me.");
+  if (ctx->descriptors[msg->tid].state == STATE_ZOMBIE) {
+    msg->status = -3;
+    scheduler_requeue_task(task);
+    return;
+  }
 
   task_descriptor_t *target_task = &ctx->descriptors[msg->tid];
 
@@ -196,6 +257,7 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
 
     // set this task to reply blocked
     task->state = STATE_REPLY_BLOCKED;
+    task->reply_blocked_on = target_task->tid;
   } else {
     // if receiver is not blocked, add to their send queue
     /* int status = */ cbuffer_add(&target_task->send_queue, task);
@@ -221,6 +283,7 @@ void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
 
     // reply block the sending task
     sending_task->state = STATE_REPLY_BLOCKED;
+    sending_task->reply_blocked_on = task->tid;
   }
   post_time_recording(&task->recv_execution_time);
 }
@@ -238,7 +301,7 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
   }
 
   task_descriptor_t *sending_task = (task_descriptor_t *) &ctx->descriptors[msg->tid];
-  if (sending_task->state == STATE_REPLY_BLOCKED) {
+  if (sending_task->state == STATE_REPLY_BLOCKED && sending_task->reply_blocked_on == task->tid) {
 
     copy_msg(task, sending_task);
     task->state = STATE_READY;

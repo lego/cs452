@@ -192,6 +192,14 @@ void RecordLogf(char *fmt, ...) {
   return RecordLog(buf);
 }
 
+void Destroy( int tid ) {
+  kernel_request_t request;
+  request.tid = active_task->tid;
+  request.syscall = SYSCALL_DESTROY;
+  request.arguments = (void *) tid;
+  context_switch(&request);
+}
+
 void *Malloc( unsigned int size ) {
   kernel_request_t request;
   request.tid = active_task->tid;

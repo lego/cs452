@@ -145,7 +145,6 @@ void PrintAllTaskStacks(int focused_task) {
   }
 }
 
-#endif
 
 static inline bool is_valid_task(int tid) {
   return tid < ctx->used_descriptors;
@@ -266,3 +265,4 @@ void cleanup() {
     PrintBacktrace();
   }
 }
+#endif
