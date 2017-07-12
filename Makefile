@@ -42,25 +42,11 @@ endif
 
 # Set of compiler settings for compiling ARM on the student environment
 ARCH   = arm
-<<<<<<< HEAD
 CC     = $(GCC_ROOT)/bin/$(GCC_TYPE)-gcc
 AS     = $(GCC_ROOT)/bin/$(GCC_TYPE)-as
 AR     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ar
 LD     = $(GCC_ROOT)/bin/$(GCC_TYPE)-ld
 CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -DUSE_$(PROJECT) -DUSE_TRACK$(TRACK) -DUSE_PACKETS=$(PACKETS) $(CFLAGS_OPTIMIZATIONS) $(STANDARD_INCLUDES) $(CFLAGS_BACKTRACE) $(CFLAGS_COMPILE_WARNINGS)
-||||||| merged common ancestors
-CC     = $(COMPILER_BINARY_LOCATION)gcc
-AS     = $(COMPILER_BINARY_LOCATION)as
-AR     = $(COMPILER_BINARY_LOCATION)ar
-LD     = $(COMPILER_BINARY_LOCATION)ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline -nostdlib -nostartfiles -ffreestanding
-=======
-CC     = $(COMPILER_BINARY_LOCATION)gcc
-AS     = $(COMPILER_BINARY_LOCATION)as
-AR     = $(COMPILER_BINARY_LOCATION)ar
-LD     = $(COMPILER_BINARY_LOCATION)ld
-CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT) -finline-functions -finline-functions-called-once -Winline -nostdlib  -mno-thumb-interwork
->>>>>>> Replace ASM with new ASM
 # -Wall: report all warnings
 # -fPIC: emit position-independent code
 # -mcpu=arm920t: generate code for the 920t architecture
@@ -70,13 +56,7 @@ CFLAGS = -fPIC -Wall -mcpu=arm920t -msoft-float --std=gnu99 -O2 -DUSE_$(PROJECT)
 ASFLAGS  = -mcpu=arm920t -mapcs-32
 # -mcpu=arm920t: use assembly code for the 920t architecture
 # -mapcs-32: always create a complete stack frame
-<<<<<<< HEAD
 LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(GCC_ROOT)/lib/gcc/$(GCC_TYPE)/$(GCC_VERSION) -L.
-||||||| merged common ancestors
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(COMPILER_LIBRARY_LOCATION) -L.
-=======
-LDFLAGS = -init main -Map main.map -N  -T orex.ld -L$(COMPILER_LIBRARY_LOCATION) -L. -nostdlib
->>>>>>> Replace ASM with new ASM
 # TODO: Document what these mean... heh
 else
 # Set of compiler settings for compiling on a local machine (likely x86, but nbd)
