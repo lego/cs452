@@ -102,20 +102,31 @@ void jslowmemcpy(void *dest, const void *src, unsigned num) {
 void jmemcpy(void *dest, const void *src, unsigned num) {
   // phase 1: align dest AND src. how do we deal with very offset things?
   // FIXME: not done, so for now we fall back to jmemcpy
-  bool aligned = !(((unsigned int) src | (unsigned int) dest) & 0xFF);
+
+  // is src and dest aligned with eachother? even if they aren't 4 byte aligned
+  // we can accomodate this
+  bool aligned = ((unsigned int) src & 0x3) == ((unsigned int) dest) & 0x3);
   if (aligned) {
-    unsigned int *vdest = (unsigned int *) dest;
-    unsigned int *vsrc = (unsigned int *) src;
+    const char * csrc = (const char *) src;
+    char * cdest = (char *) dest;
+    if (((unsigned int) src & 0x3) != 0) {
+      unsigned int beginning_offset = 4 - ((unsigned int) src & 0x3);
+      num -= beginning_offset;
+      while (beginning_offset > 0)
+        *cdest++ = *csrc++;
+    }
+
+    const unsigned int *vsrc = (const unsigned int *) csrc;
+    unsigned int *vdest = (unsigned int *) cdest;
     while (num >= 4) {
       num -= 4;
       *vdest++ = *vsrc++;
     }
-    // FIXME: this could be just jmemcpy, but we're avoiding a function call
+
     char *cdest = (char *) vdest;
     char *csrc = (char *) vsrc;
-    while (num > 0) {
+    while (num-- > 0) {
       *cdest++ = *csrc++;
-      num--;
     }
   } else {
     jslowmemcpy(dest, src, num);
