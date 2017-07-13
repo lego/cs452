@@ -356,3 +356,14 @@ int Putf(int channel, char *fmt, ...) {
   va_end(va);
   return Putstr(channel, buf);
 }
+
+void PrintTicks(int ticks) {
+  char buf[32];
+  KASSERT(ticks < 360000, "Uptime exceeded an hour. Can't handle time display, ticks (%d) >= 360000", ticks);
+  int minutes = (ticks / 6000) % 24;
+  int seconds = (ticks / 100) % 60;
+  jformatf(buf, 32, "%02d:%02d %02d0", minutes, seconds, ticks % 100);
+  Putstr(COM2, buf);
+
+  Logs(100, buf);
+}

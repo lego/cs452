@@ -21,6 +21,8 @@ int Logs(int type, const char *str);
 void MoveTerminalCursor(unsigned int x, unsigned int y);
 int GetRxQueueLength(int channel);
 
+void PrintTicks(int ticks);
+
 // Terminal locations
 #define SWITCH_LOCATION 3
 #define SENSOR_HISTORY_LOCATION 10

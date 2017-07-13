@@ -27,7 +27,6 @@ enum command_t {
 }; typedef int command_t;
 
 enum interactive_req_type_t {
-  INT_REQ_SENSOR_UPDATE,
   INT_REQ_COMMAND,
   INT_REQ_TIME,
 }; typedef int interactive_req_type_t;
