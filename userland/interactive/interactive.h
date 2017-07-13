@@ -1,5 +1,7 @@
 #pragma once
 
+#include <packet.h>
+
 enum command_t {
   COMMAND_INVALID,
   COMMAND_QUIT,
@@ -26,23 +28,26 @@ enum command_t {
   COMMAND_PATH,
 }; typedef int command_t;
 
-enum interactive_req_type_t {
-  INT_REQ_SENSOR_UPDATE,
-  INT_REQ_COMMAND,
-  INT_REQ_TIME,
-}; typedef int interactive_req_type_t;
-
 typedef struct {
-  interactive_req_type_t type;
+  // INTERACTIVE_COMMAND
+  packet_t packet;
 
-  // FIXME: figure out a better way to not put all params in one struct
-  // but use different structs
-
-  // INT_REQ_COMMAND data
   command_t command_type;
   int argc;
   char *cmd;
   char *arg1;
   char *arg2;
   char *arg3;
-} interactive_req_t;
+} interactive_command_t;
+
+typedef struct {
+  // INTERACTIVE_ECHO
+  packet_t packet;
+
+  char echo[4];
+} interactive_echo_t;
+
+typedef struct {
+  // INTERACTIVE_TIME_UPDATE
+  packet_t packet;
+} interactive_time_update_t;

@@ -300,14 +300,14 @@ void TriggerSensor(int sensor_num, int sensor_time) {
 void time_keeper() {
   int tid = MyTid();
   int parent = MyParentTid();
-  interactive_req_t req;
-  req.type = INT_REQ_TIME;
+  interactive_time_update_t req;
+  req.packet.type = INTERACTIVE_TIME_UPDATE;
   log_task("time_keeper initialized parent=%d", tid, parent);
   while (true) {
     log_task("time_keeper sleeping", tid);
     Delay(10);
     log_task("time_keeper sending", tid);
-    Send(parent, &req, sizeof(req), NULL, 0);
+    SendSN(parent, req);
   }
 }
 
@@ -772,7 +772,10 @@ void interactive() {
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
 
-  interactive_req_t req;
+  char req_buffer[1024];
+  packet_t *packet = (packet_t *) req_buffer;
+  interactive_command_t *req = (interactive_command_t *) req_buffer;
+  interactive_echo_t *echo_data = (interactive_echo_t *) req_buffer;
 
   int lastSensor = -1;
   int lastSensorTime = -1;
@@ -781,14 +784,16 @@ void interactive() {
   ClearLastCmdMessage();
 
   while (true) {
-    ReceiveS(&sender, req);
-    log_task("got msg type=%d", tid, req.type);
-    switch (req.type) {
-      case INT_REQ_COMMAND:
+    ReceiveS(&sender, req_buffer);
+    switch (packet->type) {
+      case INTERACTIVE_ECHO:
+        Putstr(COM2, echo_data->echo);
+        break;
+      case INTERACTIVE_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
         ClearLastCmdMessage();
         MoveTerminalCursor(0, COMMAND_LOCATION + 1);
-        switch (req.command_type) {
+        switch (req->command_type) {
           case COMMAND_QUIT:
             Putstr(COM2, "\033[2J\033[HRunning quit");
             Delay(5);
@@ -797,29 +802,29 @@ void interactive() {
           case COMMAND_TRAIN_SPEED:
             {
               int status;
-              int train = jatoui(req.arg1, &status);
+              int train = jatoui(req->arg1, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid train provided for tr: got %s", req.arg1);
+                Putf(COM2, "Invalid train provided for tr: got %s", req->arg1);
                 break;
               }
-              int speed = jatoui(req.arg2, &status);
+              int speed = jatoui(req->arg2, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid speed provided for tr: got %s", req.arg1);
+                Putf(COM2, "Invalid speed provided for tr: got %s", req->arg1);
                 break;
               }
 
               if (train < 0 || train > 80) {
-                Putf(COM2, "Invalid train provided for tr: got %s, expected 1-80", req.arg1);
+                Putf(COM2, "Invalid train provided for tr: got %s, expected 1-80", req->arg1);
                 break;
               }
 
               if (speed < 0 || speed > 14) {
-                Putf(COM2, "Invalid speed provided for tr: got %s, expected 0-14", req.arg1);
+                Putf(COM2, "Invalid speed provided for tr: got %s, expected 0-14", req->arg1);
                 break;
               }
 
-              Putf(COM2, "Set train %s to speed %s", req.arg1, req.arg2);
-              RecordLogf("Set train %s to speed %s\n\r", req.arg1, req.arg2);
+              Putf(COM2, "Set train %s to speed %s", req->arg1, req->arg2);
+              RecordLogf("Set train %s to speed %s\n\r", req->arg1, req->arg2);
 
               lastTrain = train;
               samples = 0;
@@ -832,45 +837,45 @@ void interactive() {
           case COMMAND_TRAIN_REVERSE:
             {
               int status;
-              int train = jatoui(req.arg1, &status);
+              int train = jatoui(req->arg1, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid train provided for rv: got %s", req.arg1);
+                Putf(COM2, "Invalid train provided for rv: got %s", req->arg1);
                 break;
               }
               if (train < 0 || train > 80) {
-                Putf(COM2, "Invalid train provided for rv: got %s expected 1-80", req.arg1);
+                Putf(COM2, "Invalid train provided for rv: got %s expected 1-80", req->arg1);
                 break;
               }
 
-              Putf(COM2, "Train %s reverse", req.arg1);
+              Putf(COM2, "Train %s reverse", req->arg1);
               ReverseTrain(train, 14);
             }
             break;
           case COMMAND_SWITCH_TOGGLE:
             {
-              int sw = ja2i(req.arg1);
-              if (jstrcmp(req.arg2, "c") || jstrcmp(req.arg2, "C")) {
+              int sw = ja2i(req->arg1);
+              if (jstrcmp(req->arg2, "c") || jstrcmp(req->arg2, "C")) {
                 SetSwitchAndRender(sw, SWITCH_CURVED);
-              } else if (jstrcmp(req.arg2, "s") || jstrcmp(req.arg2, "S")) {
+              } else if (jstrcmp(req->arg2, "s") || jstrcmp(req->arg2, "S")) {
                 SetSwitchAndRender(sw, SWITCH_STRAIGHT);
               } else {
-                Putf(COM2, "Invalid switch option provided for sw: got %s expected C or S", req.arg1);
+                Putf(COM2, "Invalid switch option provided for sw: got %s expected C or S", req->arg1);
                 break;
               }
 
-              Putf(COM2, "Set switch %s to %s", req.arg1, req.arg2);
+              Putf(COM2, "Set switch %s to %s", req->arg1, req->arg2);
             }
             break;
           case COMMAND_SWITCH_TOGGLE_ALL:
             {
-              Putf(COM2, "Set all switches to %s", req.arg1);
+              Putf(COM2, "Set all switches to %s", req->arg1);
               int state = SWITCH_CURVED;
-              if (jstrcmp(req.arg1, "c") || jstrcmp(req.arg1, "C")) {
+              if (jstrcmp(req->arg1, "c") || jstrcmp(req->arg1, "C")) {
                 state = SWITCH_CURVED;
-              } else if (jstrcmp(req.arg1, "s") || jstrcmp(req.arg1, "S")) {
+              } else if (jstrcmp(req->arg1, "s") || jstrcmp(req->arg1, "S")) {
                 state = SWITCH_STRAIGHT;
               } else {
-                Putf(COM2, "Invalid switch option provided for sw: got %s expected C or S", req.arg1);
+                Putf(COM2, "Invalid switch option provided for sw: got %s expected C or S", req->arg1);
                 break;
               }
               for (int i = 0; i < NUM_SWITCHES; i++) {
@@ -940,30 +945,30 @@ void interactive() {
           case COMMAND_NAVIGATE:
             {
               int status;
-              int train = jatoui(req.arg1, &status);
+              int train = jatoui(req->arg1, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid train provided: got %s", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s", req->arg1);
                 break;
               }
 
               if (train < 0 || train > 80) {
-                Putf(COM2, "Invalid train provided: got %s expected 1-80", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s expected 1-80", req->arg1);
                 break;
               }
 
-              int speed = jatoui(req.arg2, &status);
+              int speed = jatoui(req->arg2, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid speed provided: got %s", req.arg2);
+                Putf(COM2, "Invalid speed provided: got %s", req->arg2);
                 break;
               }
 
               if (speed < 0 || speed > 14) {
-                Putf(COM2, "Invalid speed provided: got %s expected 0-14", req.arg2);
+                Putf(COM2, "Invalid speed provided: got %s expected 0-14", req->arg2);
                 break;
               }
-              int dest_node_id = Name2Node(req.arg3);
+              int dest_node_id = Name2Node(req->arg3);
               if (dest_node_id == -1) {
-                Putf(COM2, "Invalid dest node: got %s", req.arg3);
+                Putf(COM2, "Invalid dest node: got %s", req->arg3);
                 break;
               }
 
@@ -997,31 +1002,31 @@ void interactive() {
           case COMMAND_STOP_FROM:
             {
               int status;
-              int train = jatoui(req.arg1, &status);
+              int train = jatoui(req->arg1, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid train provided: got %s", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s", req->arg1);
                 break;
               }
 
               if (train < 0 || train > 80) {
-                Putf(COM2, "Invalid train provided: got %s expected 1-80", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s expected 1-80", req->arg1);
                 break;
               }
 
-              int speed = jatoui(req.arg2, &status);
+              int speed = jatoui(req->arg2, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid speed provided: got %s", req.arg2);
+                Putf(COM2, "Invalid speed provided: got %s", req->arg2);
                 break;
               }
 
               if (speed < 0 || speed > 14) {
-                Putf(COM2, "Invalid speed provided: got %s expected 0-14", req.arg2);
+                Putf(COM2, "Invalid speed provided: got %s expected 0-14", req->arg2);
                 break;
               }
 
-              int dest_node_id = Name2Node(req.arg3);
+              int dest_node_id = Name2Node(req->arg3);
               if (dest_node_id == -1) {
-                Putf(COM2, "Invalid dest node: got %s", req.arg3);
+                Putf(COM2, "Invalid dest node: got %s", req->arg3);
                 break;
               }
 
@@ -1046,15 +1051,15 @@ void interactive() {
             break;
           case COMMAND_PATH:
             {
-              int src_node_id = Name2Node(req.arg1);
+              int src_node_id = Name2Node(req->arg1);
               if (src_node_id == -1) {
-                Putf(COM2, "Invalid src node: got %s", req.arg1);
+                Putf(COM2, "Invalid src node: got %s", req->arg1);
                 break;
               }
 
-              int dest_node_id = Name2Node(req.arg2);
+              int dest_node_id = Name2Node(req->arg2);
               if (dest_node_id == -1) {
-                Putf(COM2, "Invalid dest node: got %s", req.arg2);
+                Putf(COM2, "Invalid dest node: got %s", req->arg2);
                 break;
               }
 
@@ -1066,35 +1071,35 @@ void interactive() {
           case COMMAND_SET_VELOCITY:
             {
               int status;
-              int train = jatoui(req.arg1, &status);
+              int train = jatoui(req->arg1, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid train provided: got %s", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s", req->arg1);
                 break;
               }
 
               if (train < 0 || train > 80) {
-                Putf(COM2, "Invalid train provided: got %s expected 1-80", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s expected 1-80", req->arg1);
                 break;
               }
 
-              int speed = jatoui(req.arg2, &status);
+              int speed = jatoui(req->arg2, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid speed provided: got %s", req.arg2);
+                Putf(COM2, "Invalid speed provided: got %s", req->arg2);
                 break;
               }
 
               if (speed < 0 || speed > 14) {
-                Putf(COM2, "Invalid speed provided: got %s expected 0-14", req.arg2);
+                Putf(COM2, "Invalid speed provided: got %s expected 0-14", req->arg2);
                 break;
               }
 
-              int velocity = jatoui(req.arg3, &status);
+              int velocity = jatoui(req->arg3, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid velocity provided: got %s", req.arg3);
+                Putf(COM2, "Invalid velocity provided: got %s", req->arg3);
                 break;
               }
 
-              Putf(COM2, "Set velocity train=%s speed=%s to %smm/s", req.arg1, req.arg2, req.arg3);
+              Putf(COM2, "Set velocity train=%s speed=%s to %smm/s", req->arg1, req->arg2, req->arg3);
 
               set_velocity(train, speed, velocity);
               }
@@ -1108,18 +1113,18 @@ void interactive() {
           case COMMAND_SET_LOCATION:
             {
               int status;
-              int train = jatoui(req.arg1, &status);
+              int train = jatoui(req->arg1, &status);
               if (status != 0) {
-                Putf(COM2, "Invalid train provided: got %s", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s", req->arg1);
                 break;
               }
 
               if (train < 0 || train > 80) {
-                Putf(COM2, "Invalid train provided: got %s expected 1-80", req.arg1);
+                Putf(COM2, "Invalid train provided: got %s expected 1-80", req->arg1);
                 break;
               }
 
-              int node = Name2Node(req.arg2);
+              int node = Name2Node(req->arg2);
               if (node == -1) {
                 Putstr(COM2, "Invalid location.");
                 break;
@@ -1131,89 +1136,89 @@ void interactive() {
           case COMMAND_STOPPING_DISTANCE_OFFSET:
             {
                 int status = 0;
-                int offset = jatoui(req.arg1, &status);
+                int offset = jatoui(req->arg1, &status);
                 if (status != 0) {
-                  Putf(COM2, "Invalid offset provided: got %s", req.arg1);
+                  Putf(COM2, "Invalid offset provided: got %s", req->arg1);
                   break;
                 }
 
-                Putf(COM2, "Ofsetting stopping distance train=%d speed=%d to %smm", active_train, active_speed, req.arg1);
+                Putf(COM2, "Ofsetting stopping distance train=%d speed=%d to %smm", active_train, active_speed, req->arg1);
                 offset_stopping_distance(active_train, active_speed, offset);
               }
               break;
           case COMMAND_SET_STOPPING_DISTANCE:
             {
                 int status;
-                int train = jatoui(req.arg1, &status);
+                int train = jatoui(req->arg1, &status);
                 if (status != 0) {
-                  Putf(COM2, "Invalid train provided: got %s", req.arg1);
+                  Putf(COM2, "Invalid train provided: got %s", req->arg1);
                   break;
                 }
 
                 if (train < 0 || train > 80) {
-                  Putf(COM2, "Invalid train provided: got %s expected 1-80", req.arg1);
+                  Putf(COM2, "Invalid train provided: got %s expected 1-80", req->arg1);
                   break;
                 }
 
-                int speed = jatoui(req.arg2, &status);
+                int speed = jatoui(req->arg2, &status);
                 if (status != 0) {
-                  Putf(COM2, "Invalid speed provided: got %s", req.arg2);
+                  Putf(COM2, "Invalid speed provided: got %s", req->arg2);
                   break;
                 }
 
                 if (speed < 0 || speed > 14) {
-                  Putf(COM2, "Invalid speed provided: got %s expected 1-14", req.arg2);
+                  Putf(COM2, "Invalid speed provided: got %s expected 1-14", req->arg2);
                   break;
                 }
 
-                int stopping_distance = jatoui(req.arg3, &status);
+                int stopping_distance = jatoui(req->arg3, &status);
                 if (status != 0) {
-                  Putf(COM2, "Invalid stopping distance provided: got %s", req.arg3);
+                  Putf(COM2, "Invalid stopping distance provided: got %s", req->arg3);
                   break;
                 }
 
-                Putf(COM2, "Set stopping distance train=%s speed=%s to %smm", req.arg1, req.arg2, req.arg3);
+                Putf(COM2, "Set stopping distance train=%s speed=%s to %smm", req->arg1, req->arg2, req->arg3);
                 set_stopping_distance(train, speed, stopping_distance);
               }
               break;
           case COMMAND_SET_STOPPING_DISTANCEN:
             {
                 int status;
-                int train = jatoui(req.arg1, &status);
+                int train = jatoui(req->arg1, &status);
                 if (status != 0) {
-                  Putf(COM2, "Invalid train provided: got %s", req.arg1);
+                  Putf(COM2, "Invalid train provided: got %s", req->arg1);
                   break;
                 }
 
                 if (train < 0 || train > 80) {
-                  Putf(COM2, "Invalid train provided: got %s expected 1-80", req.arg1);
+                  Putf(COM2, "Invalid train provided: got %s expected 1-80", req->arg1);
                   break;
                 }
 
-                int speed = jatoui(req.arg2, &status);
+                int speed = jatoui(req->arg2, &status);
                 if (status != 0) {
-                  Putf(COM2, "Invalid speed provided: got %s", req.arg2);
+                  Putf(COM2, "Invalid speed provided: got %s", req->arg2);
                   break;
                 }
 
                 if (speed < 0 || speed > 14) {
-                  Putf(COM2, "Invalid speed provided: got %s expected 0-14", req.arg2);
+                  Putf(COM2, "Invalid speed provided: got %s expected 0-14", req->arg2);
                   break;
                 }
 
-                int stopping_distance = jatoui(req.arg3, &status);
+                int stopping_distance = jatoui(req->arg3, &status);
                 if (status != 0) {
-                  Putf(COM2, "Invalid stopping distance provided: got %s", req.arg3);
+                  Putf(COM2, "Invalid stopping distance provided: got %s", req->arg3);
                   break;
                 }
 
-                Putf(COM2, "Set stopping distance train=%s speed=%s to -%smm", req.arg1, req.arg2, req.arg3);
+                Putf(COM2, "Set stopping distance train=%s speed=%s to -%smm", req->arg1, req->arg2, req->arg3);
                 set_stopping_distance(train, speed, -stopping_distance);
               }
               break;
           case COMMAND_MANUAL_SENSE:
             {
-              int node = Name2Node(req.arg1);
+              int node = Name2Node(req->arg1);
               if (node == -1) {
                 Putstr(COM2, "Invalid location.");
                 break;
@@ -1229,7 +1234,7 @@ void interactive() {
             }
             break;
           default:
-            Putf(COM2, "Got invalid command=%s", req.cmd);
+            Putf(COM2, "Got invalid command=%s", req->cmd);
             break;
         }
         MoveTerminalCursor(40, COMMAND_LOCATION + 2);
@@ -1237,7 +1242,7 @@ void interactive() {
         MoveTerminalCursor(0, COMMAND_LOCATION + 2);
         Putstr(COM2, "# ");
         break;
-      case INT_REQ_TIME:
+      case INTERACTIVE_TIME_UPDATE:
         // log_task("interactive is updating time", tid);
         Putstr(COM2, SAVE_CURSOR);
         int cur_time = Time();
@@ -1275,24 +1280,8 @@ void interactive() {
           path_update_counter++;
         }
         break;
-      case INT_REQ_SENSOR_UPDATE:
-        {
-          Putstr(COM2, SAVE_CURSOR);
-          MoveTerminalCursor(0, SENSOR_HISTORY_LOCATION + 1);
-          Putstr(COM2, CLEAR_LINE);
-          Putstr(COM2, "Sensors read! ");
-          int time = Time();
-          int diffTime = time - lastSensorTime;
-          if (lastSensor > 0) {
-            registerSample(req.argc, lastSensor, diffTime, time);
-          }
-          Putf(COM2, "%s -> %s : %d" RECOVER_CURSOR, track[lastSensor].name, track[req.argc].name, diffTime);
-          lastSensor = req.argc;
-          lastSensorTime = time;
-        }
-        break;
       default:
-        KASSERT(false, "Bad type received: got type=%d", req.type);
+        KASSERT(false, "Bad type received: got type=%d", packet->type);
         break;
     }
     // NOTE: this is after because if the command parser runs again

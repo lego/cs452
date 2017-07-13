@@ -5,12 +5,16 @@ typedef enum {
   DELAY_DETECT,
   SENSOR_DETECT,
   SENSOR_TIMEOUT_DETECTIVE,
+
+  INTERACTIVE_TIME_UPDATE,
+  INTERACTIVE_COMMAND,
+  INTERACTIVE_ECHO,
 } packet_type_t;
 
 typedef struct {
   packet_type_t type;
   // length of data following this struct
-  int len;
+  // int len;
 } packet_t;
 
 

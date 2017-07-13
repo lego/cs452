@@ -72,7 +72,7 @@ command_t get_command_type(char *command) {
 }
 
 
-interactive_req_t figure_out_command(char *command_buffer) {
+interactive_command_t figure_out_command(char *command_buffer) {
   // this does some magic to do a string split without malloc
   // in particular the prefix of the string is an array of bytes that are the
   // offsets of each string part, this array ends in '\0'. Then after are the
@@ -95,8 +95,8 @@ interactive_req_t figure_out_command(char *command_buffer) {
 
   char *first_command = global_command_buffer + global_command_buffer[0];
 
-  interactive_req_t cmd;
-  cmd.type = INT_REQ_COMMAND;
+  interactive_command_t cmd;
+  cmd.packet.type = INTERACTIVE_COMMAND;
   cmd.command_type = get_command_type(first_command);
   cmd.argc = argc;
   // FIXME: this is very hardcoded and could be fixed.
@@ -121,17 +121,28 @@ interactive_req_t figure_out_command(char *command_buffer) {
   return cmd;
 }
 
-void echo_character(char c) {
-  Putc(COM2, c);
+void echo_character(int interactive_tid, char c) {
+  interactive_echo_t echo_data;
+  echo_data.packet.type = INTERACTIVE_ECHO;
+  echo_data.echo[0] = c;
+  echo_data.echo[1] = '\0';
+  SendSN(interactive_tid, echo_data);
 }
 
-void echo_backspace() {
-  Putstr(COM2, BACKSPACE " " BACKSPACE);
+void echo_backspace(int interactive_tid) {
+  interactive_echo_t echo_data;
+  echo_data.packet.type = INTERACTIVE_ECHO;
+  echo_data.echo[0] = BACKSPACE_CH;
+  echo_data.echo[1] = ' ';
+  echo_data.echo[2] = BACKSPACE_CH;
+  echo_data.echo[3] = '\0';
+  SendSN(interactive_tid, echo_data);
 }
 
 void command_parser_task() {
   int tid = MyTid();
   int parent = MyParentTid();
+
   char command_buffer[MAX_COMMAND_LIMIT];
   log_task("command parser initialized", tid);
   // for every command
@@ -157,7 +168,7 @@ void command_parser_task() {
         }
         input_size--;
 
-        echo_backspace();
+        echo_backspace(parent);
         continue;
       }
 
@@ -166,7 +177,7 @@ void command_parser_task() {
         continue;
       }
 
-      echo_character(c);
+      echo_character(parent, c);
 
       command_buffer[input_size++] = c;
       if (input_size >= MAX_COMMAND_LIMIT) {
@@ -185,7 +196,7 @@ void command_parser_task() {
     // set end of string
     command_buffer[input_size] = '\0';
 
-    interactive_req_t command_struct = figure_out_command(command_buffer);
+    interactive_command_t command_struct = figure_out_command(command_buffer);
     Send(parent, &command_struct, sizeof(command_struct), NULL, 0);
     input_size = 0;
   }
