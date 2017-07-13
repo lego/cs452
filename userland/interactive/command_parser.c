@@ -4,13 +4,17 @@
 #include <jstring.h>
 #include <terminal.h>
 #include <servers/uart_rx_server.h>
+#include <servers/uart_tx_server.h>
 #include <interactive/command_parser.h>
 #include <interactive/interactive.h>
+
+#define MAX_COMMAND_LIMIT 30
+#define BUFFER_LIMIT 512
 
 // use for command parsing
 // in particular this is where the command is string split
 // and a reference to the arguments locations are passed around
-char global_command_buffer[512];
+char global_command_buffer[BUFFER_LIMIT];
 
 command_t get_command_type(char *command) {
   if (jstrcmp(command, "q")) {
@@ -82,7 +86,7 @@ interactive_req_t figure_out_command(char *command_buffer) {
   // (buf + buf[0]) => "Hello"
   // (buf + buf[1]) => "Bye"
   // (buf + buf[2]) => "Hi"
-  jstrsplit_buf(command_buffer, ' ', global_command_buffer, 512);
+  jstrsplit_buf(command_buffer, ' ', global_command_buffer, BUFFER_LIMIT);
 
   int argc = 0;
   while (global_command_buffer[argc] != '\0') argc++;
@@ -117,12 +121,16 @@ interactive_req_t figure_out_command(char *command_buffer) {
   return cmd;
 }
 
-#define MAX_COMMAND_LIMIT 20
+void echo_character(char c) {
+  Putc(COM2, c);
+}
 
-void command_parser() {
+void echo_backspace() {
+  Putstr(COM2, BACKSPACE " " BACKSPACE);
+}
+
+void command_parser_task() {
   int tid = MyTid();
-  interactive_req_t echo_cmd;
-  echo_cmd.type = INT_REQ_ECHO;
   int parent = MyParentTid();
   char command_buffer[MAX_COMMAND_LIMIT];
   log_task("command parser initialized", tid);
@@ -149,12 +157,7 @@ void command_parser() {
         }
         input_size--;
 
-        // echo back a backspace
-        echo_cmd.echo[0] = BACKSPACE_CH;
-        echo_cmd.echo[1] = ' ';
-        echo_cmd.echo[2] = BACKSPACE_CH;
-        echo_cmd.echo[3] = '\0';
-        Send(parent, &echo_cmd, sizeof(echo_cmd), NULL, 0);
+        echo_backspace();
         continue;
       }
 
@@ -163,10 +166,7 @@ void command_parser() {
         continue;
       }
 
-      // echo back character
-      echo_cmd.echo[0] = c;
-      echo_cmd.echo[1] = '\0';
-      Send(parent, &echo_cmd, sizeof(echo_cmd), NULL, 0);
+      echo_character(c);
 
       command_buffer[input_size++] = c;
       if (input_size >= MAX_COMMAND_LIMIT) {

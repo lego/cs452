@@ -102,7 +102,6 @@ int Delay(unsigned int delay ) {
   log_clock_server("Delay delay=%d", active_task->tid, delay);
   if (clock_server_tid == -1) {
     // Don't make data syscall, but still reschedule
-    Pass();
     return -1;
   }
 
@@ -117,7 +116,6 @@ int Time() {
   log_clock_server("Time", active_task->tid);
   if (clock_server_tid == -1) {
     // Don't make data syscall, but still reschedule
-    Pass();
     return -1;
   }
 
@@ -132,7 +130,6 @@ int DelayUntil(unsigned long int until ) {
   log_clock_server("DelayUntil until=%d", active_task->tid, until);
   if (clock_server_tid == -1) {
     // Don't make data syscall, but still reschedule
-    Pass();
     return -1;
   }
 

@@ -340,6 +340,7 @@ void sensor_reader() {
   }
 }
 
+// FIXME: replace this with an interval_detector
 void time_keeper() {
   int tid = MyTid();
   int parent = MyParentTid();
@@ -775,7 +776,7 @@ void interactive() {
   int path_update_counter = 0;
 
   int tid = MyTid();
-  int command_parser_tid = Create(7, command_parser);
+  int command_parser_tid = Create(7, command_parser_task);
   int time_keeper_tid = Create(7, time_keeper);
   int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
   int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, sensor_reader);
@@ -828,10 +829,6 @@ void interactive() {
     ReceiveS(&sender, req);
     log_task("got msg type=%d", tid, req.type);
     switch (req.type) {
-      case INT_REQ_ECHO:
-        // log_task("interactive is echoing", tid);
-        Putstr(COM2, req.echo);
-        break;
       case INT_REQ_COMMAND:
         // TODO: this switch statement of commands should be yanked out, it's very long and messy
         ClearLastCmdMessage();

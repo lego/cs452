@@ -11,7 +11,9 @@ typedef struct {
 } courier_setup_t;
 
 void courier() {
+  int tid = MyTid();
   int requester;
+  int result;
   courier_setup_t setup;
 
   ReceiveS(&requester, setup);
@@ -24,11 +26,13 @@ void courier() {
   char msgData[len];
 
   while (true) {
-    Send(setup.src, NULL, 0, &msgData, setup.srcLen);
+    result = Send(setup.src, NULL, 0, &msgData, setup.srcLen);
+    if (result < 0) Destroy(tid);
     if (setup.fcn != NULL) {
       setup.fcn(msgData);
     }
-    Send(setup.dst, &msgData, setup.dstLen, NULL, 0);
+    result = Send(setup.dst, &msgData, setup.dstLen, NULL, 0);
+    if (result < 0) Destroy(tid);
   }
 }
 

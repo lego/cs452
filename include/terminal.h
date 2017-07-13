@@ -31,6 +31,7 @@
 // Characters
 #define ESCAPE_CH 0x1b
 #define BACKSPACE_CH '\b'
+#define BACKSPACE "\b"
 #define DELETE_CH 0x7f
 #define NEWLINE_CH '\n'
 #define CARRIAGE_RETURN_CH '\r'

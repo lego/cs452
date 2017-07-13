@@ -29,7 +29,6 @@ enum command_t {
 enum interactive_req_type_t {
   INT_REQ_SENSOR_UPDATE,
   INT_REQ_COMMAND,
-  INT_REQ_ECHO,
   INT_REQ_TIME,
 }; typedef int interactive_req_type_t;
 
@@ -46,7 +45,4 @@ typedef struct {
   char *arg1;
   char *arg2;
   char *arg3;
-
-  // INT_REQ_ECHO data
-  char echo[4];
 } interactive_req_t;
