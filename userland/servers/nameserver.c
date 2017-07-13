@@ -78,7 +78,6 @@ int WhoIs( task_name_t name ) {
   log_task("WhoIs name=%d", active_task->tid, name);
   if (nameserver_tid == -1) {
     // Don't make data syscall, but still reschedule
-    Pass();
     return -1;
   }
 
