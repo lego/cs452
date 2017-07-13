@@ -2,6 +2,7 @@
 #include <basic.h>
 #include <util.h>
 #include <bwio.h>
+#include <packet.h>
 #include <interactive.h>
 #include <servers/nameserver.h>
 #include <servers/clock_server.h>
@@ -11,6 +12,7 @@
 #include <train_controller.h>
 #include <kernel.h>
 #include <trains/navigation.h>
+#include <trains/sensor_collector.h>
 #include <jstring.h>
 #include <priorities.h>
 #include <interactive/command_parser.h>
@@ -294,52 +296,6 @@ void TriggerSensor(int sensor_num, int sensor_time) {
 //   }
 // }
 
-void sensor_reader() {
-  int tid = MyTid();
-  int parent = MyParentTid();
-  int sensor_saver_tid = WhoIs(SENSOR_SAVER);
-  interactive_req_t req;
-  req.type = INT_REQ_SENSOR_UPDATE;
-  log_task("sensor_reader initialized parent=%d", tid, parent);
-  int oldSensors[5];
-  int sensors[5];
-  Delay(50); // Wait half a second for old COM1 input to be read
-  while (true) {
-    log_task("sensor_reader sleeping", tid);
-    ClearRx(COM1);
-    Putc(COM1, 0x85);
-    int queueLength = 0;
-    const int maxTries = 100;
-    int i;
-    for (i = 0; i < maxTries && queueLength < 10; i++) {
-      Delay(1);
-      queueLength = GetRxQueueLength(COM1);
-    }
-    // We tried to read but failed to get the correct number of bytes, ABORT
-    if (i == maxTries) {
-      continue;
-    }
-    log_task("sensor_reader reading", tid);
-    for (int i = 0; i < 5; i++) {
-      char high = Getc(COM1);
-      char low = Getc(COM1);
-      sensors[i] = (high << 8) | low;
-    }
-    log_task("sensor_reader read", tid);
-    for (int i = 0; i < 5; i++) {
-      if (sensors[i] != oldSensors[i]) {
-        for (int j = 0; j < 16; j++) {
-          if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
-            req.argc = i*16+(15-j);
-            Send(sensor_saver_tid, &req, sizeof(req), NULL, 0);
-          }
-        }
-      }
-      oldSensors[i] = sensors[i];
-    }
-  }
-}
-
 // FIXME: replace this with an interval_detector
 void time_keeper() {
   int tid = MyTid();
@@ -610,7 +566,8 @@ void stopper() {
 void sensor_saver() {
   int stopper_tid = Create(2, stopper);
   RegisterAs(SENSOR_SAVER);
-  interactive_req_t req;
+  char req_buf[1024];
+  packet_t *packet = (packet_t *) req_buf;
   int lastSensorTime = -1;
   int sender;
 
@@ -702,14 +659,15 @@ void sensor_saver() {
   DECLARE_BASIS_NODE(basis_node);
 
   while (true) {
-    ReceiveS(&sender, req);
-    switch (req.type) {
-    case INT_REQ_SENSOR_UPDATE: {
+    ReceiveS(&sender, req_buf);
+    switch (packet->type) {
+    case SENSOR_DATA: {
+          sensor_data_t * data = (sensor_data_t *) req_buf;
           int curr_time = Time();
-          set_location(active_train, req.argc);
-          sensor_reading_timestamps[req.argc] = curr_time;
-          TriggerSensor(req.argc, curr_time);
-          if (req.argc == basis_node && set_to_stop) {
+          set_location(active_train, data->sensor_no);
+          sensor_reading_timestamps[data->sensor_no] = curr_time;
+          TriggerSensor(data->sensor_no, curr_time);
+          if (data->sensor_no == basis_node && set_to_stop) {
             set_to_stop = false;
             GetPath(&p, basis_node, stop_on_node);
             SetPathSwitches(&p);
@@ -723,7 +681,7 @@ void sensor_saver() {
             Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
           }
 
-          if (set_to_stop_from && req.argc == stop_on_node) {
+          if (set_to_stop_from && data->sensor_no == stop_on_node) {
             set_to_stop_from = false;
             SetTrainSpeed(active_train, 0);
           }
@@ -731,10 +689,10 @@ void sensor_saver() {
           int velocity = 0;
           if (lastSensor != -1) {
             for (int i = 0; i < 2; i++) {
-              if (prevSensor[req.argc][i] == lastSensor) {
-                int time_diff = sensor_reading_timestamps[req.argc] - sensor_reading_timestamps[lastSensor];
-                velocity = (sensorDistances[req.argc][i] * 100) / time_diff;
-                RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[req.argc][i], req.argc, time_diff*10, velocity);
+              if (prevSensor[data->sensor_no][i] == lastSensor) {
+                int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
+                velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
+                RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
               }
             }
           }
@@ -745,9 +703,9 @@ void sensor_saver() {
           // int time = Time();
           // int diffTime = time - lastSensorTime;
           // if (lastSensor > 0) {
-          //   registerSample(req.argc, lastSensor, diffTime, time);
+          //   registerSample(data->sensor_no, lastSensor, diffTime, time);
           // }
-          lastSensor = req.argc;
+          lastSensor = data->sensor_no;
           lastSensorTime = curr_time;
         break;
     } default:
@@ -765,8 +723,6 @@ void interactive() {
   active_train = 0;
   active_speed = 0;
   velocity_reading_delay_until = 0;
-  // this needs to come before SENSOR SAVER due to Name2Node, so this should just be the first to happen
-  InitNavigation();
   path_display_pos = 0;
   samples = 0;
   set_to_stop = false;
@@ -779,7 +735,6 @@ void interactive() {
   int command_parser_tid = Create(7, command_parser_task);
   int time_keeper_tid = Create(7, time_keeper);
   int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
-  int sensor_reader_tid = Create(PRIORITY_UART1_RX_SERVER+1, sensor_reader);
   int sender;
   idle_execution_time = 0;
   last_time_idle_displayed = 0;
