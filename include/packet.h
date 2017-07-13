@@ -32,7 +32,8 @@ typedef enum {
 } packet_type_t;
 
 typedef struct {
-  packet_type_t type;
+  // Left as int, otherwise switch cases must enumerate all cases
+  int type;
   // length of data following this struct
   // int len;
 } packet_t;

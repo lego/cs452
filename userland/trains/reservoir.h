@@ -8,20 +8,32 @@
 
 #include <packet.h>
 
-#define RESERVOIR_REQUEST_OK 1
-#define RESERVOIR_REQUEST_ERROR 0
+#define RESERVOIR_REQUEST_OK 0
+#define RESERVOIR_REQUEST_ERROR 1
+
+/**
+ * segment_t specifies a track segment, i.e. edge, from a node and direction
+ */
+typedef struct {
+  // a track node
+  int track_node;
+  // either DIR_AHEAD
+  // or DIR_CURVED and DIR_STRAIGHT
+  int dir;
+} segment_t;
 
 typedef struct {
-  // For internal message passing
+  // NOTE: for internal message passing, either
+  // RESERVOIR_REQUEST or RESERVOIR_RELEASE
   packet_t packet;
 
-  // Reasonable upper limit to request at one time
-  int tracks[12];
+  // Reasonable upper limit to request or release at one time
+  segment_t segments[12];
   int len;
-} segment_t;
+} reservoir_segments_t;
 
 void reservoir_task();
 
-int RequestSegment(segment_t * segment);
+int RequestSegment(reservoir_segments_t * segment);
 
-void ReleaseSegment(segment_t * segment);
+void ReleaseSegment(reservoir_segments_t * segment);

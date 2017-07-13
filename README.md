@@ -8,12 +8,10 @@ CS452-Codebase
   - [ ] "Safe" array struct, using macros to create and access them that have array bound checks!
 - Tasks & Utilities
   - [ ] Delayed train controller command sender
-  - [ ] Generic warehouse
   - [ ] Generic administrator
-  - [ ] Generic shopkeeper / courier
+  - [ ] Generic shopkeeper
 - Idle task metrics tracking
   - [ ] SendQ depth
-  - [ ] Task stack sizes
   - [ ] Kernel stack size (compile time / once? it won't grow)
 - Backtraces (joey/backtrace)
   - [ ] Cross-task backtraces
@@ -40,7 +38,7 @@ CS452-Codebase
 ---
 Train Control
 - Navigation server: holds a single place where stuff re-paths
-- Reservoir server: maintains the ownership of the track graph
+- Reservoir server: maintains the ownership of the track graph reservations, and other concurrent access of the track graph
 - Train controller: maintains train location, requests new pieces of track, mediates commands for a train
 
 Building
