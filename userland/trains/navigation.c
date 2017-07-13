@@ -9,6 +9,8 @@
 #include <heap.h>
 #include <train_controller.h>
 
+bool initialized = false;
+
 track_node track[TRACK_MAX];
 
 typedef struct TrainState {
@@ -26,6 +28,7 @@ int velocitySamples[TRAINS_MAX][15][VELOCITY_SAMPLES_MAX];
 int velocitySampleStart[TRAINS_MAX][15];
 
 int Name2Node(char *name) {
+  KASSERT(initialized, "Navigation not initialized");
   for (int i = 0; i < TRACK_MAX; i++) {
     if (jstrcmp(track[i].name, name)) {
       return i;
@@ -56,6 +59,7 @@ void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2) {
 
 void InitNavigation() {
   int i;
+  initialized = true;
 
   for (i = 0; i < TRAINS_MAX; i++) {
       int j;
