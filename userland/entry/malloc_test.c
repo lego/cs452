@@ -9,7 +9,12 @@
 #define PRINT_INT(var) bwprintf(COM2, "%s=%d\n\r", #var, var)
 #define PRINT_UINT(var) bwprintf(COM2, "%s=%u\n\r", #var, var)
 
+int data = 314159;
+
 void malloc_test_task() {
+  bwprintf(COM2, "Data value=%d", data);
+  ExitKernel();
+
   bwprintf(COM2, "==== Starting alloc test\n\r");
   bwprintf(COM2, " -- Attempting bzero on memory filled with 0xFF. Logging results: \n\r");
   char mem[128];
