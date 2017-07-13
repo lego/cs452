@@ -11,6 +11,16 @@
 #include <train_controller.h>
 #include <priorities.h>
 
+// These used to live in train_controller, but have been moved to
+//   trains/switch_controller as of writing this. {
+void SetSwitch(int sw, int state);
+
+enum {
+  SWITCH_CURVED,
+  SWITCH_STRAIGHT,
+};
+// }
+
 void print_task() {
   int train = 58;
   int sw = 16;

@@ -13,6 +13,7 @@
 #include <kernel.h>
 #include <trains/navigation.h>
 #include <trains/sensor_collector.h>
+#include <trains/switch_controller.h>
 #include <jstring.h>
 #include <priorities.h>
 #include <interactive/command_parser.h>
@@ -380,6 +381,7 @@ void DrawIdlePercent() {
 }
 
 void SetSwitchAndRender(int sw, int state) {
+  SetSwitch(sw, state);
   int index = sw;
   if (index >= 153 && index <= 156) {
     index -= 134; // 153 -> 19, etc
@@ -398,7 +400,6 @@ void SetSwitchAndRender(int sw, int state) {
     }
     Putstr(COM2, RECOVER_CURSOR);
   }
-  SetSwitch(sw, state);
 }
 
 void initSwitches(int *initSwitches) {

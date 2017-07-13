@@ -7,6 +7,7 @@
 #include <servers/uart_tx_server.h>
 #include <jstring.h>
 #include <heap.h>
+#include <trains/switch_controller.h>
 #include <train_controller.h>
 
 bool initialized = false;
