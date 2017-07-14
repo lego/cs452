@@ -23,6 +23,9 @@ struct track_edge {
   track_edge *reverse;
   track_node *src, *dest;
   int dist;             /* in millimetres */
+
+  // Reservoir data
+  int owner;
 };
 
 struct track_node {
@@ -33,8 +36,11 @@ struct track_node {
   track_node *reverse;  /* same location, but opposite direction */
   track_edge edge[2];
 
+  // Reservoir data
+  int owner;
+
   // Pathing data, reset on each use of pathing.
-  // NOTE: this is not mutually exclusive, and will fail for 2 trains
+  // NOTE: this is not mutually exclusive, and will fail if used concurrently
   int dist;
   int prev;
   bool visited;
