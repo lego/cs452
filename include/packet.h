@@ -12,6 +12,7 @@ typedef enum {
   DELAY_DETECT,
   SENSOR_DETECT,
   SENSOR_TIMEOUT_DETECTIVE,
+  INTERVAL_DETECT,
 
   // Messages from command_parser
   PARSED_COMMAND,

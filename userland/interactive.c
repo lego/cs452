@@ -13,6 +13,7 @@
 #include <kernel.h>
 #include <trains/navigation.h>
 #include <trains/sensor_collector.h>
+#include <detective/interval_detector.h>
 #include <trains/switch_controller.h>
 #include <jstring.h>
 #include <priorities.h>
@@ -153,7 +154,7 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 }
 
 void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr_time) {
-  Putstr(COM2, SAVE_CURSOR HIDE_CURSOR);
+  Putstr(COM2, HIDE_CURSOR);
   int i;
   path_display_pos = 0;
 
@@ -218,7 +219,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
     }
   }
 
-  Putstr(COM2, RECOVER_CURSOR SHOW_CURSOR);
+  Putstr(COM2, SHOW_CURSOR);
 }
 
 void ClearLastCmdMessage() {
@@ -298,21 +299,6 @@ void TriggerSensor(int sensor_num, int sensor_time) {
 //     }
 //   }
 // }
-
-// FIXME: replace this with an interval_detector
-void time_keeper() {
-  int tid = MyTid();
-  int parent = MyParentTid();
-  interactive_time_update_t req;
-  req.packet.type = INTERACTIVE_TIME_UPDATE;
-  log_task("time_keeper initialized parent=%d", tid, parent);
-  while (true) {
-    log_task("time_keeper sleeping", tid);
-    Delay(10);
-    log_task("time_keeper sending", tid);
-    SendSN(parent, req);
-  }
-}
 
 void DrawInitialScreen() {
   Putstr(COM2, SAVE_TERMINAL);
@@ -727,13 +713,13 @@ void interactive() {
   int tid = MyTid();
   RegisterAs(NS_INTERACTIVE);
 
-  int time_keeper_tid = Create(7, time_keeper);
+  // FIXME: priority
+  int time_keeper_id = StartIntervalDetector("interactive time keeper", tid, 10);
   int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
   int sender;
   idle_execution_time = 0;
   last_time_idle_displayed = 0;
 
-  log_task("interactive initialized time_keeper=%d", tid, time_keeper_tid);
   DrawInitialScreen();
   Putstr(COM2, SAVE_CURSOR);
   DrawTime(Time());
@@ -785,8 +771,21 @@ void interactive() {
       case INTERACTIVE_ECHO:
         Putstr(COM2, echo_data->echo);
         break;
+      case INTERVAL_DETECT:
+        Putstr(COM2, SAVE_CURSOR);
+        int cur_time = Time();
+        DrawTime(cur_time);
+        DrawIdlePercent();
+
+        if (is_pathing && path_update_counter >= 3) {
+          path_update_counter = 0;
+          UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
+        } else {
+          path_update_counter++;
+        }
+        Putstr(COM2, RECOVER_CURSOR);
+        break;
       case INTERPRETED_COMMAND:
-        // TODO: this switch statement of commands should be yanked out, it's very long and messy
         ClearLastCmdMessage();
         MoveTerminalCursor(0, COMMAND_LOCATION + 1);
         switch (base_cmd->type) {
@@ -955,44 +954,6 @@ void interactive() {
         Putstr(COM2, CLEAR_LINE_BEFORE);
         MoveTerminalCursor(0, COMMAND_LOCATION + 2);
         Putstr(COM2, "# ");
-        break;
-      case INTERACTIVE_TIME_UPDATE:
-        // log_task("interactive is updating time", tid);
-        Putstr(COM2, SAVE_CURSOR);
-        int cur_time = Time();
-        DrawTime(cur_time);
-        DrawIdlePercent();
-
-        // This was printing predictionAccuracy stuff, commented out for UI cleanliness
-        // MoveTerminalCursor(20, COMMAND_LOCATION + 4);
-        // Putstr(COM2, CLEAR_LINE);
-        // char buf[12];
-        // ji2a((1000*predictionAccuracy), buf);
-        // Putstr(COM2, buf);
-        // MoveTerminalCursor(30, COMMAND_LOCATION + 4);
-        // ji2a((1000*offset), buf);
-        // Putstr(COM2, buf);
-
-        int sum = 0; int i;
-        for (i = 0; i < samples; i++) sum += sample_points[i];
-        sum /= samples;
-        // MoveTerminalCursor(40, COMMAND_LOCATION + 8);
-        // Putstr(COM2, CLEAR_LINE_BEFORE);
-        // MoveTerminalCursor(0, COMMAND_LOCATION + 8);
-        // Putf(COM2, "Velocity sample avg. %d");
-        // Puti(COM2, sum);
-        // Putstr(COM2, "mm/s for ");
-        // Puti(COM2, samples);
-        // Putstr(COM2, " samples.");
-        Putstr(COM2, RECOVER_CURSOR);
-        // only print every 3 * 100ms, too much printing otherwise
-        if (is_pathing && path_update_counter >= 3) {
-          path_update_counter = 0;
-          // DisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
-          UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
-        } else {
-          path_update_counter++;
-        }
         break;
       default:
         KASSERT(false, "Bad type received: got type=%d", packet->type);
