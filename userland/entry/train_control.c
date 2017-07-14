@@ -8,6 +8,7 @@
 #include <servers/uart_rx_server.h>
 #include <interactive.h>
 #include <train_controller.h>
+#include <trains/switch_controller.h>
 #include <trains/sensor_collector.h>
 #include <priorities.h>
 
@@ -24,6 +25,7 @@ void train_control_entry_task() {
   InitNavigation();
 
   Create(PRIORITY_TRAIN_CONTROLLER_SERVER, train_controller_server);
+  Create(PRIORITY_SWITCH_CONTROLLER, switch_controller);
 
   Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
   Create(PRIORITY_UART1_RX_SERVER+1, sensor_collector_task);

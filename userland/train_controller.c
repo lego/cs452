@@ -13,8 +13,7 @@ enum {
   TRAIN_TASK_READY,
   TRAIN_SET_SPEED,
   TRAIN_REVERSE,
-  TRAIN_INSTANT_STOP,
-  SWITCH_SET,
+  TRAIN_INSTANT_STOP
 };
 
 typedef struct {
@@ -51,14 +50,6 @@ void train_controller_task() {
       buf[0] = 15; Putcs(COM1, buf, 2);
       Delay(10);
       buf[0] = 15; Putcs(COM1, buf, 2);
-    } else if (request.command == SWITCH_SET) {
-      if (request.value == SWITCH_CURVED) {
-        buf[0] = 34; Putcs(COM1, buf, 2);
-      } else if (request.value == SWITCH_STRAIGHT) {
-        buf[0] = 33; Putcs(COM1, buf, 2);
-      }
-      Delay(20);
-      Putc(COM1, 32);
     }
   }
 }
@@ -156,23 +147,6 @@ int InstantStop(int train) {
   request.type = TRAIN_COMMAND;
   request.index = train;
   request.command = TRAIN_INSTANT_STOP;
-  SendSN(train_controller_server_tid, request);
-  return 0;
-}
-
-int SetSwitch(int sw, int state) {
-  log_task("SetSwitch switch=%d state=%d", active_task->tid, sw, state);
-  if (train_controller_server_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
-    KASSERT(false, "Train Controller server not initialized");
-    return -1;
-  }
-  train_control_request_t request;
-  request.type = TRAIN_COMMAND;
-  request.index = sw;
-  request.value = state;
-  request.command = SWITCH_SET;
   SendSN(train_controller_server_tid, request);
   return 0;
 }
