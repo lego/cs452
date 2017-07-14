@@ -18,6 +18,8 @@
 #include <priorities.h>
 #include <interactive/command_parser.h>
 #include <interactive/interactive.h>
+#include <track/track_node.h>
+#include <track/pathing.h>
 
 #define NUM_SWITCHES 22
 

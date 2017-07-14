@@ -1,22 +1,9 @@
 #pragma once
 
-#include <stdbool.h>
-#include <trains/track_node.h>
-#include <trains/track_data.h>
-
-#define TRAINS_MAX 80
+#include <basic.h>
+#include <track/pathing.h>
 
 #define VELOCITY_SAMPLES_MAX 5
-
-extern track_node track[TRACK_MAX];
-
-typedef struct Path {
-  int dist; /* in millimetres */
-  int len;
-  track_node *src;
-  track_node *dest;
-  track_node *nodes[TRAINS_MAX];
-} path_t;
 
 // Unit macros for our fixed point calculations
 #define CENTIMETRES(amt) MILLIMETRES(amt * 10)
@@ -24,23 +11,18 @@ typedef struct Path {
 #define SECONDS(amt) MILLISECONDS(amt * 1000)
 #define MILLISECONDS(amt) amt
 
+// Initializes calibration information
+void InitNavigation();
+
 void set_location(int train, int location);
-// int src = WhereAmI(train);
+
 void SetPathSwitches(path_t *path);
 
 int StoppingDistance(int train, int speed);
 
-// Initializes the track and pre-computed routing information
-void InitNavigation();
-
 // Gets where the current train is
 // NOTE: assumes the train is stationary
 int WhereAmI(int train);
-
-// Generates a path from A to B
-void GetPath(path_t *p, int src, int dest);
-
-void PrintPath(path_t *p);
 
 // Navigates a train from A to B
 void Navigate(int train, int speed, int src, int dest, bool include_stop);
@@ -69,22 +51,14 @@ int CalculateDistance(int velocity, int time);
 // Calculate the time given a distance and velocity
 int CalculateTime(int distance, int velocity);
 
-int Name2Node(char *name);
-
 // Get the top / avg velocity for a train at a speed level
 int Velocity(int train, int speed);
-
-void dijkstra(int src, int dest);
-
-int get_path(int src, int dest, track_node **path, int path_buf_size);
 
 void set_velocity(int train, int speed, int velocity);
 void record_velocity_sample(int train, int speed, int sample);
 
 void set_stopping_distance(int train, int speed, int distance);
 void offset_stopping_distance(int train, int speed, int offset);
-
-void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2);
 
 /*
   High level of how nagivating functions work:
