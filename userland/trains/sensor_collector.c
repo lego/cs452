@@ -9,7 +9,7 @@
 void sensor_collector_task() {
   int tid = MyTid();
   int parent = MyParentTid();
-  int sensor_saver_tid = WhoIs(SENSOR_SAVER);
+  int sensor_saver_tid = WhoIsEnsured(SENSOR_SAVER);
   sensor_data_t req;
   req.packet.type = SENSOR_DATA;
   log_task("sensor_reader initialized parent=%d", tid, parent);
