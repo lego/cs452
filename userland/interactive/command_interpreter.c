@@ -107,7 +107,7 @@ static void command_toggle_switch(int interactive_tid, parsed_command_t *data) {
   SendSN(interactive_tid, msg);
 }
 
-static void command_toggle_all_switchs(int interactive_tid, parsed_command_t *dataes {
+static void command_toggle_all_switches(int interactive_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 1);
   CMD_ASSERT_IS_SWITCH_DIRECTION(data, 0);
   cmd_data_t msg;
