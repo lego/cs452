@@ -150,6 +150,8 @@ userland_%.s: userland/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_trains_%.s: userland/trains/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
+userland_track_%.s: userland/track/%.c
+	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_interactive_%.s: userland/interactive/%.c
 	$(CC) $(INCLUDES) $(USERLAND_INCLUDES) $(CFLAGS) -MMD -S -c $< -o $@
 userland_servers_%.s: userland/servers/%.c
@@ -199,5 +201,5 @@ DEP = $(OBJS:%.o=%.d)
 
 ifndef LOCAL
 # if we're compiling ARM, keep the ASM and map files, they're useful
-.PRECIOUS: %.s arm%.s %.map lib_stdlib_%.s userland_%.s userland_trains_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s standalone_%.s userland_detective_%.s
+.PRECIOUS: %.s arm%.s %.map lib_stdlib_%.s userland_%.s userland_trains_%.s userland_track_%.s userland_interactive_%.s userland_servers_%.s userland_entry_%.s standalone_%.s userland_detective_%.s
 endif

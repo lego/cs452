@@ -10,6 +10,7 @@
 #include <train_controller.h>
 #include <trains/switch_controller.h>
 #include <trains/sensor_collector.h>
+#include <track/pathing.h>
 #include <priorities.h>
 
 // from interactive
@@ -22,6 +23,7 @@ void train_control_entry_task() {
   Create(0, uart_rx);
   Create(PRIORITY_IDLE_TASK, idle_task);
 
+  InitPathing();
   InitNavigation();
 
   Create(PRIORITY_TRAIN_CONTROLLER_SERVER, train_controller_server);

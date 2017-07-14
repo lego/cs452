@@ -18,3 +18,6 @@
  * Assertions
  */
 #include <kassert.h>
+
+// 2^32-1
+#define INT_MAX 2147483647
