@@ -249,6 +249,9 @@ void cleanup() {
   bwputc(COM1, 0x61);
   bwsetfifo(COM2, ON);
 
+  // brings back scrollability
+  bwputstr(COM2, RECOVER_TERMINAL);
+
   print_logs();
   print_stats();
 
