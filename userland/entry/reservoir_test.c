@@ -6,7 +6,7 @@
 
 void reservoir_test_task() {
   int result;
-  InitNavigation();
+  InitPathing();
   Create(0, reservoir_task);
   reservoir_segments_t req;
   req.segments[0].track_node = 0;
