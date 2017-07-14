@@ -934,10 +934,11 @@ void interactive() {
           Putf(COM2, "velocity=%dmm/s", Velocity(active_train, active_speed));
           break;
         case COMMAND_SET_LOCATION:
+          Putf(COM2, "Setting train=%d stopped location to node=%s", cmd_data->train, track[cmd_data->src_node].name);
           set_location(cmd_data->train, cmd_data->src_node);
           break;
         case COMMAND_STOPPING_DISTANCE_OFFSET:
-          Putf(COM2, "Ofsetting stopping distance train=%d speed=%d to %dmm", active_train, active_speed, cmd_data->extra_arg);
+          Putf(COM2, "Offsetting stopping distance train=%d speed=%d to %dmm", active_train, active_speed, cmd_data->extra_arg);
           offset_stopping_distance(active_train, active_speed, cmd_data->extra_arg);
           break;
         case COMMAND_SET_STOPPING_DISTANCEN:
