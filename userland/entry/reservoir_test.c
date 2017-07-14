@@ -1,6 +1,6 @@
 #include <trains/reservoir.h>
-#include <trains/track_node.h>
-#include <trains/navigation.h>
+#include <track/track_node.h>
+#include <track/pathing.h>
 #include <kernel.h>
 #include <bwio.h>
 

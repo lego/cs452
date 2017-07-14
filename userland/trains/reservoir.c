@@ -1,7 +1,7 @@
 #include <basic.h>
 #include <kernel.h>
 #include <trains/reservoir.h>
-#include <trains/navigation.h>
+#include <track/pathing.h>
 
 int reservoir_tid = -1;
 
