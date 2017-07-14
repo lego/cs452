@@ -2,7 +2,7 @@
 
 // Cool! We can also identify the hierarchy via. indentation
 
-#define PRIORITY_ENTRY_TASK 1
+#define PRIORITY_ENTRY_TASK 15
 
 #define PRIORITY_NAMESERVER 1
 

@@ -5,7 +5,9 @@
 #include <terminal.h>
 #include <servers/uart_rx_server.h>
 #include <servers/uart_tx_server.h>
+#include <servers/nameserver.h>
 #include <interactive/command_parser.h>
+#include <interactive/commands.h>
 #include <interactive/interactive.h>
 
 #define MAX_COMMAND_LIMIT 30
@@ -16,63 +18,45 @@
 // and a reference to the arguments locations are passed around
 char global_command_buffer[BUFFER_LIMIT];
 
+#define DEF_COMMAND(cmd, val) if (jstrcmp(command, cmd)) { return val; } else
+
 command_t get_command_type(char *command) {
-  if (jstrcmp(command, "q")) {
-    return COMMAND_QUIT;
-  } else if (jstrcmp(command, "tr")) {
-    return COMMAND_TRAIN_SPEED;
-  } else if (jstrcmp(command, "rv")) {
-    return COMMAND_TRAIN_REVERSE;
-  } else if (jstrcmp(command, "sen")) {
-    return COMMAND_MANUAL_SENSE;
-  } else if (jstrcmp(command, "sw")) {
-    return COMMAND_SWITCH_TOGGLE;
-  } else if (jstrcmp(command, "swa")) {
-    return COMMAND_SWITCH_TOGGLE_ALL;
-  } else if (jstrcmp(command, "clss")) {
-    return COMMAND_CLEAR_SENSOR_SAMPLES;
-  } else if (jstrcmp(command, "clo")) {
-    return COMMAND_CLEAR_SENSOR_OFFSET;
-  } else if (jstrcmp(command, "pss")) {
-    return COMMAND_PRINT_SENSOR_SAMPLES;
-  } else if (jstrcmp(command, "psm")) {
-    return COMMAND_PRINT_SENSOR_MULTIPLIERS;
-  } else if (jstrcmp(command, "nav")) {
-    // navigates the train to B
-    return COMMAND_NAVIGATE;
-  } else if (jstrcmp(command, "path")) {
-    // runs the pathing algorithm from A to B
-    return COMMAND_PATH;
-  } else if (jstrcmp(command, "velo")) {
-    // manually sets the velocity for a train speed
-    return COMMAND_SET_VELOCITY;
-  } else if (jstrcmp(command, "pvelo")) {
-    // manually sets the velocity for a train speed
-    return COMMAND_PRINT_VELOCITY;
-  } else if (jstrcmp(command, "loc")) {
-    // manually sets the location for a train
-    return COMMAND_SET_LOCATION;
-  } else if (jstrcmp(command, "stopdistoff")) {
-    // manually sets the stopdistance for a train speed
-    return COMMAND_STOPPING_DISTANCE_OFFSET;
-  } else if (jstrcmp(command, "stopdist")) {
-    // manually sets the stopdistance for a train speed
-    return COMMAND_SET_STOPPING_DISTANCE;
-  } else if (jstrcmp(command, "stopdistn")) {
-    // manually sets the stopdistance for a train speed
-    return COMMAND_SET_STOPPING_DISTANCEN;
-  } else if (jstrcmp(command, "stopfrom")) {
-    // moves the train to a node and sends the stop command on arrival
-    // (only works for sensor nodes)
-    return COMMAND_STOP_FROM;
-  } else {
+  DEF_COMMAND("q", COMMAND_QUIT)
+  DEF_COMMAND("tr", COMMAND_TRAIN_SPEED)
+  DEF_COMMAND("rv", COMMAND_TRAIN_REVERSE)
+  DEF_COMMAND("sen", COMMAND_MANUAL_SENSE)
+  DEF_COMMAND("sw", COMMAND_SWITCH_TOGGLE)
+  DEF_COMMAND("swa", COMMAND_SWITCH_TOGGLE_ALL)
+  DEF_COMMAND("clss", COMMAND_CLEAR_SENSOR_SAMPLES)
+  DEF_COMMAND("clo", COMMAND_CLEAR_SENSOR_OFFSET)
+  DEF_COMMAND("pss", COMMAND_PRINT_SENSOR_SAMPLES)
+  DEF_COMMAND("psm", COMMAND_PRINT_SENSOR_MULTIPLIERS)
+  // navigates the train to B
+  DEF_COMMAND("nav", COMMAND_NAVIGATE)
+  // runs the pathing algorithm from A to B
+  DEF_COMMAND("path", COMMAND_PATH)
+  // manually sets the velocity for a train speed
+  DEF_COMMAND("velo", COMMAND_SET_VELOCITY)
+  // manually sets the velocity for a train speed
+  DEF_COMMAND("pvelo", COMMAND_PRINT_VELOCITY)
+  // manually sets the location for a train
+  DEF_COMMAND("loc", COMMAND_SET_LOCATION)
+  // manually sets the stopdistance for a train speed
+  DEF_COMMAND("stopdistoff", COMMAND_STOPPING_DISTANCE_OFFSET)
+  // manually sets the stopdistance for a train speed
+  DEF_COMMAND("stopdist", COMMAND_SET_STOPPING_DISTANCE)
+  // manually sets the stopdistance for a train speed
+  DEF_COMMAND("stopdistn", COMMAND_SET_STOPPING_DISTANCEN)
+  // moves the train to a node and sends the stop command on arrival
+  // (only works for sensor nodes)
+  DEF_COMMAND("stopfrom", COMMAND_STOP_FROM) {
     // KASSERT(false, "Command not valid: %s", command);
-    return COMMAND_HELP;
+    return COMMAND_INVALID;
   }
 }
 
 
-interactive_command_t figure_out_command(char *command_buffer) {
+parsed_command_t figure_out_command(char *command_buffer) {
   // this does some magic to do a string split without malloc
   // in particular the prefix of the string is an array of bytes that are the
   // offsets of each string part, this array ends in '\0'. Then after are the
@@ -95,28 +79,18 @@ interactive_command_t figure_out_command(char *command_buffer) {
 
   char *first_command = global_command_buffer + global_command_buffer[0];
 
-  interactive_command_t cmd;
-  cmd.packet.type = INTERACTIVE_COMMAND;
-  cmd.command_type = get_command_type(first_command);
+  parsed_command_t cmd;
+  cmd.packet.type = PARSED_COMMAND;
+  cmd.type = get_command_type(first_command);
   cmd.argc = argc;
-  // FIXME: this is very hardcoded and could be fixed.
-  if (argc >= 1) {
-    cmd.arg1 = global_command_buffer + global_command_buffer[1];
-  } else {
-    cmd.arg1 = NULL;
-  }
-  if (argc >= 2) {
-    cmd.arg2 = global_command_buffer + global_command_buffer[2];
-  } else {
-    cmd.arg2 = NULL;
-  }
-  if (argc >= 3) {
-    cmd.arg3 = global_command_buffer + global_command_buffer[3];
-  } else {
-    cmd.arg3 = NULL;
-  }
-
   cmd.cmd = global_command_buffer + global_command_buffer[0];
+
+  for (int i = 0; i < MAX_ARGV; i++) {
+    if (argc > i)
+      cmd.argv[i] = global_command_buffer + global_command_buffer[i+1];
+    else
+      cmd.argv[i] = NULL;
+  }
 
   return cmd;
 }
@@ -141,7 +115,8 @@ void echo_backspace(int interactive_tid) {
 
 void command_parser_task() {
   int tid = MyTid();
-  int parent = MyParentTid();
+  int command_interpreter_tid = WhoIsEnsured(NS_COMMAND_INTERPRETER);
+  int interactive_tid = WhoIsEnsured(NS_INTERACTIVE);
 
   char command_buffer[MAX_COMMAND_LIMIT];
   log_task("command parser initialized", tid);
@@ -168,7 +143,7 @@ void command_parser_task() {
         }
         input_size--;
 
-        echo_backspace(parent);
+        echo_backspace(interactive_tid);
         continue;
       }
 
@@ -177,7 +152,7 @@ void command_parser_task() {
         continue;
       }
 
-      echo_character(parent, c);
+      echo_character(interactive_tid, c);
 
       command_buffer[input_size++] = c;
       if (input_size >= MAX_COMMAND_LIMIT) {
@@ -196,8 +171,8 @@ void command_parser_task() {
     // set end of string
     command_buffer[input_size] = '\0';
 
-    interactive_command_t command_struct = figure_out_command(command_buffer);
-    Send(parent, &command_struct, sizeof(command_struct), NULL, 0);
+    parsed_command_t command_struct = figure_out_command(command_buffer);
+    Send(command_interpreter_tid, &command_struct, sizeof(command_struct), NULL, 0);
     input_size = 0;
   }
 }
