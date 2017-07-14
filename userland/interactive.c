@@ -369,8 +369,7 @@ void DrawIdlePercent() {
   Logs(101, buf);
 }
 
-void SetSwitchAndRender(int sw, int state) {
-  SetSwitch(sw, state);
+void RenderSwitchChange(int sw, int state) {
   int index = sw;
   if (index >= 153 && index <= 156) {
     index -= 134; // 153 -> 19, etc
@@ -397,7 +396,8 @@ void initSwitches(int *initSwitches) {
     if (switchNumber >= 19) {
       switchNumber += 134; // 19 -> 153, etc
     }
-    SetSwitchAndRender(switchNumber, initSwitches[i]);
+    RenderSwitchChange(switchNumber, initSwitches[i]);
+    SetSwitch(switchNumber, initSwitches[i]);
     Delay(6);
   }
 }
@@ -796,7 +796,6 @@ void interactive() {
         case COMMAND_TRAIN_SPEED:
           Putf(COM2, "Set train %d to speed %d", cmd_data->train, cmd_data->speed);
           RecordLogf("Set train %d to speed %d\n\r", cmd_data->train, cmd_data->speed);
-          SetTrainSpeed(cmd_data->train, cmd_data->speed);
           samples = 0;
           lastTrain = cmd_data->train;
           active_train = cmd_data->train;
@@ -805,10 +804,9 @@ void interactive() {
           break;
         case COMMAND_TRAIN_REVERSE:
           Putf(COM2, "Train %d reverse", cmd_data->train);
-          ReverseTrain(cmd_data->train, 14);
           break;
         case COMMAND_SWITCH_TOGGLE:
-          SetSwitchAndRender(cmd_data->switch_no, cmd_data->switch_dir);
+          RenderSwitchChange(cmd_data->switch_no, cmd_data->switch_dir);
           Putf(COM2, "Set switch %d to %c", cmd_data->switch_no, cmd_data->switch_dir == DIR_STRAIGHT ? 'S' : 'C');
           break;
         case COMMAND_SWITCH_TOGGLE_ALL:
@@ -818,8 +816,7 @@ void interactive() {
             if (switchNumber >= 19) {
               switchNumber += 134; // 19 -> 153, etc
             }
-            SetSwitchAndRender(i, cmd_data->switch_dir);
-            Delay(6);
+            RenderSwitchChange(i, cmd_data->switch_dir);
           }
           break;
         case COMMAND_QUIT:
@@ -918,8 +915,6 @@ void interactive() {
           active_speed = cmd_data->speed;
           // get the path to the stopping from node
           GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-          // set the switches for that route
-          SetPathSwitches(&p);
           // display the path
           DisplayPath(&p, active_train, active_speed, 0, 0);
           is_pathing = true;
