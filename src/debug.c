@@ -218,6 +218,9 @@ void __exit_kernel_svc() {
   bwputc(COM1, 0x61);
   bwsetfifo(COM2, ON);
 
+  print_logs();
+  print_stats();
+
   asm volatile ("msr cpsr_c, #211");
   asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
   asm volatile ("ldmfd sp, {sl, fp, sp, pc}");

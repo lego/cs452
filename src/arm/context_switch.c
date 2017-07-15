@@ -21,9 +21,9 @@ void context_switch_init() {
   // none
   *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
 }
-char *undefined_instr_msg = RED_BG "UNDEFINED INSTRUCTION EXCEPTION";
-char *prefetch_abort_msg = RED_BG "PREFETCH ABORT";
-char *data_abort_msg = RED_BG "DATA ABORT";
+char *undefined_instr_msg = RECOVER_TERMINAL RED_BG "UNDEFINED INSTRUCTION EXCEPTION";
+char *prefetch_abort_msg = RECOVER_TERMINAL RED_BG "PREFETCH ABORT";
+char *data_abort_msg = RECOVER_TERMINAL RED_BG "DATA ABORT";
 char *kernel_fail = RESET_ATTRIBUTES "  Kernel LR: ";
 char *task_fail = "   Task LR: ";
 
@@ -70,18 +70,17 @@ asm (
   "bl bwputr\n\t"
 
   // print task lr
-  "msr cpsr_c, #223\n\t"
-  "stmfd sp!, {lr}\n\t"
   "mov r0, #1\n\t"
   "ldr r1, =task_fail\n\t"
   "ldr r1, [r1]\n\t"
   "bl bwputstr\n\t"
-  "ldmfd sp!, {lr}\n\t"
+
+  "msr cpsr_c, #223\n\t"
   "mov r0, #1\n\t"
   "mov r1, lr\n\t"
+  "msr cpsr_c, #211\n\t"
   "bl bwputr\n\t"
 
-  "msr cpsr_c, #211\n\t"
   "b exit_kernel\n\t"
 
 "__asm_switch_to_task:\n\t"
