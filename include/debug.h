@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <terminal.h>
 
-void cleanup();
+void cleanup(bool should_print_backtraces);
 
 void exit_kernel();
 

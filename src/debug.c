@@ -128,6 +128,9 @@ void PrintAllTaskStacks(int focused_task) {
     if (task->state == STATE_ZOMBIE) {
       bwprintf(COM2, "  task has ended\n\r");
       continue;
+    } else if (task->was_interrupted) {
+      bwprintf(COM2, "  task was interrupted - backtraces not implemented\n\r");
+      continue;
     }
     PrintTaskBacktrace(i);
     bwprintf(COM2, "\n\r");
@@ -206,13 +209,9 @@ void print_logs() {
 extern int main_fp;
 typedef void (*interrupt_handler)(void);
 
-void __exit_kernel_svc(int already_called_clear) {
+void __exit_kernel_svc() {
   // return to redboot, this is just a fcn return for the main fcn
   // it needs to be in SVC mode to work
-
-  if (already_called_clear == 0) {
-    cleanup();
-  }
 
   asm volatile ("msr cpsr_c, #211");
   asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
@@ -228,7 +227,7 @@ void exit_kernel(int already_called_clear) {
   asm volatile ("swi #5");
 }
 
-void cleanup() {
+void cleanup(bool print_stacks) {
   // Clear out any interrupt bits
   // This is needed because for some reason if we run our program more than
   //   once, on the second time we immediately hit the interrupt handler
@@ -251,15 +250,16 @@ void cleanup() {
 
   bwputstr(COM2, "\n\r" WHITE_BG BLACK_FG "===== TASK STACKS" RESET_ATTRIBUTES "\n\r");
   bwputstr(COM2, "Bug Joey to have this implemented :'(\n\t ");
-  return;
 
-  if (active_task) {
-    PrintAllTaskStacks(active_task->tid);
-  }
-  else {
-    PrintAllTaskStacks(-1);
-    bwprintf(COM2, "Kernel stack\n\r");
-    PrintBacktrace();
+  if (print_stacks) {
+    if (active_task) {
+      PrintAllTaskStacks(active_task->tid);
+    }
+    else {
+      PrintAllTaskStacks(-1);
+      bwprintf(COM2, "Kernel stack\n\r");
+      PrintBacktrace();
+    }
   }
 }
 #endif

@@ -12,10 +12,10 @@
 #include <kern/task_descriptor.h>
 #include <terminal.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  bwputstr(COM2, SCROLL_DOWN_20); cleanup(); \
+  bwputstr(COM2, SCROLL_DOWN_20); cleanup(false); \
   bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "\n\rin %s:%d\n\r", ## __VA_ARGS__, __FILE__, __LINE__); \
   PrintBacktrace() \
-  exit_kernel(0); \
+  exit_kernel(); \
   } } while(0)
 
   // asm volatile ("swi #5"); cleanup();

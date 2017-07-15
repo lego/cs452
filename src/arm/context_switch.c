@@ -82,6 +82,8 @@ asm (
   "bl bwputr\n\t"
 
   "mov r0, #0\n\t"
+  "bl cleanup\n\t"
+
   "b exit_kernel\n\t"
 
 "__asm_switch_to_task:\n\t"

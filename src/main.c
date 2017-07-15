@@ -104,7 +104,7 @@ int main() {
   }
 
   #ifndef DEBUG_MODE
-  cleanup();
+  cleanup(false);
   #endif
 
   // io_disable_caches();
