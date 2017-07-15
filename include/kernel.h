@@ -22,8 +22,10 @@
  * @param  code
  * @return          the new tasks ID
  */
-#define Create(priority, code) CreateWithName(priority, code, #code)
-int CreateWithName(int priority, void (*code)( ), const char *name);
+#define Create(priority, code) _CreateWithName(priority, code, #code, false)
+#define CreateRecyclable(priority, code) _CreateWithName(priority, code, #code, true)
+#define CreateWithName(priority, code, name) _CreateWithName(priority, code, name, false);
+int _CreateWithName(int priority, void (*code)( ), const char *name, bool is_recyclable);
 
 
 

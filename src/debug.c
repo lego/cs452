@@ -189,12 +189,15 @@ void print_stats() {
   #if !defined(DEBUG_MODE)
   for (i = 0; i < ctx->used_descriptors; i++) {
     task_descriptor_t *task = &ctx->descriptors[i];
-    bwprintf(COM2, " Task %3d:%-40s %10ums (Total) %10ums (Send) %10ums (Recv) %10ums (Repl)\n\r",
+    // Skip recyclable tasks
+    if (task->is_recyclable) continue;
+    bwprintf(COM2, " Task%s %3d:%-40s %10ums (Total) %10uus (Send) %10uus (Recv) %10uus (Repl)\n\r",
+      task->state == STATE_ZOMBIE ? ":Z" : "  ",
       i, task->name,
       io_time_ms(task->execution_time),
-      io_time_ms(task->send_execution_time),
-      io_time_ms(task->recv_execution_time),
-      io_time_ms(task->repl_execution_time)
+      io_time_us(task->send_execution_time),
+      io_time_us(task->recv_execution_time),
+      io_time_us(task->repl_execution_time)
     );
   }
   #endif

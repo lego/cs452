@@ -5,6 +5,7 @@
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
 #include <trains/switch_controller.h>
+#include <trains/route_executor.h>
 #include <trains/reservoir.h>
 #include <trains/navigation.h>
 #include <track/pathing.h>
@@ -93,7 +94,8 @@ void execute_command(cmd_data_t * cmd_data) {
 }
 
 void begin_train_controller(pathing_worker_result_t * result) {
-
+  // FIXME: priority
+  CreateRouteExecutor(6, result->train, &result->path);
 }
 
 void executor_task() {

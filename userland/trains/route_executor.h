@@ -1,5 +1,7 @@
 #pragma once
 
+#include <track/pathing.h>
+
 /**
  * Creates a route executor to execute a train's route
  * @param  priority to start the executor at

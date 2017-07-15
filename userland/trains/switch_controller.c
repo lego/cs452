@@ -67,7 +67,7 @@ void switch_controller() {
         if (solenoid_off_tid != -1) {
           Destroy(solenoid_off_tid);
         }
-        solenoid_off_tid = Create(PRIORITY_SWITCH_CONTROLLER_SOLENOIDS_OFF, solenoid_off);
+        solenoid_off_tid = CreateRecyclable(PRIORITY_SWITCH_CONTROLLER_SOLENOIDS_OFF, solenoid_off);
       }
     }
   }

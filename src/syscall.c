@@ -64,7 +64,7 @@ void syscall_handle(kernel_request_t *arg) {
 
 void syscall_create(task_descriptor_t *task, kernel_request_t *arg) {
   syscall_create_arg_t *create_arg = arg->arguments;
-  task_descriptor_t *new_task = td_create(ctx, task->tid, create_arg->priority, create_arg->entrypoint, create_arg->func_name);
+  task_descriptor_t *new_task = td_create(ctx, task->tid, create_arg->priority, create_arg->entrypoint, create_arg->func_name, create_arg->is_recyclable);
   log_syscall("Create priority=%d tid=%d", task->tid, create_arg->priority, new_task->tid);
   scheduler_requeue_task(new_task);
   scheduler_requeue_task(task);

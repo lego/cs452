@@ -14,6 +14,7 @@
 #include <trains/executor.h>
 #include <trains/sensor_collector.h>
 #include <track/pathing.h>
+#include <trains/reservoir.h>
 #include <priorities.h>
 
 // from interactive
@@ -30,6 +31,9 @@ void train_control_entry_task() {
 
   InitPathing();
   InitNavigation();
+
+  // FIXME: priority
+  Create(4, reservoir_task);
 
   // FIXME: priority
   Create(3, executor_task);

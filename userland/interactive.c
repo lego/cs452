@@ -83,11 +83,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
   Putf(COM2, "Path from %s ~> %s", p->src->name, p->dest->name);
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-  Putf(COM2, "dist=%dmm", remaining_mm + stop_dist);
+  Putf(COM2, "dist %5dmm", remaining_mm + stop_dist);
   // only show ETA for navigation
   if (train != -2) {
-    MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-    Putstr(COM2, " timeleft=");
+    Putstr(COM2, "   timeleft=");
     PrintTicks(calculated_time);
   }
   int dist_sum = 0;
@@ -135,11 +134,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 
     // print distance to individual node and time to it
     MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-    Putf(COM2, "dist=%dmm" CLEAR_LINE_AFTER, dist_sum);
+    Putf(COM2, "dist %5dmm", dist_sum);
     // only show ETA for navigating
     if (train != -2) {
-      MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-      Putstr(COM2, "eta=");
+      Putstr(COM2, "   eta=");
       PrintTicks(p->nodes[i]->expected_time);
     }
   }
@@ -165,9 +163,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   if (remaining_mm < 0) remaining_mm = -stop_dist;
 
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-  Putf(COM2, "dist=%dmm" CLEAR_LINE_AFTER, remaining_mm + stop_dist);
-  MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-  Putstr(COM2, "timeleft=");
+  Putf(COM2, "dist %5dmm   timeleft=", remaining_mm + stop_dist);
   PrintTicks(calculated_time);
   int dist_sum = 0;
 
@@ -202,13 +198,11 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
 
     // print distance to individual node and time to it
     MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-    Putf(COM2, "dist=%dmm" CLEAR_LINE_AFTER, remaining_mm_to_node + stop_dist);
+    Putf(COM2, "dist %5dmm   eta=", remaining_mm_to_node + stop_dist);
     // only show ETA for navigating
-    MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-    Putstr(COM2, "eta=");
     PrintTicks(p->nodes[i]->expected_time);
     if (p->nodes[i]->type == NODE_SENSOR && p->nodes[i]->actual_sensor_trip != -1) {
-      Putstr(COM2, " actual=");
+      Putstr(COM2, "  actual=");
       PrintTicks(p->nodes[i]->actual_sensor_trip);
     }
   }
@@ -880,25 +874,19 @@ void interactive() {
             Putf(COM2, "Train must already be in motion and hit a sensor to path.");
             break;
           }
-          RecordLogf("Basis is %d.\n\r", BASIS_NODE_NAME);
           active_train = cmd_data->train;
           active_speed = cmd_data->speed;
-          velocity_reading_delay_until = Time();
-          SetTrainSpeed(cmd_data->train, cmd_data->speed);
+          // velocity_reading_delay_until = Time();
 
-          // get the path to BASIS_NODE, our destination point
-          GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-          // set all the switches to go there
-          SetPathSwitches(&p);
           // get the full path including BASIS_NODE and display it
-          GetMultiDestinationPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME, cmd_data->dest_node);
-          DisplayPath(&p, active_train, active_speed, 0, 0);
-          is_pathing = true;
-          pathing_start_time = Time();
-          // set the trains destination, this makes the pathing logic fire
-          // up when the train hits BASIS_NODE
-          stop_on_node = cmd_data->dest_node;
-          set_to_stop = true;
+          // GetMultiDestinationPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME, cmd_data->dest_node);
+          // DisplayPath(&p, active_train, active_speed, 0, 0);
+          // is_pathing = true;
+          // pathing_start_time = Time();
+          // // set the trains destination, this makes the pathing logic fire
+          // // up when the train hits BASIS_NODE
+          // stop_on_node = cmd_data->dest_node;
+          // set_to_stop = true;
           break;
         case COMMAND_STOP_FROM:
           if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {

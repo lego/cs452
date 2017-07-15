@@ -15,7 +15,7 @@ void route_executor_task() {
   ReceiveS(&sender, init);
   ReceiveS(&sender, path);
 
-  // TODO: execute path
+  RecordLogf("Route executor has begun. train=%d route is %s ~> %s", init.train, path.src->name, path.dest->name);
 }
 
 int CreateRouteExecutor(int priority, int train, path_t * path) {

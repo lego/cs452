@@ -74,7 +74,7 @@ int main() {
   io_enable_caches();
 
   /* create first user task */
-  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_ENTRY_TASK, ENTRY_FUNC, "First user task");
+  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_ENTRY_TASK, ENTRY_FUNC, "First user task", false);
   scheduler_requeue_task(first_user_task);
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());

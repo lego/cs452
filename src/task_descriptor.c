@@ -20,7 +20,7 @@ int next_free_stack(task_descriptor_t * task) {
   }
 }
 
-task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name) {
+task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name, bool is_recyclable) {
   // TODO: Assert task priority is valid, i.e. in [1,5]
   int tid = ctx->used_descriptors++;
   KASSERT(tid < MAX_TASKS, "Warning: maximum tasks reached tid=%d", tid);
@@ -38,6 +38,7 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
   task->recv_execution_time = 0;
   task->repl_execution_time = 0;
   task->was_interrupted = false;
+  task->is_recyclable = is_recyclable;
   jstrncpy(task->name, func_name, 128);
   #ifndef DEBUG_MODE
   KASSERT(task->stack_id < MAX_TASK_STACKS, "Maximum amount of task stacks allocated stack_id=%d used_stacks=%d", task->stack_id, ctx->used_stacks);

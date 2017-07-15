@@ -326,20 +326,9 @@ int Logs(int type, const char *str) {
 }
 
 void MoveTerminalCursor(unsigned int x, unsigned int y) {
-  // FIXME: make this happen in one Putstr operation for escape sequence continuity
-  char bf[12];
-  Putc(COM2, ESCAPE_CH);
-  Putc(COM2, '[');
-
-  ui2a(y, 10, bf);
-  Putstr(COM2, bf);
-
-  Putc(COM2, ';');
-
-  ui2a(x, 10, bf);
-  Putstr(COM2, bf);
-
-  Putc(COM2, 'H');
+  char buffer[12];
+  jformatf(buffer, sizeof(buffer), "\e[%d;%dH", y, x);
+  Putstr(COM2, buffer);
 }
 
 int GetTxQueueLength( int channel ) {

@@ -55,6 +55,9 @@ void InitNavigation() {
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;
   }
+
+  // NOTE: fixture location for testing purposes, for non-active train #10
+  state.train_locations[10] = Name2Node("C10");
 }
 
 void set_location(int train, int location) {

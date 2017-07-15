@@ -9,7 +9,7 @@
 #include <servers/nameserver.h>
 #include <jstring.h>
 
-int CreateWithName(int priority, void (*entrypoint)(), const char *func_name) {
+int _CreateWithName(int priority, void (*entrypoint)(), const char *func_name, bool is_recyclable) {
   KASSERT(0 <= priority && priority < 32, "Invalid priority provided.");
 
   kernel_request_t request;
@@ -20,6 +20,7 @@ int CreateWithName(int priority, void (*entrypoint)(), const char *func_name) {
   arg.priority = priority;
   arg.entrypoint = entrypoint;
   arg.func_name = func_name;
+  arg.is_recyclable = is_recyclable;
 
   request.arguments = &arg;
 
