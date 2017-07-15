@@ -23,6 +23,7 @@ typedef struct {
   // type = PATHING_WORKER_RESULT
   packet_t packet;
   int train;
+  int speed;
   // TODO: maybe make this a heap pointer?
   path_t path;
 } pathing_worker_result_t;
@@ -43,6 +44,7 @@ void pathing_worker(int parent_tid, void * data) {
   // FIXME: handle status == -1, i.e. not direct path
   result.packet.type = PATHING_WORKER_RESULT;
   result.train = cmd->train;
+  result.speed = cmd->speed;
   // Send result to Executor task
   SendSN(parent_tid, result);
 }
@@ -95,14 +97,14 @@ void execute_command(cmd_data_t * cmd_data) {
 
 void begin_train_controller(pathing_worker_result_t * result) {
   // FIXME: priority
-  CreateRouteExecutor(6, result->train, &result->path);
+  CreateRouteExecutor(6, result->train, result->speed, &result->path);
 }
 
 void executor_task() {
   int tid = MyTid();
   RegisterAs(NS_EXECUTOR);
 
-  char request_buffer[1024];
+  char request_buffer[1024] __attribute__ ((aligned (4)));
   packet_t * packet = (packet_t *) request_buffer;
   cmd_data_t * cmd = (cmd_data_t *) request_buffer;
   pathing_worker_result_t * pathing_result = (pathing_worker_result_t *) request_buffer;

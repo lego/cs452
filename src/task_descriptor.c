@@ -51,5 +51,6 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
 }
 
 void td_free_stack(int tid) {
+  ctx->descriptors[tid].stack_pointer = (void *) 0xDEADBEEF;
   cbuffer_add(&ctx->freed_stacks, (void *) ctx->descriptors[tid].stack_id);
 }

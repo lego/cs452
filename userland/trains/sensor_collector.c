@@ -10,6 +10,8 @@ void sensor_collector_task() {
   int tid = MyTid();
   int parent = MyParentTid();
   int sensor_saver_tid = WhoIsEnsured(SENSOR_SAVER);
+  int sensor_detector_multiplexer_tid = WhoIsEnsured(NS_SENSOR_DETECTOR_MULTIPLEXER);
+
   sensor_data_t req;
   req.packet.type = SENSOR_DATA;
   log_task("sensor_reader initialized parent=%d", tid, parent);
@@ -44,10 +46,10 @@ void sensor_collector_task() {
           if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
             req.sensor_no = i*16+(15-j);
 
-
             // Send to all sensor subscribers
-            // right now that's just the sensor saver
+            // right now that's just the sensor saver and multiplexer
             SendSN(sensor_saver_tid, req);
+            SendSN(sensor_detector_multiplexer_tid, req);
           }
         }
       }

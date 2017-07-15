@@ -534,8 +534,8 @@ void stopper() {
 void sensor_saver() {
   int stopper_tid = Create(2, stopper);
   RegisterAs(SENSOR_SAVER);
-  char req_buf[1024];
-  packet_t *packet = (packet_t *) req_buf;
+  char request_buffer[1024] __attribute__ ((aligned (4)));
+  packet_t *packet = (packet_t *) request_buffer;
   int lastSensorTime = -1;
   int sender;
 
@@ -627,10 +627,10 @@ void sensor_saver() {
   DECLARE_BASIS_NODE(basis_node);
 
   while (true) {
-    ReceiveS(&sender, req_buf);
+    ReceiveS(&sender, request_buffer);
     switch (packet->type) {
     case SENSOR_DATA: {
-          sensor_data_t * data = (sensor_data_t *) req_buf;
+          sensor_data_t * data = (sensor_data_t *) request_buffer;
           int curr_time = Time();
           set_location(active_train, data->sensor_no);
           sensor_reading_timestamps[data->sensor_no] = curr_time;
@@ -660,7 +660,7 @@ void sensor_saver() {
               if (prevSensor[data->sensor_no][i] == lastSensor) {
                 int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
                 velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
-                RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
+                // RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
               }
             }
           }
@@ -729,7 +729,7 @@ void interactive() {
   initialSwitchStates[ 9] = SWITCH_STRAIGHT;
   initialSwitchStates[10] = SWITCH_CURVED;
   initialSwitchStates[11] = SWITCH_STRAIGHT;
-  initialSwitchStates[12] = SWITCH_CURVED;
+  initialSwitchStates[12] = SWITCH_STRAIGHT;
   initialSwitchStates[13] = SWITCH_CURVED;
   initialSwitchStates[14] = SWITCH_CURVED;
   initialSwitchStates[15] = SWITCH_STRAIGHT;
@@ -741,12 +741,12 @@ void interactive() {
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
 
-  char req_buffer[1024];
-  packet_t *packet = (packet_t *) req_buffer;
-  interactive_echo_t *echo_data = (interactive_echo_t *) req_buffer;
-  cmd_t *base_cmd = (cmd_t *) req_buffer;
-  cmd_error_t *cmd_error = (cmd_error_t *) req_buffer;
-  cmd_data_t *cmd_data = (cmd_data_t *) req_buffer;
+  char request_buffer[1024] __attribute__ ((aligned (4)));
+  packet_t *packet = (packet_t *) request_buffer;
+  interactive_echo_t *echo_data = (interactive_echo_t *) request_buffer;
+  cmd_t *base_cmd = (cmd_t *) request_buffer;
+  cmd_error_t *cmd_error = (cmd_error_t *) request_buffer;
+  cmd_data_t *cmd_data = (cmd_data_t *) request_buffer;
 
   int lastSensor = -1;
   int lastSensorTime = -1;
@@ -755,7 +755,7 @@ void interactive() {
   ClearLastCmdMessage();
 
   while (true) {
-    ReceiveS(&sender, req_buffer);
+    ReceiveS(&sender, request_buffer);
     switch (packet->type) {
       case INTERACTIVE_ECHO:
         Putstr(COM2, echo_data->echo);
@@ -870,11 +870,8 @@ void interactive() {
           is_pathing = false;
           break;
         case COMMAND_NAVIGATE:
-          if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
-            Putf(COM2, "Train must already be in motion and hit a sensor to path.");
-            break;
-          }
           active_train = cmd_data->train;
+          // FIXME: navigate no longer has a speed, so this is hardcoded
           active_speed = cmd_data->speed;
           // velocity_reading_delay_until = Time();
 

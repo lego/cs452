@@ -60,7 +60,7 @@ void reservoir_task() {
   int tid = MyTid();
   reservoir_tid = tid;
 
-  char request_buffer[128];
+  char request_buffer[128] __attribute__ ((aligned (4)));
   KASSERT(sizeof(request_buffer) >= sizeof(reservoir_segments_t), "Buffer isn't large enough.");
   KASSERT(sizeof(request_buffer) >= sizeof(pathing_request_t), "Buffer isn't large enough.");
   packet_t * packet = (packet_t *) request_buffer;

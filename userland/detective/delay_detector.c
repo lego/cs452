@@ -4,7 +4,7 @@
 #include <kernel.h>
 #include <servers/clock_server.h>
 
-volatile int delay_detector_counter = 0;
+volatile int delay_detector_counter = 1;
 
 typedef struct {
   int send_to;

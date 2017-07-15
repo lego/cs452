@@ -1,9 +1,13 @@
 #include <detective/detector.h>
 #include <detective/sensor_detector.h>
+#include <trains/sensor_collector.h>
+#include <servers/nameserver.h>
+#include <track/pathing.h>
 #include <priorities.h>
 #include <kernel.h>
+#include <packet.h>
 
-volatile int sensor_detector_counter = 0;
+volatile int sensor_detector_counter = 1;
 
 typedef struct {
   int send_to;
@@ -13,16 +17,26 @@ typedef struct {
 
 void sensor_detector() {
   int sender;
+  int sensor_multiplexer_tid = WhoIsEnsured(NS_SENSOR_DETECTOR_MULTIPLEXER);
   sensor_detector_init_t init;
   ReceiveS(&sender, init);
   ReplyN(sender);
 
   detector_message_t msg;
-  msg.packet.type = DELAY_DETECT;
+  msg.packet.type = SENSOR_DETECT;
   msg.details = init.sensor_no;
   msg.identifier = init.identifier;
 
-  // FIXME: figure out a way to block for a sensor
+  packet_t request;
+  request.type = SENSOR_DETECTOR_REQUEST;
+
+  sensor_data_t data;
+
+  // Listen to all sensor data, waiting for the one we want
+  while (true) {
+    SendS(sensor_multiplexer_tid, request, data);
+    if (data.sensor_no == init.sensor_no) break;
+  }
 
   SendSN(init.send_to, msg);
 }

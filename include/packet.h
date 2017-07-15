@@ -14,6 +14,8 @@ typedef enum {
   SENSOR_TIMEOUT_DETECTIVE,
   INTERVAL_DETECT,
 
+  SENSOR_DETECTOR_REQUEST, // Message from detector to multiplexer for data
+
   // Messages from command_parser
   PARSED_COMMAND,
   // Messages from command_interpreter

@@ -154,7 +154,8 @@ char Getc( int channel ) {
   uart_request_t req;
   req.type = GET_REQUEST;
   req.channel = channel;
-  char result;
+  // 4 byte aligned because we enforce all Reply inputs to be 4 byte aligned
+  char result __attribute__((aligned (4)));
   SendS(server_tid, req, result);
   return result;
 }

@@ -10,6 +10,9 @@
 
 #define REDBOOT_ENTRYPOINT 0x218000
 
+extern int main_fp;
+extern int next_task_starting;
+
 void hex_dump(char *description, char *mem, int len) {
   KASSERT(len % 4 == 0, "Can only dump groups of 4 bytes, expected len%%4==0, got len=%d", len);
   int i;
@@ -184,6 +187,10 @@ void PrintTaskBacktrace(int tid) {
 
 void print_stats() {
   bwputstr(COM2, "\n\r" WHITE_BG BLACK_FG "===== STATS" RESET_ATTRIBUTES "\n\r");
+  if (next_task_starting != -1) {
+    bwprintf(COM2, " Next/last task starting tid=%d %s\n\r", next_task_starting, ctx->descriptors[next_task_starting].name);
+    bwprintf(COM2, "  stack_pointer=%08x\n\r", (unsigned int) ctx->descriptors[next_task_starting].stack_pointer);
+  }
   bwputstr(COM2, "Execution time\n\r");
   int i;
   #if !defined(DEBUG_MODE)
@@ -209,7 +216,6 @@ void print_logs() {
   bwputstr(COM2, logs);
 }
 
-extern int main_fp;
 typedef void (*interrupt_handler)(void);
 
 void __exit_kernel_svc() {
@@ -245,6 +251,11 @@ void cleanup(bool print_stacks) {
   }
 
   interrupts_clear_all();
+  // We have to do this a few times, otherwise it doesn't turn off
+  // Smells like bad CTS or something?
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
   bwputc(COM1, 0x61);
   bwsetfifo(COM2, ON);
 

@@ -2,11 +2,12 @@
 #include <detective/sensor_timeout_detective.h>
 #include <detective/sensor_detector.h>
 #include <detective/delay_detector.h>
+#include <track/pathing.h>
 #include <priorities.h>
 #include <kernel.h>
 #include <jstring.h>
 
-volatile int sensor_timeout_detective_counter = 0;
+volatile int sensor_timeout_detective_counter = 1;
 
 typedef struct {
   int send_to;
@@ -24,18 +25,19 @@ void sensor_timeout_detective() {
   ReceiveS(&sender, init);
   ReplyN(sender);
 
+  RecordLogf("Started sensor timeout detective: timeout=%d sensor=%s\n\r", init.timeout, track[init.sensor_no].name);
+
   char buffer[128];
-  jstrappend(my_name, " - sense", buffer);
+  jformatf(buffer, sizeof(buffer), "SenTimeDet %d - sense %s", init.identifier, track[init.sensor_no].name);
   StartSensorDetector(buffer, tid, init.sensor_no);
 
-  buffer[0] = '\0';
-  jstrappend(my_name, " - delay", buffer);
+  jformatf(buffer, sizeof(buffer), "SenTimeDet %d - delay %dms", init.identifier, init.timeout * 10);
   StartDelayDetector(buffer, tid, init.timeout);
 
   detector_message_t detector;
   ReceiveS(&sender, detector);
-  int activated_action;
-  switch (detector.details) {
+  int activated_action = -1; // makes compiler happy, make it something that will break stuff
+  switch (detector.packet.type) {
     case DELAY_DETECT:
       activated_action = DETECTIVE_TIMEOUT;
       break;
@@ -43,8 +45,7 @@ void sensor_timeout_detective() {
       activated_action = DETECTIVE_SENSOR;
       break;
     default:
-      activated_action = 0; // makes the compiler happy
-      KASSERT(false, "Detective had bad case.");
+      KASSERT(false, "Detective received bad packet type=%d\n\r", detector.packet.type);
   }
 
   sensor_timeout_message_t msg;

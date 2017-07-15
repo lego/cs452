@@ -95,6 +95,7 @@ int main() {
     if (next_task->state == STATE_ZOMBIE) continue;
     KASSERT(next_task->state == STATE_READY, "Task had non-ready tid=%d state=%d", next_task->tid, next_task->state);
     log_kmain("next task tid=%d", next_task->tid);
+    next_task_starting = next_task->tid;
     task_pre_activate(next_task);
     kernel_request_t *request = activate(next_task);
     task_post_activate(next_task);
@@ -106,6 +107,11 @@ int main() {
   #ifndef DEBUG_MODE
   cleanup(false);
   #endif
+
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
 
   // io_disable_caches();
 
