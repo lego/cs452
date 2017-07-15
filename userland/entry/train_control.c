@@ -11,6 +11,7 @@
 #include <interactive/command_interpreter.h>
 #include <train_controller.h>
 #include <trains/switch_controller.h>
+#include <trains/executor.h>
 #include <trains/sensor_collector.h>
 #include <track/pathing.h>
 #include <priorities.h>
@@ -30,6 +31,8 @@ void train_control_entry_task() {
   InitPathing();
   InitNavigation();
 
+  // FIXME: priority
+  Create(3, executor_task);
   Create(PRIORITY_TRAIN_CONTROLLER_SERVER, train_controller_server);
   Create(PRIORITY_SWITCH_CONTROLLER, switch_controller);
 
