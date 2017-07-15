@@ -6,6 +6,7 @@
 #include <jstring.h>
 #include <kern/interrupts.h>
 #include <kern/context.h>
+#include <terminal.h>
 
 #define REDBOOT_ENTRYPOINT 0x218000
 
@@ -205,32 +206,25 @@ void print_logs() {
 extern int main_fp;
 typedef void (*interrupt_handler)(void);
 
-void __exit_kernel_svc() {
+void __exit_kernel_svc(int already_called_clear) {
   // return to redboot, this is just a fcn return for the main fcn
   // it needs to be in SVC mode to work
 
-  // Make sure to clear out any pending packet data, also sends a signal that the program has finished
-  for (int i = 0; i < 260; i++) {
-    bwputc(COM2, 0x0);
+  if (already_called_clear == 0) {
+    cleanup();
   }
-
-  interrupts_clear_all();
-  bwputc(COM1, 0x61);
-  bwsetfifo(COM2, ON);
-
-  print_logs();
-  print_stats();
 
   asm volatile ("msr cpsr_c, #211");
   asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
   asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
 }
 
-void exit_kernel() {
+void exit_kernel(int already_called_clear) {
   // return to redboot, this is just a fcn return for the main fcn
   // it needs to be in SVC mode to work
   *((interrupt_handler*)0x28) = (interrupt_handler)&__exit_kernel_svc;
   // go into __exit_kernel_svc as SVC
+  asm volatile ("mov r0, %0" :  : "r" (already_called_clear));
   asm volatile ("swi #5");
 }
 
@@ -251,9 +245,6 @@ void cleanup() {
   interrupts_clear_all();
   bwputc(COM1, 0x61);
   bwsetfifo(COM2, ON);
-
-  // brings back scrollability
-  bwputstr(COM2, RECOVER_TERMINAL);
 
   print_logs();
   print_stats();

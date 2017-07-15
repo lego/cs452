@@ -301,7 +301,8 @@ void TriggerSensor(int sensor_num, int sensor_time) {
 // }
 
 void DrawInitialScreen() {
-  Putstr(COM2, SAVE_TERMINAL);
+  Putstr(COM2, CLEAR_SCREEN);
+  Putstr(COM2, HOME_CURSOR);
   Putstr(COM2, "Time xx:xx xx0\n\r");
   Putstr(COM2, "Idle xx.x%\n\r");
 

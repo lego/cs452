@@ -85,7 +85,7 @@ int main() {
   bwputc(COM1, 0x60);
   #endif
 
-  bwputstr(COM2, SAVE_TERMINAL);
+  // bwputstr(COM2, SAVE_TERMINAL);
 
   // start executing user tasks
   while (!should_exit) {
