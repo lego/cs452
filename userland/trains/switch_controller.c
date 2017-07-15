@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <util.h>
 #include <trains/switch_controller.h>
 #include <servers/uart_tx_server.h>
 #include <servers/clock_server.h>
@@ -70,6 +71,16 @@ void switch_controller() {
           Destroy(solenoid_off_tid);
         }
         solenoid_off_tid = Create(PRIORITY_SWITCH_CONTROLLER_SOLENOIDS_OFF, solenoid_off);
+        {
+          int time = Time();
+          uart_packet_t packet;
+          packet.len = 6;
+          packet.type = PACKET_SWITCH_DATA;
+          jmemcpy(&packet.data[0], &time, sizeof(int));
+          packet.data[4] = request.index;
+          packet.data[5] = request.value;
+          PutPacket(&packet);
+        }
       }
     }
   }

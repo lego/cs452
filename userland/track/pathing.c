@@ -23,6 +23,19 @@ void InitPathing() {
   #endif
 }
 
+int findSensorOrBranch(int start) {
+  int current = start;
+  do {
+    if (track[current].edge[DIR_AHEAD].dest != 0) {
+      current = track[current].edge[DIR_AHEAD].dest->id;
+    } else {
+      current = -1;
+    }
+  } while(current >= 0 && track[current].type != NODE_SENSOR && track[current].type != NODE_BRANCH);
+
+  return current;
+}
+
 void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2) {
   path_t p1;
   path_t p2;

@@ -1,8 +1,8 @@
 #pragma once
 
 enum {
-  SWITCH_CURVED,
   SWITCH_STRAIGHT,
+  SWITCH_CURVED,
 };
 
 void switch_controller();

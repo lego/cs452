@@ -5,7 +5,7 @@
 #include <bwio.h>
 #include <servers/uart_tx_server.h>
 #include <trains/switch_controller.h>
-#include <train_controller.h>
+#include <train_command_server.h>
 
 #define TRAINS_MAX 80
 

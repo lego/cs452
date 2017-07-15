@@ -9,10 +9,11 @@
 #include <terminal.h>
 #include <servers/uart_rx_server.h>
 #include <servers/uart_tx_server.h>
-#include <train_controller.h>
+#include <train_command_server.h>
 #include <kernel.h>
 #include <trains/navigation.h>
 #include <trains/sensor_collector.h>
+#include <trains/train_controller.h>
 #include <detective/interval_detector.h>
 #include <trains/switch_controller.h>
 #include <jstring.h>
@@ -22,6 +23,7 @@
 #include <track/track_node.h>
 #include <track/pathing.h>
 
+#define TRAINS_MAX 80
 #define NUM_SWITCHES 22
 
 #define BASIS_NODE "A4"
@@ -513,19 +515,6 @@ int samples = 0;
 
 #define NUM_SENSORS 80
 
-int findSensorOrBranch(int start) {
-  int current = start;
-  do {
-    if (track[current].edge[DIR_AHEAD].dest != 0) {
-      current = track[current].edge[DIR_AHEAD].dest->id;
-    } else {
-      current = -1;
-    }
-  } while(current >= 0 && track[current].type != NODE_SENSOR && track[current].type != NODE_BRANCH);
-
-  return current;
-}
-
 void stopper() {
   int sender;
   int train;
@@ -766,6 +755,11 @@ void interactive() {
 
   ClearLastCmdMessage();
 
+  int trainControllerTids[TRAINS_MAX];
+  for (int i = 0; i < TRAINS_MAX; i++) {
+    trainControllerTids[i] = -1;
+  }
+
   while (true) {
     ReceiveS(&sender, req_buffer);
     switch (packet->type) {
@@ -796,7 +790,16 @@ void interactive() {
         case COMMAND_TRAIN_SPEED:
           Putf(COM2, "Set train %d to speed %d", cmd_data->train, cmd_data->speed);
           RecordLogf("Set train %d to speed %d\n\r", cmd_data->train, cmd_data->speed);
-          SetTrainSpeed(cmd_data->train, cmd_data->speed);
+          if (trainControllerTids[cmd_data->train] == -1) {
+            trainControllerTids[cmd_data->train] = CreateTrainController(cmd_data->train);
+          }
+          {
+            train_controller_msg_t msg;
+            msg.type = TRAIN_CONTROLLER_COMMAND;
+            msg.command.type = TRAIN_CONTROLLER_SET_SPEED;
+            msg.command.speed = cmd_data->speed;
+            SendSN(trainControllerTids[cmd_data->train], msg);
+          }
           samples = 0;
           lastTrain = cmd_data->train;
           active_train = cmd_data->train;
@@ -818,7 +821,7 @@ void interactive() {
             if (switchNumber >= 19) {
               switchNumber += 134; // 19 -> 153, etc
             }
-            SetSwitchAndRender(i, cmd_data->switch_dir);
+            SetSwitchAndRender(switchNumber, cmd_data->switch_dir);
             Delay(6);
           }
           break;

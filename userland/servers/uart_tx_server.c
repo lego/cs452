@@ -285,6 +285,18 @@ int Puti(int channel, int i) {
   return Putstr(channel, bf);
 }
 
+int PutPacket(uart_packet_t *packet) {
+  log_task("PutPacket len=%d type=%d", active_task->tid, packet->len, packet->type);
+  int server_tid = uart2_tx_warehouse_tid;
+  if (server_tid == -1) {
+    KASSERT(false, "UART tx server not initialized");
+    return -1;
+  }
+
+  SendSN(server_tid, *packet);
+  return 0;
+}
+
 int Logp(uart_packet_t *packet) {
   log_task("Logp str=%d", active_task->tid, packet.type);
   if (logging_warehouse_tid == -1) {
