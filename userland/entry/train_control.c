@@ -10,7 +10,7 @@
 #include <interactive.h>
 #include <interactive/command_parser.h>
 #include <interactive/command_interpreter.h>
-#include <train_controller.h>
+#include <train_command_server.h>
 #include <trains/switch_controller.h>
 #include <trains/executor.h>
 #include <trains/sensor_collector.h>
@@ -39,14 +39,14 @@ void train_control_entry_task() {
   // FIXME: priority
   Create(4, sensor_detector_multiplexer_task);
 
-  // FIXME: priority
   Create(3, executor_task);
-  Create(PRIORITY_TRAIN_CONTROLLER_SERVER, train_controller_server);
+  Create(PRIORITY_TRAIN_COMMAND_SERVER, train_command_server);
   Create(PRIORITY_SWITCH_CONTROLLER, switch_controller);
 
   Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
   // FIXME: priority
-  Create(PRIORITY_UART1_RX_SERVER+1, sensor_collector_task);
+  Create(PRIORITY_UART1_RX_SERVER+1, sensor_attributer);
+  Create(PRIORITY_UART1_RX_SERVER+2, sensor_collector_task);
 
   Create(PRIORITY_INTERACTIVE, interactive);
   // FIXME: priority
