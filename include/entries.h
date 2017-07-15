@@ -11,6 +11,7 @@ void train_control_entry_task();
 void backtrace_test_task();
 void destroy_test_task();
 void reservoir_test_task();
+void worker_test_task();
 
 
 #if defined(USE_K1)
@@ -35,6 +36,8 @@ void reservoir_test_task();
 #define ENTRY_FUNC destroy_test_task
 #elif defined(USE_RESERVOIR_TEST)
 #define ENTRY_FUNC reservoir_test_task
+#elif defined(USE_WORKER_TEST)
+#define ENTRY_FUNC worker_test_task
 #else
 #error Bad PROJECT value provided to Makefile. Expected "K1-4", "TC1", "BENCHMARK", "CLOCK_SERVER_TEST", "NAVIGATION_TEST"
 #endif
