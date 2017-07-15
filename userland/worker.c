@@ -29,6 +29,8 @@ void worker_task() {
 int _CreateWorker(int priority, void (*worker_func)(int, void *), void * data, int data_len) {
   int worker_tid = Create(priority, worker_task);
   worker_init_t init_data;
+  init_data.worker_func = worker_func;
+  init_data.len = data_len;
   SendSN(worker_tid, init_data);
   Send(worker_tid, data, data_len, NULL, 0);
   return worker_tid;
