@@ -34,6 +34,7 @@ typedef struct {
 void pathing_worker(int parent_tid, void * data) {
   cmd_data_t * cmd = (cmd_data_t *) data;
   pathing_worker_result_t result;
+  RecordLogf("Pathing working started\n\r");
 
   // get the path to BASIS_NODE, our destination point
   int src_node = WhereAmI(cmd->train);
@@ -71,6 +72,7 @@ void execute_command(cmd_data_t * cmd_data) {
       }
       break;
     case COMMAND_NAVIGATE:
+      RecordLogf("Executor starting pathing worker\n\r");
       _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
       break;
 
@@ -107,13 +109,14 @@ void executor_task() {
   while (true) {
     ReceiveS(&sender, request_buffer);
     ReplyN(sender);
-    Logf(EXECUTOR_LOGGING, "Executor got message type=%d", packet->type);
+    RecordLogf("Executor got message type=%d\n\r", packet->type);
     switch (packet->type)
      {
       case INTERPRETED_COMMAND:
         execute_command(cmd);
         break;
       case PATHING_WORKER_RESULT:
+        RecordLogf("Executor got pathing worker result\n\r");
         begin_train_controller(pathing_result);
         break;
       default:
