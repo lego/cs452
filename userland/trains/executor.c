@@ -3,6 +3,7 @@
 #include <trains/executor.h>
 #include <servers/nameserver.h>
 #include <servers/clock_server.h>
+#include <servers/uart_tx_server.h>
 #include <trains/switch_controller.h>
 #include <trains/reservoir.h>
 #include <trains/navigation.h>
@@ -106,8 +107,9 @@ void executor_task() {
   while (true) {
     ReceiveS(&sender, request_buffer);
     ReplyN(sender);
-
-    switch (packet->type) {
+    Logf(EXECUTOR_LOGGING, "Executor got message type=%d", packet->type);
+    switch (packet->type)
+     {
       case INTERPRETED_COMMAND:
         execute_command(cmd);
         break;

@@ -297,6 +297,16 @@ int Logp(uart_packet_t *packet) {
   return 0;
 }
 
+int Logf(int type, char *fmt, ...) {
+  char buf[512];
+  va_list va;
+  va_start(va,fmt);
+  jformat(buf, 512, fmt, va);
+  va_end(va);
+  return Logs(type, buf);
+}
+
+
 int Logs(int type, const char *str) {
   log_task("Logp str=%d", active_task->tid, packet.type);
   if (logging_warehouse_tid == -1) {

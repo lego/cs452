@@ -17,6 +17,7 @@ int Puti(int channel, int i);
 int Putf(int channel, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 int Putp(int channel, uart_packet_t *packet);
 int Logp(uart_packet_t *packet);
+int Logf(int type, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 int Logs(int type, const char *str);
 void MoveTerminalCursor(unsigned int x, unsigned int y);
 int GetRxQueueLength(int channel);
