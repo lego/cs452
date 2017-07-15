@@ -67,6 +67,7 @@ void ExitKernel( ) {
 int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
   KASSERT(tid != active_task->tid, "Attempted send to self. from_tid=%d to_tid=%d", active_task->tid, tid);
   KASSERT(tid >= 0, "Attempted to send to a negative tid. from_tid=%d to_tid=%d", active_task->tid, tid);
+  KASSERT(((unsigned int) reply & 0x3) == 0, "Provided unaligned memory as a reply struct. Please  __attribute__ ((aligned (4)) to align it. from_tid=%d to_tid=%d", active_task->tid, tid);
 
   kernel_request_t request;
   request.tid = active_task->tid;
@@ -91,6 +92,7 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_RECEIVE;
+  KASSERT(((unsigned int) msg & 0x3) == 0, "Provided unaligned memory as a reply struct. Please  __attribute__ ((aligned (4)) to align it.");
 
   syscall_message_t ret_val;
   ret_val.msglen = msglen;
@@ -98,7 +100,7 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
   request.ret_val = &ret_val;
 
   context_switch(&request);
-  if (tid != NULL) *tid = ret_val.tid;
+  if (tid != NULL && ret_val.status >= 0) *tid = ret_val.tid;
   return ret_val.status;
 }
 
