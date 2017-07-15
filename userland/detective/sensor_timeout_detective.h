@@ -5,6 +5,11 @@
 #define DETECTIVE_TIMEOUT 0
 #define DETECTIVE_SENSOR 1
 
+/**
+ * Message sent from the Sensor Timeout Detective, informing the desired task
+ * whether a timeout occured, or a sensor was detected
+ */
+
 typedef struct {
   // types: SENSOR_TIMEOUT_DETECTIVE
   packet_t packet;

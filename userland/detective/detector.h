@@ -2,8 +2,13 @@
 
 #include <packet.h>
 
+/**
+ * Generic detector message, sent from detectors to the task asking for the
+ * result.
+ */
 typedef struct {
-  // types: DELAY_DETECT, SENSOR_DETECT
+  // type = DELAY_DETECT
+  // type = SENSOR_DETECT
   packet_t packet;
   // Polymorphic details.
   // if DELAY_DETECT, ticks waited

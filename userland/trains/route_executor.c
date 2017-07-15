@@ -90,7 +90,7 @@ void route_executor_task() {
           RecordLogf("Detective timed out at uptime=%d\n\r", Time());
         } else if (sensor_timeout_msg->action == DETECTIVE_SENSOR) {
           int hit_time = Time();
-          RecordLogf("Detective sensor hit at time=%d expected=%d, offset=%d\n\r", hit_time, current + eta_to_node, hit_time - current - eta_to_node);
+          RecordLogf("Detective sensor hit at time=%d expected=%d offset=%d\n\r", hit_time, current + eta_to_node, hit_time - current - eta_to_node);
         }
         last_sensor_no = next_sensor_no;
         next_sensor_no = get_next_sensor(&path, last_sensor_no);
