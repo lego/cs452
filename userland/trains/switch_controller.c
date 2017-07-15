@@ -4,8 +4,6 @@
 #include <servers/clock_server.h>
 #include <priorities.h>
 
-#define NUM_SWITCHES 22
-
 static int switch_controller_tid = -1;
 
 typedef struct {

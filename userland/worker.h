@@ -11,4 +11,4 @@
  */
 #define CreateWorker(priority, worker_func, data) _CreateWorker(priority, worker_func, &data, sizeof(data));
 
-int _CreateWorker(int priority, void (*worker_func)(void *), void * data, int data_len);
+int _CreateWorker(int priority, void (*worker_func)(int, void *), void * data, int data_len);

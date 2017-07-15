@@ -7,6 +7,7 @@
  */
 
 #include <packet.h>
+#include <track/pathing.h>
 
 #define RESERVOIR_REQUEST_OK 0
 #define RESERVOIR_REQUEST_ERROR 1
@@ -34,6 +35,34 @@ typedef struct {
 
 void reservoir_task();
 
+/**
+ * Request ownership over segments
+ * NOTE: blocking request (Send)
+ * @param  segment to ask for (includes nodes and requested train)
+ * @return         status of request
+ *                   0 => OK
+ *                   1 => FAILED (already owned)
+ */
 int RequestSegment(reservoir_segments_t * segment);
 
+/**
+ * Release ownership over segments
+ * NOTE: you must already own them to release them, otherwise this
+ * NOTE: blocking request (Send)
+ * causes a KASSERT
+ * @param segment to release.
+ */
 void ReleaseSegment(reservoir_segments_t * segment);
+
+/**
+ * Requests a path that has no owned segments
+ * NOTE: blocking request (Send)
+ * @param  output    to store pathing result
+ * @param  train     that we want to check ownership with
+ * @param  src_node  for the path
+ * @param  dest_node for the path
+ * @return           status of request
+ *                     0 => OK
+ *                     1 => FAILED (no direct path)
+ */
+int RequestPath(path_t * output, int train, int src_node, int dest_node);

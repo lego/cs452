@@ -25,11 +25,17 @@ typedef enum {
   INTERACTIVE_TIME_UPDATE,
   INTERACTIVE_ECHO,
 
+  /*
+   * Messages to Executor task
+   */
+  PATHING_WORKER_RESULT,
+
   /**
-   * Reservoir messages
+   * Messages to Reservoir task
    */
   RESERVOIR_REQUEST,
   RESERVOIR_RELEASE,
+  RESERVOIR_PATHING_REQUEST,
 } packet_type_t;
 
 typedef struct {

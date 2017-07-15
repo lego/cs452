@@ -8,6 +8,11 @@
 
 #define VELOCITY_SAMPLES_MAX 5
 
+// used in interactive and trains/executor
+#define BASIS_NODE "A4"
+#define BASIS_NODE_NAME Name2Node(BASIS_NODE)
+#define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME
+
 extern track_node track[TRACK_MAX];
 
 typedef struct Path {
