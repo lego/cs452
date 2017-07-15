@@ -12,7 +12,7 @@
 #include <kern/task_descriptor.h>
 #include <terminal.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  bwputstr(COM2, SCROLL_DOWN_20); cleanup(false); \
+  cleanup(false); bwputstr(COM2, SCROLL_DOWN_20); \
   bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "\n\rin %s:%d\n\r", ## __VA_ARGS__, __FILE__, __LINE__); \
   PrintBacktrace() \
   exit_kernel(); \
