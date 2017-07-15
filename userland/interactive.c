@@ -22,12 +22,6 @@
 #include <track/track_node.h>
 #include <track/pathing.h>
 
-#define NUM_SWITCHES 22
-
-#define BASIS_NODE "A4"
-#define BASIS_NODE_NAME Name2Node(BASIS_NODE)
-#define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME
-
 // used for displaying the path, updated on 100ms intervals
 path_t *current_path;
 bool is_pathing;

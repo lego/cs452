@@ -1,23 +1,54 @@
+#include <worker.h>
+#include <packet.h>
 #include <trains/executor.h>
-#include <server/nameserver.h>
-#include <server/clock_server.h>
+#include <servers/nameserver.h>
+#include <servers/clock_server.h>
 #include <trains/switch_controller.h>
+#include <trains/reservoir.h>
+#include <trains/navigation.h>
+#include <track/pathing.h>
+#include <train_controller.h>
+#include <interactive/commands.h>
 
 // FIXME: priority
 #define SOME_PRIORITY 5
 
-void begin_navigation(cmd_data_t * cmd) {
+// FIXME: globals : active_train, active_speed, from interactive.c
+extern int active_train;
+extern int active_speed;
+
+typedef struct {
+  // type = PATHING_WORKER_RESULT
+  packet_t packet;
+  int train;
+  // TODO: maybe make this a heap pointer?
+  path_t path;
+} pathing_worker_result_t;
+
+/**
+ * Fetches the path from the Reservoir and returns it to the Executor
+ * @param parent task ID (Executor)
+ * @param data   of the navigation request
+ */
+void pathing_worker(int parent_tid, void * data) {
+  cmd_data_t * cmd = (cmd_data_t *) data;
+  pathing_worker_result_t result;
+
   // get the path to BASIS_NODE, our destination point
-  GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-  // set all the switches to go there
-  SetPathSwitches(&p);
+  int src_node = WhereAmI(cmd->train);
+  int status = RequestPath(&result.path, cmd->train, src_node, cmd->dest_node);
+  // FIXME: handle status == -1, i.e. not direct path
+  result.packet.type = PATHING_WORKER_RESULT;
+  result.train = cmd->train;
+  // Send result to Executor task
+  SendSN(parent_tid, result);
 }
 
-void execute_command(cmd_data_t * cmd) {
+void execute_command(cmd_data_t * cmd_data) {
   path_t p;
 
   // FIXME: do we want to tell a worker to do these things?
-  switch (cmd->type) {
+  switch (cmd_data->base.type) {
     case COMMAND_TRAIN_SPEED:
       SetTrainSpeed(cmd_data->train, cmd_data->speed);
       break;
@@ -33,16 +64,17 @@ void execute_command(cmd_data_t * cmd) {
         if (switchNumber >= 19) {
           switchNumber += 134; // 19 -> 153, etc
         }
-        RenderSwitchChange(i, cmd_data->switch_dir);
+        SetSwitch(i, cmd_data->switch_dir);
         // FIXME: don't delay in executor
         Delay(6);
       }
       break;
     case COMMAND_NAVIGATE:
-      CreateWorker(SOME_PRIORITY, navigation_worker, navigation_worker_init, cmd_data);
+      _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
       break;
 
     case COMMAND_STOP_FROM:
+      // FIXME: globals : active_train, active_speed
       if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
         break;
       }
@@ -52,9 +84,13 @@ void execute_command(cmd_data_t * cmd) {
       SetPathSwitches(&p);
       break;
     default:
-      KASSERT(false, "Unhandled command send to executor. Got command=%d", cmd->type);
+      KASSERT(false, "Unhandled command send to executor. Got command=%d", cmd_data->base.type);
       break;
   }
+}
+
+void begin_train_controller(pathing_worker_result_t * result) {
+
 }
 
 void executor_task() {
@@ -62,16 +98,21 @@ void executor_task() {
   RegisterAs(NS_EXECUTOR);
 
   char request_buffer[1024];
-  packet_t * packet;
-  cmd_data_t * cmd;
+  packet_t * packet = (packet_t *) request_buffer;
+  cmd_data_t * cmd = (cmd_data_t *) request_buffer;
+  pathing_worker_result_t * pathing_result = (pathing_worker_result_t *) request_buffer;
+  int sender;
 
   while (true) {
-    Receive(&sender, request_buffer)
+    ReceiveS(&sender, request_buffer);
     ReplyN(sender);
 
     switch (packet->type) {
       case INTERPRETED_COMMAND:
         execute_command(cmd);
+        break;
+      case PATHING_WORKER_RESULT:
+        begin_train_controller(pathing_result);
         break;
       default:
         KASSERT(false, "Got unexpected packet type=%d", packet->type);
