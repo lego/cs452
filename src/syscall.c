@@ -238,7 +238,7 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   syscall_message_t *msg = arg->arguments;
 
   // check if the target task is valid
-  KASSERT(is_valid_task(msg->tid), "Sending to impossible task %d", msg->tid);
+  KASSERT(is_valid_task(msg->tid), "Sending to impossible task %d from %d (%s)", msg->tid, task->tid, task->name);
 
   if (ctx->descriptors[msg->tid].state == STATE_ZOMBIE) {
     msg->status = -3;
@@ -305,7 +305,7 @@ void syscall_reply(task_descriptor_t *task, kernel_request_t *arg) {
   syscall_message_t *msg = arg->arguments;
 
   // check if the target task is valid
-  KASSERT(is_valid_task(msg->tid), "Replying to impossible task %d", msg->tid);
+  KASSERT(is_valid_task(msg->tid), "Replying to impossible task %d from %d (%s)", msg->tid, task->tid, task->name);
 
   task_descriptor_t *sending_task = (task_descriptor_t *) &ctx->descriptors[msg->tid];
   if (sending_task->state == STATE_REPLY_BLOCKED && sending_task->reply_blocked_on == task->tid) {

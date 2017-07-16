@@ -9,11 +9,18 @@
 #include <trains/navigation.h>
 #include <priorities.h>
 
-int train_controllers[TRAINS_MAX] = {-1};
+int train_controllers[TRAINS_MAX];
+
+void InitTrainControllers() {
+  for (int i = 0; i < TRAINS_MAX; i++) {
+    train_controllers[i] = -1;
+  }
+}
 
 static void execute_basic_command(int train, train_command_msg_t * msg) {
   switch (msg->type) {
   case TRAIN_CONTROLLER_SET_SPEED:
+    Logf(EXECUTOR_LOGGING, "TC executing speed cmd");
     SetTrainSpeed(train, msg->speed);
     break;
   }
@@ -32,16 +39,20 @@ void train_controller() {
   train_navigate_t * navigate_data = (train_navigate_t *) request_buffer;
 
   path_t navigation_data;
+  Logf(EXECUTOR_LOGGING, "TC started");
 
   int train;
   ReceiveS(&requester, train);
   ReplyN(requester);
+  Logf(EXECUTOR_LOGGING, "TC initialized");
 
   RegisterTrain(train);
+  Logf(EXECUTOR_LOGGING, "TC registered");
 
   while (true) {
     ReceiveS(&requester, request_buffer);
     ReplyN(requester);
+    Logf(EXECUTOR_LOGGING, "TC received msg");
     switch (packet->type) {
       case SENSOR_DATA:
         break;
@@ -64,12 +75,14 @@ int CreateTrainController(int train) {
 }
 
 static void ensure_train_controller(int train) {
+  Logf(EXECUTOR_LOGGING, "train_controllers[%d]=%d", train, train_controllers[train]);
   if (train_controllers[train] == -1) {
-    train_controllers[train] = CreateTrainController(train);
+    CreateTrainController(train);
   }
 }
 
 void TellTrainController(int train, int type, int speed) {
+  Logf(EXECUTOR_LOGGING, "telling train=%d", train);
   ensure_train_controller(train);
   train_command_msg_t msg;
   msg.packet.type = TRAIN_CONTROLLER_COMMAND;

@@ -17,6 +17,7 @@
 #include <track/pathing.h>
 #include <trains/reservoir.h>
 #include <priorities.h>
+#include <trains/train_controller.h>
 
 // from interactive
 void sensor_saver();
@@ -24,6 +25,7 @@ void sensor_saver();
 void train_control_entry_task() {
   InitPathing();
   InitNavigation();
+  InitTrainControllers();
 
   Create(PRIORITY_NAMESERVER, nameserver);
   Create(PRIORITY_CLOCK_SERVER, clock_server);

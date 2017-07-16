@@ -56,6 +56,7 @@ void execute_command(cmd_data_t * cmd_data) {
   // FIXME: do we want to tell a worker to do these things?
   switch (cmd_data->base.type) {
     case COMMAND_TRAIN_SPEED:
+      Logf(EXECUTOR_LOGGING, "Executor got command");
       TellTrainController(cmd_data->train, TRAIN_CONTROLLER_SET_SPEED, cmd_data->speed);
       break;
     case COMMAND_TRAIN_REVERSE:

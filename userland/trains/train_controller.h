@@ -23,6 +23,10 @@ typedef struct {
   int speed; // Initially for testing at a consistent speed
 } train_navigate_t;
 
+/**
+ * Initializes internal state of the train controllers
+ */
+void InitTrainControllers();
 
 int CreateTrainController(int train);
 
