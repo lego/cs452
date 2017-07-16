@@ -21,6 +21,9 @@
 #include <priorities.h>
 #include <entries.h>
 
+int next_starting_task;
+int last_started_task;
+
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
 }
@@ -95,9 +98,11 @@ int main() {
     if (next_task->state == STATE_ZOMBIE) continue;
     KASSERT(next_task->state == STATE_READY, "Task had non-ready tid=%d state=%d", next_task->tid, next_task->state);
     log_kmain("next task tid=%d", next_task->tid);
+    next_starting_task = next_task->tid;
     task_pre_activate(next_task);
     kernel_request_t *request = activate(next_task);
     task_post_activate(next_task);
+    last_started_task = next_task->tid;
     if (next_task->state != STATE_ZOMBIE) {
       handle(request);
     }

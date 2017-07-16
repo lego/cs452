@@ -8,6 +8,9 @@
 #include <kern/context.h>
 #include <terminal.h>
 
+extern int next_starting_task;
+extern int last_started_task;
+
 #define REDBOOT_ENTRYPOINT 0x218000
 
 void hex_dump(char *description, char *mem, int len) {
@@ -184,6 +187,8 @@ void PrintTaskBacktrace(int tid) {
 
 void print_stats() {
   bwputstr(COM2, "\n\r" WHITE_BG BLACK_FG "===== STATS" RESET_ATTRIBUTES "\n\r");
+  bwprintf(COM2, "Last task %d: %s\n\r", last_started_task, ctx->descriptors[last_started_task].name);
+  bwprintf(COM2, "Next task %d: %s\n\r", next_starting_task, ctx->descriptors[next_starting_task].name);
   bwputstr(COM2, "Execution time\n\r");
   int i;
   #if !defined(DEBUG_MODE)

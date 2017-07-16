@@ -42,5 +42,4 @@ void train_control_entry_task() {
   Create(6, command_interpreter_task);
   // FIXME: priority
   Create(7, command_parser_task);
-
 }
