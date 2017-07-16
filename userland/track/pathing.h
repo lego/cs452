@@ -1,8 +1,8 @@
 #pragma once
 
 #include <basic.h>
-#include <track/track_node.h>
 #include <track/track_data.h>
+#include <track/track_node.h>
 
 /**
  * Path and track graph related functions. This has functions involving:

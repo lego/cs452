@@ -1,13 +1,12 @@
-#include <stddef.h>
 #include <cbuffer.h>
+#include <stddef.h>
 
-
-void cbuffer_init(cbuffer_t *cbuf, void **buffer, int size ) {
-  #ifdef DEBUG_MODE
+void cbuffer_init(cbuffer_t *cbuf, void **buffer, int size) {
+#ifdef DEBUG_MODE
   for (int i = 0; i < size; i++) {
     buffer[i] = 0;
   }
-  #endif
+#endif
 
   cbuf->buffer = buffer;
   cbuf->max_size = size;
@@ -15,20 +14,14 @@ void cbuffer_init(cbuffer_t *cbuf, void **buffer, int size ) {
   cbuf->size = 0;
 }
 
-
 cbuffer_t cbuffer_create(void **buffer, int size) {
-  #ifdef DEBUG_MODE
+#ifdef DEBUG_MODE
   for (int i = 0; i < size; i++) {
     buffer[i] = 0;
   }
-  #endif
+#endif
 
-  return (cbuffer_t) {
-           .buffer = buffer,
-           .max_size = size,
-           .start = 0,
-           .size = 0
-  };
+  return (cbuffer_t){.buffer = buffer, .max_size = size, .start = 0, .size = 0};
 }
 
 int cbuffer_add(cbuffer_t *cbuffer, void *item) {
@@ -49,14 +42,15 @@ int cbuffer_add(cbuffer_t *cbuffer, void *item) {
 
 void *cbuffer_pop(cbuffer_t *cbuffer, int *status) {
   if (cbuffer->size == 0) {
-    if (status != NULL) *status = -1;
+    if (status != NULL)
+      *status = -1;
     return 0;
   }
   void *item = cbuffer->buffer[cbuffer->start];
 
-  #ifdef DEBUG_MODE
+#ifdef DEBUG_MODE
   cbuffer->buffer[cbuffer->start] = 0;
-  #endif
+#endif
 
   cbuffer->size--;
   cbuffer->start++;
@@ -65,7 +59,8 @@ void *cbuffer_pop(cbuffer_t *cbuffer, int *status) {
     cbuffer->start = 0;
   }
 
-  if (status != NULL) *status = 0;
+  if (status != NULL)
+    *status = 0;
   return item;
 }
 
@@ -86,14 +81,8 @@ int cbuffer_unpop(cbuffer_t *cbuffer, void *item) {
   return 0;
 }
 
-bool cbuffer_full(cbuffer_t *cbuffer) {
-  return cbuffer->size == cbuffer->max_size;
-}
+bool cbuffer_full(cbuffer_t *cbuffer) { return cbuffer->size == cbuffer->max_size; }
 
-bool cbuffer_empty(cbuffer_t *cbuffer) {
-  return cbuffer->size == 0;
-}
+bool cbuffer_empty(cbuffer_t *cbuffer) { return cbuffer->size == 0; }
 
-int cbuffer_size(cbuffer_t *cbuffer) {
-  return cbuffer->size;
-}
+int cbuffer_size(cbuffer_t *cbuffer) { return cbuffer->size; }

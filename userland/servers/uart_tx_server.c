@@ -1,14 +1,13 @@
 #include <basic.h>
-#include <jstring.h>
-#include <util.h>
-#include <kernel.h>
-#include <servers/uart_tx_server.h>
-#include <servers/nameserver.h>
-#include <heap.h>
 #include <bwio.h>
-#include <priorities.h>
-#include <jstring.h>
+#include <kernel.h>
+#include <servers/nameserver.h>
+#include <servers/uart_tx_server.h>
 #include <courier.h>
+#include <heap.h>
+#include <jstring.h>
+#include <priorities.h>
+#include <util.h>
 #include <warehouse.h>
 
 static int uart1_tx_notifier_tid = -1;
@@ -33,41 +32,41 @@ void uart_tx_notifier() {
 
   log_uart_server("uart_tx_notifier initialized tid=%d channel=%d", tid, channel);
 
-  char request_buffer[512] __attribute__ ((aligned (4)));
-  uart_packet_t * packet = (uart_packet_t *) request_buffer;
-  char * packet_data = request_buffer + sizeof(uart_packet_t);
+  char request_buffer[512] __attribute__((aligned(4)));
+  uart_packet_t *packet = (uart_packet_t *)request_buffer;
+  char *packet_data = request_buffer + sizeof(uart_packet_t);
 
   while (true) {
     int bytes = ReceiveS(&requester, request_buffer);
     KASSERT(bytes < 512, "Packet buffer overflown. Re-evaluate buffer sizes.");
     ReplyN(requester);
     log_uart_server("uart_notifer channel=%d", channel);
-    switch(channel) {
-      case COM1:
-        for (int i = 0; i < packet->len; i++) {
-          AwaitEventPut(EVENT_UART1_TX, packet_data[i]);
-          log_uart_server("uart_notifer COM1 putc=%c", packet_data[i]);
-        }
-        break;
-      case COM2:
+    switch (channel) {
+    case COM1:
+      for (int i = 0; i < packet->len; i++) {
+        AwaitEventPut(EVENT_UART1_TX, packet_data[i]);
+        log_uart_server("uart_notifer COM1 putc=%c", packet_data[i]);
+      }
+      break;
+    case COM2:
 #if NONTERMINAL_OUTPUT
-        AwaitEventPut(EVENT_UART2_TX, packet->len);
-        AwaitEventPut(EVENT_UART2_TX, packet->type);
+      AwaitEventPut(EVENT_UART2_TX, packet->len);
+      AwaitEventPut(EVENT_UART2_TX, packet->type);
 #else
-        if (packet->type != 1) {
-          break;
-        }
-#endif
-        for (int i = 0; i < packet->len; i++) {
-          AwaitEventPut(EVENT_UART2_TX, packet_data[i]);
-          log_uart_server("uart_notifer COM2 putc=%c", packet_data[i]);
-        }
+      if (packet->type != 1) {
         break;
+      }
+#endif
+      for (int i = 0; i < packet->len; i++) {
+        AwaitEventPut(EVENT_UART2_TX, packet_data[i]);
+        log_uart_server("uart_notifer COM2 putc=%c", packet_data[i]);
+      }
+      break;
     }
   }
 }
 
-int createNotifier(int channel, char * name) {
+int createNotifier(int channel, char *name) {
   int notifier_priority = ((channel == COM1) ? PRIORITY_UART1_TX_NOTIFIER : PRIORITY_UART2_TX_NOTIFIER);
   int notifier_tid = CreateWithName(notifier_priority, uart_tx_notifier, name);
   SendSN(notifier_tid, channel);
@@ -101,10 +100,9 @@ void uart_tx_server() {
 
   uart_request_t request;
 
-
-  char request_buffer[512] __attribute__ ((aligned (4)));
-  uart_packet_t * packet = (uart_packet_t *) request_buffer;
-  char * packet_data = request_buffer + sizeof(uart_packet_t);
+  char request_buffer[512] __attribute__((aligned(4)));
+  uart_packet_t *packet = (uart_packet_t *)request_buffer;
+  char *packet_data = request_buffer + sizeof(uart_packet_t);
 
   packet->type = 1;
 
@@ -127,7 +125,7 @@ void uart_tx_server() {
   int warehouse_tid = ((channel == COM1) ? uart1_tx_warehouse_tid : uart2_tx_warehouse_tid);
   int ready = false;
 
-  char * courier_name = (channel == COM1) ? "UART1 TX server courier" : "UART2 TX server courier";
+  char *courier_name = (channel == COM1) ? "UART1 TX server courier" : "UART2 TX server courier";
 
   int courier_tid = createCourier(courier_priority, warehouse_tid, tid, 0, courier_name);
 
@@ -139,7 +137,7 @@ void uart_tx_server() {
     if (requester == courier_tid) {
       ready = true;
     } else {
-      switch ( request.type ) {
+      switch (request.type) {
       case PUT_REQUEST:
         while (true) {
           if ((request.len == -1 && !(*request.ch)) || request.len == 0) {
@@ -157,7 +155,7 @@ void uart_tx_server() {
             ready = false;
           } else {
             KASSERT(outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits for channel %d!", channel);
-            int i = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
+            int i = (outputStart + outputQueueLength) % OUTPUT_QUEUE_MAX;
             outputQueue[i] = c;
             outputQueueLength += 1;
           }
@@ -179,10 +177,10 @@ void uart_tx_server() {
         packet->len = RESPONSE_BUFFER_SIZE;
       }
       for (int i = 0; i < packet->len; i++) {
-        int index = (outputStart+i) % OUTPUT_QUEUE_MAX;
+        int index = (outputStart + i) % OUTPUT_QUEUE_MAX;
         packet_data[i] = outputQueue[index];
       }
-      outputStart = (outputStart+packet->len) % OUTPUT_QUEUE_MAX;
+      outputStart = (outputStart + packet->len) % OUTPUT_QUEUE_MAX;
       outputQueueLength -= packet->len;
       Reply(courier_tid, request_buffer, sizeof(uart_packet_t) + packet->len);
       ready = false;
@@ -223,16 +221,10 @@ void uart_tx() {
   request.channel = COM2;
   SendSN(uart2_tx_server_tid, request);
 
-  logging_warehouse_tid = createWarehouse(
-      PRIORITY_LOGGING_WAREHOUSE,
-      uart2_tx_warehouse_tid,
-      LOGGING_PACKET_QUEUE,
-      PRIORITY_LOGGING_COURIER,
-      0,
-      "UART2 TX logging warehouse");
+  logging_warehouse_tid = createWarehouse(PRIORITY_LOGGING_WAREHOUSE, uart2_tx_warehouse_tid, LOGGING_PACKET_QUEUE, PRIORITY_LOGGING_COURIER, 0, "UART2 TX logging warehouse");
 }
 
-int Putcs( int channel, const char* c, int len ) {
+int Putcs(int channel, const char *c, int len) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Putc c=%c", active_task->tid, c);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
@@ -250,7 +242,7 @@ int Putcs( int channel, const char* c, int len ) {
   return 0;
 }
 
-int Putc( int channel, const char c ) {
+int Putc(int channel, const char c) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Putc tid=%d char=%c", active_task->tid, uart2_tx_server_tid, c);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
@@ -267,7 +259,7 @@ int Putc( int channel, const char c ) {
   return 0;
 }
 
-int Putstr(int channel, const char *str ) {
+int Putstr(int channel, const char *str) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Putstr str=%s", active_task->tid, str);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
@@ -319,12 +311,11 @@ int Logp(uart_packet_t *packet) {
 int Logf(int type, char *fmt, ...) {
   char buf[512];
   va_list va;
-  va_start(va,fmt);
+  va_start(va, fmt);
   jformat(buf, 512, fmt, va);
   va_end(va);
   return Logs(type, buf);
 }
-
 
 int Logs(int type, const char *str) {
   log_task("Logp str=%d", active_task->tid, packet.type);
@@ -334,12 +325,13 @@ int Logs(int type, const char *str) {
   }
 
   int slen = jstrlen(str);
-  char message_buffer[1024] __attribute__ ((aligned (4)));;
-  uart_packet_t * packet = (uart_packet_t *) message_buffer;
-  char * packet_data = message_buffer + sizeof(uart_packet_t);
+  char message_buffer[1024] __attribute__((aligned(4)));
+  ;
+  uart_packet_t *packet = (uart_packet_t *)message_buffer;
+  char *packet_data = message_buffer + sizeof(uart_packet_t);
   packet->type = type;
   packet->len = slen;
-  jmemcpy(packet_data, str, slen*sizeof(char));
+  jmemcpy(packet_data, str, slen * sizeof(char));
 
   int size = sizeof(uart_packet_t) + slen;
   KASSERT(size <= 1024, "Message buffer overflow. Re-evaluate buffer sizes");
@@ -354,7 +346,7 @@ void MoveTerminalCursor(unsigned int x, unsigned int y) {
   Putstr(COM2, buffer);
 }
 
-int GetTxQueueLength( int channel ) {
+int GetTxQueueLength(int channel) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
@@ -373,7 +365,7 @@ int GetTxQueueLength( int channel ) {
 int Putf(int channel, char *fmt, ...) {
   char buf[2048];
   va_list va;
-  va_start(va,fmt);
+  va_start(va, fmt);
   jformat(buf, 2048, fmt, va);
   va_end(va);
   return Putstr(channel, buf);

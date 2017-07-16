@@ -34,14 +34,16 @@ void scheduler_reschedule_the_world() {
   log_scheduler_task("signal kernel", tid);
   pthread_cond_signal(&kernel_cv);
   active_task = NULL;
-  if (task->state == STATE_ACTIVE) task->state = STATE_READY;
+  if (task->state == STATE_ACTIVE)
+    task->state = STATE_READY;
   log_scheduler_task("cv wait", tid);
-  while (task->state != STATE_ACTIVE) pthread_cond_wait(&task_cvs[tid], &active_mutex);
+  while (task->state != STATE_ACTIVE)
+    pthread_cond_wait(&task_cvs[tid], &active_mutex);
   log_scheduler_task("cv woke", tid);
 }
 
 void *scheduler_start_task(void *td) {
-  task_descriptor_t *task = (task_descriptor_t *) td;
+  task_descriptor_t *task = (task_descriptor_t *)td;
   log_scheduler_task("acquire mutex", task->tid);
   pthread_mutex_lock(&active_mutex);
   task->entrypoint();
@@ -70,7 +72,8 @@ kernel_request_t *scheduler_activate_task(task_descriptor_t *task) {
   }
   log_scheduler_kern("cv wait for tid=%d", task->tid);
   task->state = STATE_ACTIVE;
-  while (task->state == STATE_ACTIVE) pthread_cond_wait(&kernel_cv, &active_mutex);
+  while (task->state == STATE_ACTIVE)
+    pthread_cond_wait(&kernel_cv, &active_mutex);
   log_scheduler_kern("cv awake after tid=%d", task->tid);
   return &task->current_request;
 }

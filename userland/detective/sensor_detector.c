@@ -1,12 +1,12 @@
+#include <kernel.h>
 #include <detective/detector.h>
 #include <detective/sensor_detector.h>
-#include <trains/sensor_collector.h>
 #include <servers/nameserver.h>
 #include <servers/uart_tx_server.h>
 #include <track/pathing.h>
-#include <priorities.h>
-#include <kernel.h>
+#include <trains/sensor_collector.h>
 #include <packet.h>
+#include <priorities.h>
 
 volatile int sensor_detector_counter = 1;
 
@@ -38,13 +38,14 @@ void sensor_detector() {
   // Listen to all sensor data, waiting for the one we want
   while (true) {
     SendS(sensor_multiplexer_tid, request, data);
-    if (data.sensor_no == init.sensor_no) break;
+    if (data.sensor_no == init.sensor_no)
+      break;
   }
 
   SendSN(init.send_to, msg);
 }
 
-int StartSensorDetector(const char * name, int send_to, int sensor_no) {
+int StartSensorDetector(const char *name, int send_to, int sensor_no) {
   int tid = CreateWithName(PRIORITY_SENSOR_DETECTOR, sensor_detector, name);
   sensor_detector_init_t init;
   init.send_to = send_to;

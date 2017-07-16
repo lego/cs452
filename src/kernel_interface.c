@@ -1,11 +1,11 @@
-#include <stddef.h>
 #include <kassert.h>
+#include <stddef.h>
 
 #include <bwio.h>
+#include <kernel.h>
 #include <kern/context.h>
 #include <kern/context_switch.h>
 #include <kern/kernel_request.h>
-#include <kernel.h>
 #include <servers/nameserver.h>
 #include <jstring.h>
 
@@ -31,44 +31,40 @@ int _CreateWithName(int priority, void (*entrypoint)(), const char *func_name, b
   return ret_val.tid;
 }
 
-int MyTid( ) {
-  return active_task->tid;
-}
+int MyTid() { return active_task->tid; }
 
-const char * MyTaskName( ) {
+const char *MyTaskName() {
   // cast from fixed size array to char *
-  return (const char *) active_task->name;
+  return (const char *)active_task->name;
 }
 
-int MyParentTid( ) {
-  return active_task->parent_tid;
-}
+int MyParentTid() { return active_task->parent_tid; }
 
-void Pass( ) {
+void Pass() {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_PASS;
   context_switch(&request);
 }
 
-void Exit( ) {
+void Exit() {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_EXIT;
   context_switch(&request);
 }
 
-void ExitKernel( ) {
+void ExitKernel() {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_EXIT_KERNEL;
   context_switch(&request);
 }
 
-int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
+int Send(int tid, void *msg, int msglen, volatile void *reply, int replylen) {
   KASSERT(tid != active_task->tid, "Attempted send to self. from_tid=%d to_tid=%d", active_task->tid, tid);
   KASSERT(tid >= 0, "Attempted to send to a negative tid. from_tid=%d to_tid=%d", active_task->tid, tid);
-  KASSERT(((unsigned int) reply & 0x3) == 0, "Provided unaligned memory as a reply struct. Please  __attribute__ ((aligned (4))) to align it. from_tid=%d to_tid=%d", active_task->tid, tid);
+  KASSERT(((unsigned int)reply & 0x3) == 0, "Provided unaligned memory as a reply struct. Please  __attribute__ ((aligned (4))) to align it. from_tid=%d to_tid=%d", active_task->tid, tid);
 
   kernel_request_t request;
   request.tid = active_task->tid;
@@ -89,11 +85,11 @@ int Send( int tid, void *msg, int msglen, volatile void *reply, int replylen) {
   return ret_val.status;
 }
 
-int Receive( int *tid, volatile void *msg, int msglen ) {
+int Receive(int *tid, volatile void *msg, int msglen) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_RECEIVE;
-  KASSERT(((unsigned int) msg & 0x3) == 0, "Provided unaligned memory as a reply struct. Please  __attribute__ ((aligned (4))) to align it.");
+  KASSERT(((unsigned int)msg & 0x3) == 0, "Provided unaligned memory as a reply struct. Please  __attribute__ ((aligned (4))) to align it.");
 
   syscall_message_t ret_val;
   ret_val.msglen = msglen;
@@ -101,11 +97,12 @@ int Receive( int *tid, volatile void *msg, int msglen ) {
   request.ret_val = &ret_val;
 
   context_switch(&request);
-  if (tid != NULL && ret_val.status >= 0) *tid = ret_val.tid;
+  if (tid != NULL && ret_val.status >= 0)
+    *tid = ret_val.tid;
   return ret_val.status;
 }
 
-int Reply( int tid, void *reply, int replylen ) {
+int Reply(int tid, void *reply, int replylen) {
   // See send for why this is commented out
   KASSERT(tid != active_task->tid, "Attempted reply to self tid=%d", tid);
   // FIXME: assert tid is valid, replylen is positive or 0
@@ -127,7 +124,7 @@ int Reply( int tid, void *reply, int replylen ) {
   return arg.status;
 }
 
-int AwaitEvent( await_event_t event_type ) {
+int AwaitEvent(await_event_t event_type) {
   // FIXME: assert valid event
 
   kernel_request_t request;
@@ -140,7 +137,7 @@ int AwaitEvent( await_event_t event_type ) {
   return 0;
 }
 
-int AwaitEventPut( await_event_t event_type, char ch) {
+int AwaitEventPut(await_event_t event_type, char ch) {
   // FIXME: assert valid event
 
   kernel_request_t request;
@@ -166,7 +163,7 @@ io_time_t GetIdleTaskExecutionTime() {
   return 0;
 }
 
-void RecordLog(const char * msg) {
+void RecordLog(const char *msg) {
   int len = jstrlen(msg);
   if (!(len < LOG_SIZE - log_length)) {
     log_length = 0;
@@ -190,32 +187,32 @@ void RecordLogi(int i) {
 void RecordLogf(char *fmt, ...) {
   char buf[2048];
   va_list va;
-  va_start(va,fmt);
+  va_start(va, fmt);
   jformat(buf, 2048, fmt, va);
   va_end(va);
   return RecordLog(buf);
 }
 
-void Destroy( int tid ) {
+void Destroy(int tid) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_DESTROY;
-  request.arguments = (void *) tid;
+  request.arguments = (void *)tid;
   context_switch(&request);
 }
 
-void *Malloc( unsigned int size ) {
+void *Malloc(unsigned int size) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_MALLOC;
-  request.arguments = (void *) size;
+  request.arguments = (void *)size;
   void *data = NULL;
   request.ret_val = &data;
   context_switch(&request);
   return data;
 }
 
-int Free( void * ptr ) {
+int Free(void *ptr) {
   kernel_request_t request;
   request.tid = active_task->tid;
   request.syscall = SYSCALL_FREE;

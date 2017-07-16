@@ -73,12 +73,12 @@ void clock_server() {
     case DELAY_REQUEST:
       // Add requester to list of suspended tasks
       log_clock_server("clock_server: delay tid=%d until=%d", tid, requester, ticks + request.time_value);
-      heap_push(&delay_queue, ticks + request.time_value, (void *) requester);
+      heap_push(&delay_queue, ticks + request.time_value, (void *)requester);
       break;
     case DELAY_UNTIL_REQUEST:
       // Add requester to list of suspended tasks
       log_clock_server("clock_server: delay tid=%d until=%d", tid, requester, request.time_value);
-      heap_push(&delay_queue, request.time_value, (void *) requester);
+      heap_push(&delay_queue, request.time_value, (void *)requester);
       break;
     default:
       KASSERT(false, "Clock server received unknown request.type: type=%d", request.type);
@@ -89,7 +89,7 @@ void clock_server() {
 
     // Reply to suspended tasks that have timed out
     while (heap_size(&delay_queue) > 0 && heap_peek_priority(&delay_queue) <= ticks) {
-      int tid_of_delay_done = (int) heap_pop(&delay_queue);
+      int tid_of_delay_done = (int)heap_pop(&delay_queue);
       log_clock_server("clock_server: undelay tid=%d", tid, tid_of_delay_done);
       ReplyN(tid_of_delay_done);
     }
@@ -98,7 +98,7 @@ void clock_server() {
   }
 }
 
-int Delay(unsigned int delay ) {
+int Delay(unsigned int delay) {
   log_clock_server("Delay delay=%d", active_task->tid, delay);
   if (clock_server_tid == -1) {
     // Don't make data syscall, but still reschedule
@@ -126,7 +126,7 @@ int Time() {
   return time_value;
 }
 
-int DelayUntil(unsigned long int until ) {
+int DelayUntil(unsigned long int until) {
   log_clock_server("DelayUntil until=%d", active_task->tid, until);
   if (clock_server_tid == -1) {
     // Don't make data syscall, but still reschedule

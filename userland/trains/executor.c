@@ -1,17 +1,17 @@
-#include <worker.h>
 #include <kernel.h>
-#include <packet.h>
-#include <trains/executor.h>
-#include <servers/nameserver.h>
-#include <servers/clock_server.h>
-#include <servers/uart_tx_server.h>
-#include <trains/switch_controller.h>
-#include <trains/reservoir.h>
-#include <trains/navigation.h>
-#include <track/pathing.h>
-#include <train_command_server.h>
 #include <interactive/commands.h>
+#include <servers/clock_server.h>
+#include <servers/nameserver.h>
+#include <servers/uart_tx_server.h>
+#include <track/pathing.h>
+#include <trains/executor.h>
+#include <trains/navigation.h>
+#include <trains/reservoir.h>
+#include <trains/switch_controller.h>
 #include <trains/train_controller.h>
+#include <packet.h>
+#include <train_command_server.h>
+#include <worker.h>
 
 // FIXME: priority
 #define SOME_PRIORITY 5
@@ -35,8 +35,8 @@ typedef struct {
  * @param parent task ID (Executor)
  * @param data   of the navigation request
  */
-void pathing_worker(int parent_tid, void * data) {
-  cmd_data_t * cmd = (cmd_data_t *) data;
+void pathing_worker(int parent_tid, void *data) {
+  cmd_data_t *cmd = (cmd_data_t *)data;
   pathing_worker_result_t result;
   Logf(EXECUTOR_LOGGING, "Pathing working started");
 
@@ -55,50 +55,50 @@ void pathing_worker(int parent_tid, void * data) {
  * Executes a CLI command. This is to separate this switch statement of CLI results
  * from the state machine that is the executor
  */
-void execute_command(cmd_data_t * cmd_data) {
+void execute_command(cmd_data_t *cmd_data) {
   path_t p;
 
   // FIXME: do we want to tell a worker to do these things?
   switch (cmd_data->base.type) {
-    case COMMAND_TRAIN_SPEED:
-      Logf(EXECUTOR_LOGGING, "Executor got command");
-      TellTrainController(cmd_data->train, TRAIN_CONTROLLER_SET_SPEED, cmd_data->speed);
-      break;
-    case COMMAND_TRAIN_REVERSE:
-      ReverseTrain(cmd_data->train, 14);
-      break;
-    case COMMAND_SWITCH_TOGGLE:
-      SetSwitch(cmd_data->switch_no, cmd_data->switch_dir);
-      break;
-    case COMMAND_SWITCH_TOGGLE_ALL:
-      for (int i = 0; i < NUM_SWITCHES; i++) {
-        int switchNumber = i+1;
-        if (switchNumber >= 19) {
-          switchNumber += 134; // 19 -> 153, etc
-        }
-        SetSwitch(i, cmd_data->switch_dir);
-        // FIXME: don't delay in executor
-        Delay(6);
+  case COMMAND_TRAIN_SPEED:
+    Logf(EXECUTOR_LOGGING, "Executor got command");
+    TellTrainController(cmd_data->train, TRAIN_CONTROLLER_SET_SPEED, cmd_data->speed);
+    break;
+  case COMMAND_TRAIN_REVERSE:
+    ReverseTrain(cmd_data->train, 14);
+    break;
+  case COMMAND_SWITCH_TOGGLE:
+    SetSwitch(cmd_data->switch_no, cmd_data->switch_dir);
+    break;
+  case COMMAND_SWITCH_TOGGLE_ALL:
+    for (int i = 0; i < NUM_SWITCHES; i++) {
+      int switchNumber = i + 1;
+      if (switchNumber >= 19) {
+        switchNumber += 134; // 19 -> 153, etc
       }
-      break;
-    case COMMAND_NAVIGATE:
-      Logf(EXECUTOR_LOGGING, "Executor starting pathing worker");
-      _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
-      break;
+      SetSwitch(i, cmd_data->switch_dir);
+      // FIXME: don't delay in executor
+      Delay(6);
+    }
+    break;
+  case COMMAND_NAVIGATE:
+    Logf(EXECUTOR_LOGGING, "Executor starting pathing worker");
+    _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
+    break;
 
-    case COMMAND_STOP_FROM:
-      // FIXME: globals : active_train, active_speed
-      if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
-        break;
-      }
-      // get the path to the stopping from node
-      GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-      // set the switches for that route
-      SetPathSwitches(&p);
+  case COMMAND_STOP_FROM:
+    // FIXME: globals : active_train, active_speed
+    if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
       break;
-    default:
-      KASSERT(false, "Unhandled command send to executor. Got command=%d", cmd_data->base.type);
-      break;
+    }
+    // get the path to the stopping from node
+    GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
+    // set the switches for that route
+    SetPathSwitches(&p);
+    break;
+  default:
+    KASSERT(false, "Unhandled command send to executor. Got command=%d", cmd_data->base.type);
+    break;
   }
 }
 
@@ -106,10 +106,10 @@ void executor_task() {
   int tid = MyTid();
   RegisterAs(NS_EXECUTOR);
 
-  char request_buffer[1024] __attribute__ ((aligned (4)));
-  packet_t * packet = (packet_t *) request_buffer;
-  cmd_data_t * cmd = (cmd_data_t *) request_buffer;
-  pathing_worker_result_t * pathing_result = (pathing_worker_result_t *) request_buffer;
+  char request_buffer[1024] __attribute__((aligned(4)));
+  packet_t *packet = (packet_t *)request_buffer;
+  cmd_data_t *cmd = (cmd_data_t *)request_buffer;
+  pathing_worker_result_t *pathing_result = (pathing_worker_result_t *)request_buffer;
   int sender;
 
   while (true) {

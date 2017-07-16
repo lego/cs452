@@ -1,15 +1,15 @@
-#include <trains/train_controller.h>
 #include <basic.h>
 #include <bwio.h>
 #include <kernel.h>
-#include <servers/nameserver.h>
 #include <servers/clock_server.h>
+#include <servers/nameserver.h>
 #include <servers/uart_tx_server.h>
-#include <train_command_server.h>
-#include <trains/sensor_collector.h>
-#include <trains/route_executor.h>
 #include <trains/navigation.h>
+#include <trains/route_executor.h>
+#include <trains/sensor_collector.h>
+#include <trains/train_controller.h>
 #include <priorities.h>
+#include <train_command_server.h>
 
 int train_controllers[TRAINS_MAX];
 
@@ -19,7 +19,7 @@ void InitTrainControllers() {
   }
 }
 
-static void execute_basic_command(int train, train_command_msg_t * msg) {
+static void execute_basic_command(int train, train_command_msg_t *msg) {
   switch (msg->type) {
   case TRAIN_CONTROLLER_SET_SPEED:
     Logf(EXECUTOR_LOGGING, "TC executing speed cmd");
@@ -28,18 +28,18 @@ static void execute_basic_command(int train, train_command_msg_t * msg) {
   }
 }
 
-static void start_navigation(int train, path_t * path) {
+static void start_navigation(int train, path_t *path) {
   // FIXME: priority
   CreateRouteExecutor(10, train, path);
 }
 
 void train_controller() {
   int requester;
-  char request_buffer[1024] __attribute__ ((aligned (4)));
-  packet_t * packet = (packet_t *) request_buffer;
-  train_command_msg_t * msg = (train_command_msg_t *) request_buffer;
-  sensor_data_t * sensor_data = (sensor_data_t *) request_buffer;
-  train_navigate_t * navigate_msg = (train_navigate_t *) request_buffer;
+  char request_buffer[1024] __attribute__((aligned(4)));
+  packet_t *packet = (packet_t *)request_buffer;
+  train_command_msg_t *msg = (train_command_msg_t *)request_buffer;
+  sensor_data_t *sensor_data = (sensor_data_t *)request_buffer;
+  train_navigate_t *navigate_msg = (train_navigate_t *)request_buffer;
 
   path_t navigation_data;
 
@@ -53,15 +53,15 @@ void train_controller() {
     ReceiveS(&requester, request_buffer);
     ReplyN(requester);
     switch (packet->type) {
-      case SENSOR_DATA:
-        break;
-      case TRAIN_CONTROLLER_COMMAND:
-        execute_basic_command(train, msg);
-        break;
-      case TRAIN_NAVIGATE_COMMAND:
-        navigation_data = navigate_msg->path; // Persist the path
-        start_navigation(train, &navigation_data);
-        break;
+    case SENSOR_DATA:
+      break;
+    case TRAIN_CONTROLLER_COMMAND:
+      execute_basic_command(train, msg);
+      break;
+    case TRAIN_NAVIGATE_COMMAND:
+      navigation_data = navigate_msg->path; // Persist the path
+      start_navigation(train, &navigation_data);
+      break;
     }
   }
 }
@@ -89,8 +89,7 @@ void TellTrainController(int train, int type, int speed) {
   SendSN(train_controllers[train], msg);
 }
 
-
-void NavigateTrain(int train, int speed, path_t * path) {
+void NavigateTrain(int train, int speed, path_t *path) {
   ensure_train_controller(train);
   Logf(EXECUTOR_LOGGING, "navigating train=%d (tid=%d)", train, train_controllers[train]);
   train_navigate_t msg;

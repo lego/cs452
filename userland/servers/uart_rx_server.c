@@ -1,10 +1,9 @@
 #include <basic.h>
-#include <kernel.h>
-#include <servers/uart_rx_server.h>
+#include <bwio.h>
 #include <kernel.h>
 #include <servers/nameserver.h>
+#include <servers/uart_rx_server.h>
 #include <heap.h>
-#include <bwio.h>
 #include <priorities.h>
 
 static int uart1_rx_server_tid = -1;
@@ -40,17 +39,17 @@ void uart_rx_notifier() {
   req.type = RX_NOTIFIER;
   while (true) {
     log_uart_server("uart_rx_notifer channel=%d", channel);
-    switch(channel) {
-      case COM1:
-        AwaitEvent(EVENT_UART1_RX);
-        req.ch = VMEM(UART1_BASE + UART_DATA_OFFSET);
-        log_uart_server("uart_rx_notifer COM1 getc=%c", req.ch);
-        break;
-      case COM2:
-        AwaitEvent(EVENT_UART2_RX);
-        req.ch = VMEM(UART2_BASE + UART_DATA_OFFSET);
-        log_uart_server("uart_rx_notifer COM2 getc=%c", req.ch);
-        break;
+    switch (channel) {
+    case COM1:
+      AwaitEvent(EVENT_UART1_RX);
+      req.ch = VMEM(UART1_BASE + UART_DATA_OFFSET);
+      log_uart_server("uart_rx_notifer COM1 getc=%c", req.ch);
+      break;
+    case COM2:
+      AwaitEvent(EVENT_UART2_RX);
+      req.ch = VMEM(UART2_BASE + UART_DATA_OFFSET);
+      log_uart_server("uart_rx_notifer COM2 getc=%c", req.ch);
+      break;
     }
     Send(uart_server_tid, &req, sizeof(uart_request_t), NULL, 0);
   }
@@ -96,10 +95,10 @@ void uart_rx_server() {
   while (true) {
     ReceiveS(&requester, request);
 
-    switch ( request.type ) {
+    switch (request.type) {
     case RX_NOTIFIER:
       KASSERT(outputQueueLength < OUTPUT_QUEUE_MAX, "UART input server queue has reached its limits for channel %d!", channel);
-      int i = (outputStart+outputQueueLength) % OUTPUT_QUEUE_MAX;
+      int i = (outputStart + outputQueueLength) % OUTPUT_QUEUE_MAX;
       outputQueue[i] = request.ch;
       outputQueueLength += 1;
       ReplyN(requester);
@@ -124,7 +123,7 @@ void uart_rx_server() {
     if (waiting_tid != -1 && outputQueueLength > 0) {
       char c = outputQueue[outputStart];
       ReplyS(waiting_tid, c);
-      outputStart = (outputStart+1) % OUTPUT_QUEUE_MAX;
+      outputStart = (outputStart + 1) % OUTPUT_QUEUE_MAX;
       outputQueueLength -= 1;
       waiting_tid = -1;
     }
@@ -143,7 +142,7 @@ void uart_rx() {
   SendSN(uart2_rx_server_tid, request);
 }
 
-char Getc( int channel ) {
+char Getc(int channel) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
   int server_tid = ((channel == COM1) ? uart1_rx_server_tid : uart2_rx_server_tid);
@@ -154,12 +153,12 @@ char Getc( int channel ) {
   uart_request_t req;
   req.type = GET_REQUEST;
   req.channel = channel;
-  char result __attribute__ ((aligned (4)));
+  char result __attribute__((aligned(4)));
   SendS(server_tid, req, result);
   return result;
 }
 
-int ClearRx(int channel ) {
+int ClearRx(int channel) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("ClearRx tid=%d", active_task->tid, uart_rx_server_tid);
   int server_tid = ((channel == COM1) ? uart1_rx_server_tid : uart2_rx_server_tid);
@@ -174,7 +173,7 @@ int ClearRx(int channel ) {
   return 0;
 }
 
-int GetRxQueueLength( int channel ) {
+int GetRxQueueLength(int channel) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
   log_task("Getc tid=%d", active_task->tid, uart_rx_server_tid);
   int server_tid = ((channel == COM1) ? uart1_rx_server_tid : uart2_rx_server_tid);

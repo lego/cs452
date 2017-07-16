@@ -41,4 +41,4 @@ typedef struct {
  * @param  sensor_no to wait for
  * @return           returns the unique identifier (for sensor detectors)
  */
-int StartSensorTimeoutDetective(const char * name, int send_to, int timeout, int sensor_no);
+int StartSensorTimeoutDetective(const char *name, int send_to, int timeout, int sensor_no);

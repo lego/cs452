@@ -42,7 +42,8 @@ void sensor_notifier() {
   ReceiveS(&requester, attrib);
   ReplyN(requester);
 
-  char packet_buffer[512] __attribute__ ((aligned (4)));;
+  char packet_buffer[512] __attribute__((aligned(4)));
+  ;
   uart_packet_fixed_size_t packet;
   packet.len = 6;
   packet.type = PACKET_SENSOR_DATA;
@@ -78,48 +79,47 @@ void sensor_attributer() {
     ReceiveS(&requester, request);
     ReplyN(requester);
     switch (request.type) {
-      case SENSOR_ATTRIB_ASSIGN_TRAIN:
-        KASSERT(active_train == -1, "More than one unknown train active at the same time. Cannot do sensor attribution.");
-        active_train = request.arg1;
-        trainControllerTids[active_train] = requester;
-        break;
-      case SENSOR_ATTRIB_NOTIFY_SENSOR: {
-          int attrib = -1;
-          if (active_train != -1) {
-            attrib = active_train;
-            active_train = -1;
-            lastTrainAtSensor[request.arg1][0] = attrib;
-          } else {
-            int node = track[request.arg1].reverse->id;
-            for (int i = 0; i < 3 && attrib == -1; i++) {
+    case SENSOR_ATTRIB_ASSIGN_TRAIN:
+      KASSERT(active_train == -1, "More than one unknown train active at the same time. Cannot do sensor attribution.");
+      active_train = request.arg1;
+      trainControllerTids[active_train] = requester;
+      break;
+    case SENSOR_ATTRIB_NOTIFY_SENSOR: {
+      int attrib = -1;
+      if (active_train != -1) {
+        attrib = active_train;
+        active_train = -1;
+        lastTrainAtSensor[request.arg1][0] = attrib;
+      } else {
+        int node = track[request.arg1].reverse->id;
+        for (int i = 0; i < 3 && attrib == -1; i++) {
+          node = findSensorOrBranch(node);
+          while (node >= 0 && track[node].type == NODE_BRANCH) {
+            int state = GetSwitchState(track[node].num);
+            node = track[node].edge[state].dest->id;
+            if (track[node].type != NODE_SENSOR) {
               node = findSensorOrBranch(node);
-              while (node >= 0 && track[node].type == NODE_BRANCH) {
-                int state = GetSwitchState(track[node].num);
-                node = track[node].edge[state].dest->id;
-                if (track[node].type != NODE_SENSOR) {
-                  node = findSensorOrBranch(node);
-                }
-              }
-              if (node >= 0 && track[node].type == NODE_SENSOR) {
-                int reverseNode = track[node].reverse->id;
-                if (lastTrainAtSensor[reverseNode][0] != -1) {
-                  attrib = lastTrainAtSensor[reverseNode][0];
-                  lastTrainAtSensor[reverseNode][0] = -1;
-                  lastTrainAtSensor[request.arg1][0] = attrib;
-                }
-              }
             }
           }
-          int notifier = Create(PRIORITY_UART2_TX_SERVER, sensor_notifier);
-          sensor_attribution_t attrib_data;
-          attrib_data.sensor = request.arg1;
-          attrib_data.attribution = attrib;
-          attrib_data.time = request.arg2;
-          SendSN(notifier, attrib_data);
+          if (node >= 0 && track[node].type == NODE_SENSOR) {
+            int reverseNode = track[node].reverse->id;
+            if (lastTrainAtSensor[reverseNode][0] != -1) {
+              attrib = lastTrainAtSensor[reverseNode][0];
+              lastTrainAtSensor[reverseNode][0] = -1;
+              lastTrainAtSensor[request.arg1][0] = attrib;
+            }
+          }
         }
-        break;
-      default:
-        KASSERT(false, "Unknown sensor attrib request type, got %d", request.type);
+      }
+      int notifier = Create(PRIORITY_UART2_TX_SERVER, sensor_notifier);
+      sensor_attribution_t attrib_data;
+      attrib_data.sensor = request.arg1;
+      attrib_data.attribution = attrib;
+      attrib_data.time = request.arg2;
+      SendSN(notifier, attrib_data);
+    } break;
+    default:
+      KASSERT(false, "Unknown sensor attrib request type, got %d", request.type);
     }
   }
 }
@@ -134,7 +134,6 @@ void sensor_collector_task() {
 
   sensor_attributer_msg_t req;
   req.type = SENSOR_ATTRIB_NOTIFY_SENSOR;
-
 
   log_task("sensor_reader initialized parent=%d", tid, parent);
   int oldSensors[5];
@@ -168,10 +167,10 @@ void sensor_collector_task() {
         for (int j = 0; j < 16; j++) {
           if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
             // Send to attributer
-            req.arg1 = i*16+(15-j);
+            req.arg1 = i * 16 + (15 - j);
             SendSN(sensor_attributer_tid, req);
             // Send to detector multiplexer
-            req_data.sensor_no = i*16+(15-j);
+            req_data.sensor_no = i * 16 + (15 - j);
             SendSN(sensor_detector_multiplexer_tid, req_data);
           }
         }

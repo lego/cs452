@@ -1,8 +1,8 @@
-#include <trains/reservoir.h>
-#include <track/track_node.h>
-#include <track/pathing.h>
-#include <kernel.h>
 #include <bwio.h>
+#include <kernel.h>
+#include <track/pathing.h>
+#include <track/track_node.h>
+#include <trains/reservoir.h>
 
 void reservoir_test_task() {
   int result;
@@ -38,7 +38,6 @@ void reservoir_test_task() {
   reverse_req.len = 1;
   result = RequestSegment(&reverse_req);
   bwprintf(COM2, "Reservation w/reverse node0 attempt=%d\n\r", result);
-
 
   result = RequestSegment(&req);
   bwprintf(COM2, "Reservation w/ attempt=%d\n\r", result);

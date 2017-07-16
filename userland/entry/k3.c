@@ -2,8 +2,8 @@
 
 #include <bwio.h>
 #include <kernel.h>
-#include <servers/nameserver.h>
 #include <servers/clock_server.h>
+#include <servers/nameserver.h>
 #include <idle_task.h>
 #include <io.h>
 #include <priorities.h>
@@ -16,10 +16,7 @@ typedef struct {
 volatile int programs_active;
 volatile io_time_t start_time;
 
-static inline void Prepare() {
-  programs_active++;
-}
-
+static inline void Prepare() { programs_active++; }
 
 static inline void ExitIfComplete() {
   programs_active--;
@@ -42,7 +39,7 @@ void k3_client_task() {
   int i;
   for (i = 0; i < amount; i++) {
     Delay(ticks);
-    bwprintf(COM2, "Finished delay tid=%d ticks=%d completed=%d\n\r", my_tid, ticks, i+1);
+    bwprintf(COM2, "Finished delay tid=%d ticks=%d completed=%d\n\r", my_tid, ticks, i + 1);
   }
 
   ExitIfComplete();

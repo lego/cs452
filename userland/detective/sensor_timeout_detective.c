@@ -1,12 +1,12 @@
-#include <detective/detector.h>
-#include <detective/sensor_timeout_detective.h>
-#include <detective/sensor_detector.h>
+#include <kernel.h>
 #include <detective/delay_detector.h>
+#include <detective/detector.h>
+#include <detective/sensor_detector.h>
+#include <detective/sensor_timeout_detective.h>
 #include <servers/uart_tx_server.h>
 #include <track/pathing.h>
-#include <priorities.h>
-#include <kernel.h>
 #include <jstring.h>
+#include <priorities.h>
 
 volatile int sensor_timeout_detective_counter = 1;
 
@@ -19,7 +19,7 @@ typedef struct {
 
 void sensor_timeout_detective() {
   int tid = MyTid();
-  const char * my_name = MyTaskName();
+  const char *my_name = MyTaskName();
 
   int sender;
   sensor_timeout_init_t init;
@@ -39,14 +39,14 @@ void sensor_timeout_detective() {
   ReceiveS(&sender, detector);
   int activated_action = -1; // makes compiler happy, make it something that will break stuff
   switch (detector.packet.type) {
-    case DELAY_DETECT:
-      activated_action = DETECTIVE_TIMEOUT;
-      break;
-    case SENSOR_DETECT:
-      activated_action = DETECTIVE_SENSOR;
-      break;
-    default:
-      KASSERT(false, "Detective received bad packet type=%d\n\r", detector.packet.type);
+  case DELAY_DETECT:
+    activated_action = DETECTIVE_TIMEOUT;
+    break;
+  case SENSOR_DETECT:
+    activated_action = DETECTIVE_SENSOR;
+    break;
+  default:
+    KASSERT(false, "Detective received bad packet type=%d\n\r", detector.packet.type);
   }
 
   sensor_timeout_message_t msg;
@@ -62,7 +62,7 @@ void sensor_timeout_detective() {
   Destroy(tid);
 }
 
-int StartSensorTimeoutDetective(const char * name, int send_to, int timeout, int sensor_no) {
+int StartSensorTimeoutDetective(const char *name, int send_to, int timeout, int sensor_no) {
   int tid = CreateWithName(PRIORITY_SENSOR_TIMEOUT_DETECTIVE, sensor_timeout_detective, name);
   sensor_timeout_init_t init;
   init.send_to = send_to;

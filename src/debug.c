@@ -1,12 +1,12 @@
-#include <stdint.h>
-#include <util.h>
 #include <basic.h>
-#include <debug.h>
 #include <bwio.h>
-#include <jstring.h>
-#include <kern/interrupts.h>
 #include <kern/context.h>
+#include <kern/interrupts.h>
+#include <debug.h>
+#include <jstring.h>
+#include <stdint.h>
 #include <terminal.h>
+#include <util.h>
 
 extern int next_starting_task;
 extern int last_started_task;
@@ -29,22 +29,24 @@ void hex_dump(char *description, char *mem, int len) {
   int j;
   char *curr_mem = mem - len;
   bwprintf(COM2, "%s:\n\r", description);
-  for (i = 0; i < 2*len; i += 4) {
+  for (i = 0; i < 2 * len; i += 4) {
     if (curr_mem == mem) {
       // highlight the desired address
       bwputstr(COM2, WHITE_BG BLACK_FG);
-      bwprintf(COM2, "%08x", (unsigned int) curr_mem);
+      bwprintf(COM2, "%08x", (unsigned int)curr_mem);
       bwputstr(COM2, RESET_ATTRIBUTES);
     } else {
-      bwprintf(COM2, "%08x", (unsigned int) curr_mem);
+      bwprintf(COM2, "%08x", (unsigned int)curr_mem);
     }
 
     bwprintf(COM2, " is %08x  ", *(unsigned int *)curr_mem);
 
     for (j = 0; j < 4; j++) {
       char c = curr_mem[j];
-      if (is_alphanumeric(c) || c == '_') bwputc(COM2, c);
-      else bwputc(COM2, '.');
+      if (is_alphanumeric(c) || c == '_')
+        bwputc(COM2, c);
+      else
+        bwputc(COM2, '.');
     }
     bwputstr(COM2, "\n\r");
     curr_mem += 4;
@@ -61,7 +63,7 @@ char *name_not_found = "(name not found)";
 char *get_func_name(unsigned int *pc) {
   // check if a name is present via. the upper bits of the addr being 0xFF
   unsigned int name_length = *(pc - 1) & 0xFF;
-  char *chars = (char *) (pc - 1);
+  char *chars = (char *)(pc - 1);
   chars -= name_length;
 
   int i = 0;
@@ -82,57 +84,53 @@ void PrintAllTaskStacks(int focused_task) {}
 
 #else
 
-static inline uint32_t get_next_fp(uint32_t fp) {
-  return VMEM(fp - 12);
-}
+static inline uint32_t get_next_fp(uint32_t fp) { return VMEM(fp - 12); }
 
-static inline uint32_t get_lr(uint32_t fp) {
-  return VMEM(fp - 4);
-}
+static inline uint32_t get_lr(uint32_t fp) { return VMEM(fp - 4); }
 
-static inline uint32_t get_func_starting_pc(uint32_t fp) {
-  return VMEM(fp) - 16;
-}
+static inline uint32_t get_func_starting_pc(uint32_t fp) { return VMEM(fp) - 16; }
 
 void uart_tx_notifier();
 
 void print_stack_trace(unsigned int fp, int lr) {
-	if (!fp) return;
-	unsigned int pc = 0, depth = 20;
+  if (!fp)
+    return;
+  unsigned int pc = 0, depth = 20;
 
   // Ensure the FP is in range
-	if (fp <= 0x218000 || fp >= 0x2000000) {
-		bwprintf(COM2, RED_BG "fp out of range: %08x" RESET_ATTRIBUTES "\n\r", fp);
-		return;
-	}
+  if (fp <= 0x218000 || fp >= 0x2000000) {
+    bwprintf(COM2, RED_BG "fp out of range: %08x" RESET_ATTRIBUTES "\n\r", fp);
+    return;
+  }
 
-	do {
+  do {
     // Get the PC
-		pc = get_func_starting_pc(fp);
+    pc = get_func_starting_pc(fp);
 
     // Get the assembly offset
-		int asm_line_num = (lr == 0) ? 0 : ((lr - pc) >> 2);
+    int asm_line_num = (lr == 0) ? 0 : ((lr - pc) >> 2);
     // Get the function name
     char *name = get_func_name((unsigned int *)pc);
 
     if (name == name_not_found) {
-      hex_dump("something", (char *) fp, 16);
-      bwprintf(COM2, "uart_notifier addr=%08x", (unsigned int) uart_tx_notifier);
+      hex_dump("something", (char *)fp, 16);
+      bwprintf(COM2, "uart_notifier addr=%08x", (unsigned int)uart_tx_notifier);
       return;
     }
 
     bwprintf(COM2, "  %s @ %08x+%d  fp=%08x\n\r", name, pc, asm_line_num, fp);
 
     // Get next functions current execution location + FP
-		lr = get_lr(fp);
-		fp = get_next_fp(fp);
+    lr = get_lr(fp);
+    fp = get_next_fp(fp);
 
     // Break if end of user task stack (Exit is put into LR by scheduler)
-    if (lr == (unsigned int) Exit) break;
+    if (lr == (unsigned int)Exit)
+      break;
 
     // Break if end of kernel stack. Redboot is in the LR, which is below the
     // redboot entry -- well probably just an arbitrarily low number
-	} while (lr > REDBOOT_ENTRYPOINT);
+  } while (lr > REDBOOT_ENTRYPOINT);
 }
 
 void PrintAllTaskStacks(int focused_task) {
@@ -141,7 +139,8 @@ void PrintAllTaskStacks(int focused_task) {
 
   for (i = 0; i < ctx->used_descriptors; i++) {
     task = &ctx->descriptors[i];
-    if (i == focused_task) continue;
+    if (i == focused_task)
+      continue;
     bwprintf(COM2, "Task %d (%s) stack\n\r", i, task->name);
     if (task->state == STATE_ZOMBIE) {
       bwprintf(COM2, "  task has ended\n\r");
@@ -159,7 +158,7 @@ void PrintAllTaskStacks(int focused_task) {
     bwprintf(COM2, GREY_BG BLACK_FG "CURRENT" RESET_ATTRIBUTES " Task %d (%s) backtrace\n\r", focused_task, task->name);
     // get fp
     unsigned int fp;
-    asm volatile("mov %0, fp @ save fp" : "=r" (fp));
+    asm volatile("mov %0, fp @ save fp" : "=r"(fp));
     // skip this frame, because it's PrintAllTaskStacks
     fp = get_next_fp(fp);
     // print current task backtrace
@@ -167,10 +166,7 @@ void PrintAllTaskStacks(int focused_task) {
   }
 }
 
-
-static inline bool is_valid_task(int tid) {
-  return tid < ctx->used_descriptors;
-}
+static inline bool is_valid_task(int tid) { return tid < ctx->used_descriptors; }
 
 void PrintTaskBacktrace(int tid) {
   KASSERT(is_valid_task(tid), "Can't take the backtrace of an invalid task.");
@@ -187,15 +183,17 @@ void PrintTaskBacktrace(int tid) {
   // bwprintf(COM2, "Predirected fp=%08x\n\r", fp - 0x20);
   // hex_dump("Target frame", (void *) (fp - 0x20), 8 * 10);
   // fp - 0x20 because ??, but it worked through observation
-  if (tid == 4) return;
+  if (tid == 4)
+    return;
   if (tid == 7) {
-    hex_dump("Idle task zone", (char *) fp, 20 * 8);
+    hex_dump("Idle task zone", (char *)fp, 20 * 8);
   }
 
   fp -= 0x20;
 
   // the PC pointed to by the saved stack will be bad, as it's in the middle of a fcn
-  if (task->was_interrupted) fp = get_next_fp(fp);
+  if (task->was_interrupted)
+    fp = get_next_fp(fp);
 
   print_stack_trace(fp, lr);
 }
@@ -243,9 +241,9 @@ typedef void (*interrupt_handler)(void);
  * an SWI handler to enter privilaged mode
  */
 void __exit_kernel_svc() {
-  asm volatile ("msr cpsr_c, #211");
-  asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
-  asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
+  asm volatile("msr cpsr_c, #211");
+  asm volatile("sub sp, %0, #16" : : "r"(main_fp));
+  asm volatile("ldmfd sp, {sl, fp, sp, pc}");
 }
 
 /**
@@ -254,11 +252,10 @@ void __exit_kernel_svc() {
  * then call into privilaged mode
  */
 void exit_kernel() {
-  *((interrupt_handler*)0x28) = (interrupt_handler)&__exit_kernel_svc;
+  *((interrupt_handler *)0x28) = (interrupt_handler)&__exit_kernel_svc;
   // go into __exit_kernel_svc as IRQ (privilaged)
-  asm volatile ("swi #5");
+  asm volatile("swi #5");
 }
-
 
 //
 // This is needed because for some reason if we run our program more than
@@ -304,8 +301,7 @@ void cleanup(bool print_stacks) {
   if (print_stacks) {
     if (active_task) {
       PrintAllTaskStacks(active_task->tid);
-    }
-    else {
+    } else {
       PrintAllTaskStacks(-1);
       bwprintf(COM2, "Kernel stack\n\r");
       PrintBacktrace();

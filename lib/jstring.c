@@ -1,26 +1,29 @@
-#include <stddef.h>
-#include <kassert.h>
 #include <jstring.h>
+#include <kassert.h>
+#include <stddef.h>
 #include <util.h>
 
 unsigned int jstrlen(const char *str) {
   int len = 0;
-  while(str[len] != 0) len++;
+  while (str[len] != 0)
+    len++;
   return len;
 }
 
 bool jstrcmp(const char *str1, const char *str2) {
   int i = 0;
   while (true) {
-    if (str1[i] == '\0' && str2[i] == '\0') return true;
-    else if (str1[i] == str2[i]) i++;
-    else return false;
+    if (str1[i] == '\0' && str2[i] == '\0')
+      return true;
+    else if (str1[i] == str2[i])
+      i++;
+    else
+      return false;
   }
   return false;
 }
 
-
-char * jstrncpy(char *s1, const char *s2, int n) {
+char *jstrncpy(char *s1, const char *s2, int n) {
   char *s = s1;
   while (n > 1 && *s2 != '\0') {
     *s++ = *s2++;
@@ -36,7 +39,8 @@ void jstrappend(const char *str1, const char *str2, char *buf) {
   // FIXME: assert size doesn't overflow buffer
   if (buf == str1) {
     // optimization if str1 is also a buffer with space
-    while (*buf != '\0') buf++;
+    while (*buf != '\0')
+      buf++;
   } else {
     while (*str1 != '\0') {
       *buf = *str1;
@@ -56,7 +60,8 @@ void jstrappendc(const char *str1, const char c, char *buf) {
   // FIXME: assert size doesn't overflow buffer
   if (buf == str1) {
     // optimization if str1 is also a buffer
-    while (*buf != '\0') buf++;
+    while (*buf != '\0')
+      buf++;
   } else {
     while (*str1 != '\0') {
       *buf = *str1;
@@ -73,19 +78,20 @@ int jstrsplit_count(char *str, char delimiter) {
   int i;
   unsigned int len = jstrlen(str);
   // edge case, empty string
-  if (len == 0) return 0;
+  if (len == 0)
+    return 0;
 
   // count for how many new strings there will be
   int str_count = str[0] == delimiter ? 0 : 1;
   bool in_delimiter = str[0] == delimiter;
   for (i = 0; i < len; i++) {
-    if (str[i] != delimiter && in_delimiter) str_count++;
+    if (str[i] != delimiter && in_delimiter)
+      str_count++;
     in_delimiter = str[i] == delimiter;
   }
 
   return str_count;
 }
-
 
 void jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
   int i;
@@ -102,17 +108,20 @@ void jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
   // put NULL for char ** end
   buffer[str_count] = '\0';
   // edge case, empty string
-  if (str_count == 0) return;
+  if (str_count == 0)
+    return;
 
   // Set the split characters into the buffer, with offsets in the beginning
   char *current_str = buffer + str_count + 1;
   // start it in the delimiter so it always initializes
   bool in_delimiter = true;
   // start buffer back one, so it initializes with an increment correctly
-  if (in_delimiter) buffer--;
+  if (in_delimiter)
+    buffer--;
   int idx = 0;
   for (i = 0; i < len; i++) {
-    if (str[i] == delimiter && in_delimiter) continue;
+    if (str[i] == delimiter && in_delimiter)
+      continue;
     else if (str[i] != delimiter && in_delimiter) {
       // move out of delimiter
       // shift current char **
@@ -146,15 +155,16 @@ int jc2i(char c) {
   return -1;
 }
 
-int ja2i(char* str) {
+int ja2i(char *str) {
   int length;
-  for (length = 0; *(str+length); length++);
+  for (length = 0; *(str + length); length++)
+    ;
   length -= 1; // go back to last character to skip the '\0'
   int total = 0;
   int base = 1;
   char c;
   for (; length >= 0; length--) {
-    c = *(str+length);
+    c = *(str + length);
     int converted = jc2i(c);
     if (converted < 0) {
       return -1;
@@ -170,12 +180,13 @@ void jui2a(unsigned int num, unsigned int base, char *bf) {
   int dgt;
   unsigned int d = 1;
 
-  while((num / d) >= base) d *= base;
-  while(d != 0) {
+  while ((num / d) >= base)
+    d *= base;
+  while (d != 0) {
     dgt = num / d;
     num %= d;
     d /= base;
-    if(n || dgt > 0 || d == 0) {
+    if (n || dgt > 0 || d == 0) {
       *bf++ = dgt + (dgt < 10 ? '0' : 'a' - 10);
       ++n;
     }
@@ -184,7 +195,7 @@ void jui2a(unsigned int num, unsigned int base, char *bf) {
 }
 
 void ji2a(int num, char *bf) {
-  if(num < 0) {
+  if (num < 0) {
     num = -num;
     *bf++ = '-';
   }
@@ -192,12 +203,14 @@ void ji2a(int num, char *bf) {
 }
 
 unsigned int jatoui(char *str, int *status) {
-  unsigned int res = 0;    // Initialize result
-  unsigned int i = 0;    // Initialize index of first digit
+  unsigned int res = 0; // Initialize result
+  unsigned int i = 0;   // Initialize index of first digit
 
-  while (!is_digit(str[i]) && str[i] != '\0') i++;
+  while (!is_digit(str[i]) && str[i] != '\0')
+    i++;
   if (str[i] == '\0') {
-    if (status != NULL) *status = -1;
+    if (status != NULL)
+      *status = -1;
     return 0;
   }
 
@@ -207,35 +220,37 @@ unsigned int jatoui(char *str, int *status) {
   }
 
   // Check if there are only spaces at the end
-  while (str[i] == ' ') i++;
+  while (str[i] == ' ')
+    i++;
   // Status denoting we fully consumed only the number, excluding padding
-  if (str[i] == '\0' && status != NULL) *status = 0;
+  if (str[i] == '\0' && status != NULL)
+    *status = 0;
   // Status denoting there were more non-number characters
-  else if (status != NULL) *status = 1;
+  else if (status != NULL)
+    *status = 1;
   return res;
 }
 
-
 // returns the final amount of characters appended
 // equivilant to n+len(bf)
-int jstrappendw( char *dest_buf, int n, char fc, char *bf ) {
+int jstrappendw(char *dest_buf, int n, char fc, char *bf) {
   char ch;
   char *p = bf;
   int used_buf = 0;
-  while( *p++ && n > 0 ) n--;
-  while( n-- > 0 ) {
-    jstrappendc( dest_buf, fc, dest_buf );
+  while (*p++ && n > 0)
+    n--;
+  while (n-- > 0) {
+    jstrappendc(dest_buf, fc, dest_buf);
     used_buf++;
   }
-  while( ( ch = *bf++ ) ) {
-    jstrappendc( dest_buf, ch, dest_buf );
+  while ((ch = *bf++)) {
+    jstrappendc(dest_buf, ch, dest_buf);
     used_buf++;
   }
   return used_buf;
 }
 
-
-void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
+void jformat(char *buf, int buf_size, char *fmt, va_list va) {
   buf[0] = '\0';
   char bf[12];
   char ch, lz;
@@ -244,17 +259,20 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
   int used_size = 0;
   int trailing = 0;
 
-  while ( ( ch = *(fmt++) ) ) {
+  while ((ch = *(fmt++))) {
     used_size = 0;
-    if ( ch != '%' ) {
-      jstrappendc( buf, ch, buf );
+    if (ch != '%') {
+      jstrappendc(buf, ch, buf);
       used_buf++;
     } else {
-      lz = 0; w = 0; trailing = 0;
+      lz = 0;
+      w = 0;
+      trailing = 0;
       ch = *(fmt++);
-      switch ( ch ) {
+      switch (ch) {
       case '0':
-        lz = 1; ch = *(fmt++);
+        lz = 1;
+        ch = *(fmt++);
       case '1':
       case '2':
       case '3':
@@ -264,46 +282,49 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
       case '7':
       case '8':
       case '9':
-        ch = a2i( ch, &fmt, 10, &w );
-        if (lz == 1) lz = '0';
-        else lz = ' ';
+        ch = a2i(ch, &fmt, 10, &w);
+        if (lz == 1)
+          lz = '0';
+        else
+          lz = ' ';
         break;
       case '-':
         // trailing padding
         ch = *(fmt++);
-        ch = a2i( ch, &fmt, 10, &trailing );
+        ch = a2i(ch, &fmt, 10, &trailing);
         lz = ' ';
         break;
       }
 
-      switch( ch ) {
-      case 0: return;
+      switch (ch) {
+      case 0:
+        return;
       case 'c':
-        jstrappendc(buf, (char) va_arg( va, int ), buf);
+        jstrappendc(buf, (char)va_arg(va, int), buf);
         used_buf++;
         break;
       case 's':
-        used_size = jstrappendw( buf, w, lz, va_arg( va, char* ) );
+        used_size = jstrappendw(buf, w, lz, va_arg(va, char *));
         used_buf += used_size;
         break;
       case 'u':
-        ui2a( va_arg( va, unsigned int ), 10, bf );
-        used_size = jstrappendw( buf, w, lz, bf );
+        ui2a(va_arg(va, unsigned int), 10, bf);
+        used_size = jstrappendw(buf, w, lz, bf);
         used_buf += used_size;
         break;
       case 'd':
-        i2a( va_arg( va, int ), bf );
-        used_size = jstrappendw( buf, w, lz, bf );
+        i2a(va_arg(va, int), bf);
+        used_size = jstrappendw(buf, w, lz, bf);
         used_buf += used_size;
         break;
       case 'l':
-        l2a( va_arg( va, long int ), bf );
-        used_size = jstrappendw( buf, w, lz, bf );
+        l2a(va_arg(va, long int), bf);
+        used_size = jstrappendw(buf, w, lz, bf);
         used_buf += used_size;
         break;
       case 'x':
-        ui2a( va_arg( va, unsigned int ), 16, bf );
-        used_size = jstrappendw( buf, w, lz, bf );
+        ui2a(va_arg(va, unsigned int), 16, bf);
+        used_size = jstrappendw(buf, w, lz, bf);
         used_buf += used_size;
         break;
       case '%':
@@ -322,9 +343,9 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
   }
 }
 
-void jformatf( char *buf, int buf_size, char *fmt, ... ) {
+void jformatf(char *buf, int buf_size, char *fmt, ...) {
   va_list va;
-  va_start(va,fmt);
-  jformat( buf, buf_size, fmt, va );
+  va_start(va, fmt);
+  jformat(buf, buf_size, fmt, va);
   va_end(va);
 }

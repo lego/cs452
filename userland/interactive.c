@@ -1,27 +1,27 @@
-#include <io.h>
 #include <basic.h>
-#include <util.h>
 #include <bwio.h>
-#include <packet.h>
-#include <interactive.h>
-#include <servers/nameserver.h>
-#include <servers/clock_server.h>
-#include <terminal.h>
-#include <servers/uart_rx_server.h>
-#include <servers/uart_tx_server.h>
-#include <train_command_server.h>
 #include <kernel.h>
-#include <trains/navigation.h>
-#include <trains/sensor_collector.h>
-#include <trains/train_controller.h>
 #include <detective/interval_detector.h>
-#include <trains/switch_controller.h>
-#include <jstring.h>
-#include <priorities.h>
 #include <interactive/command_parser.h>
 #include <interactive/interactive.h>
-#include <track/track_node.h>
+#include <servers/clock_server.h>
+#include <servers/nameserver.h>
+#include <servers/uart_rx_server.h>
+#include <servers/uart_tx_server.h>
 #include <track/pathing.h>
+#include <track/track_node.h>
+#include <trains/navigation.h>
+#include <trains/sensor_collector.h>
+#include <trains/switch_controller.h>
+#include <trains/train_controller.h>
+#include <interactive.h>
+#include <io.h>
+#include <jstring.h>
+#include <packet.h>
+#include <priorities.h>
+#include <terminal.h>
+#include <train_command_server.h>
+#include <util.h>
 
 // used for displaying the path, updated on 100ms intervals
 path_t *current_path;
@@ -78,8 +78,8 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   int dist_to_dest = p->dist;
   int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
   int calculated_time = remaining_mm * 10 / velo;
-  if (calculated_time < 0) calculated_time = 0;
-
+  if (calculated_time < 0)
+    calculated_time = 0;
 
   MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
   Putf(COM2, "Path from %s ~> %s", p->src->name, p->dest->name);
@@ -98,16 +98,16 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
     // if branch, figure out which way
     // also find the edge to get the true distance (node.dist is incorrect for merged paths, i.e. SRC -> BASIS -> DEST)
     char dir = 'x';
-    if (p->nodes[i-1]->type == NODE_BRANCH) {
-      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+    if (p->nodes[i - 1]->type == NODE_BRANCH) {
+      if (p->nodes[i - 1]->edge[DIR_CURVED].dest == p->nodes[i]) {
         dir = 'C';
-        next_edge = &p->nodes[i-1]->edge[DIR_CURVED];
+        next_edge = &p->nodes[i - 1]->edge[DIR_CURVED];
       } else {
         dir = 'S';
-        next_edge = &p->nodes[i-1]->edge[DIR_STRAIGHT];
+        next_edge = &p->nodes[i - 1]->edge[DIR_STRAIGHT];
       }
     } else {
-      next_edge = &p->nodes[i-1]->edge[DIR_AHEAD];
+      next_edge = &p->nodes[i - 1]->edge[DIR_AHEAD];
     }
 
     dist_sum += next_edge->dist;
@@ -119,19 +119,19 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
       remaining_mm_to_node = dist_sum - travelled_dist;
     }
     int eta_to_node = remaining_mm_to_node * 10 / velo;
-    if (eta_to_node < 0) eta_to_node = 0;
+    if (eta_to_node < 0)
+      eta_to_node = 0;
     p->nodes[i]->expected_time = eta_to_node + start_time;
 
-    if (p->nodes[i-1]->type == NODE_BRANCH) {
+    if (p->nodes[i - 1]->type == NODE_BRANCH) {
       path_display_pos++;
       MoveTerminalCursor(PATH_LOG_X + 4, PATH_LOG_Y + path_display_pos);
-      Putf(COM2, "switch=%d needs to be %c", p->nodes[i-1]->num, dir);
+      Putf(COM2, "switch=%d needs to be %c", p->nodes[i - 1]->num, dir);
     }
 
     path_display_pos++;
     MoveTerminalCursor(PATH_LOG_X + 2, PATH_LOG_Y + path_display_pos);
     Putf(COM2, "node=%s", p->nodes[i]->name);
-
 
     // print distance to individual node and time to it
     MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
@@ -160,8 +160,10 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   int dist_to_dest = p->dist;
   int remaining_mm = dist_to_dest - stop_dist - travelled_dist;
   int calculated_time = remaining_mm * 10 / velo;
-  if (calculated_time < 0) calculated_time = 0;
-  if (remaining_mm < 0) remaining_mm = -stop_dist;
+  if (calculated_time < 0)
+    calculated_time = 0;
+  if (remaining_mm < 0)
+    remaining_mm = -stop_dist;
 
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
   Putf(COM2, "dist %5dmm   timeleft=", remaining_mm + stop_dist);
@@ -174,24 +176,25 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
     // if branch, figure out which way
     // also find the edge to get the true distance (node.dist is incorrect for merged paths, i.e. SRC -> BASIS -> DEST)
     char dir = 'x';
-    if (p->nodes[i-1]->type == NODE_BRANCH) {
-      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+    if (p->nodes[i - 1]->type == NODE_BRANCH) {
+      if (p->nodes[i - 1]->edge[DIR_CURVED].dest == p->nodes[i]) {
         dir = 'C';
-        next_edge = &p->nodes[i-1]->edge[DIR_CURVED];
+        next_edge = &p->nodes[i - 1]->edge[DIR_CURVED];
       } else {
         dir = 'S';
-        next_edge = &p->nodes[i-1]->edge[DIR_STRAIGHT];
+        next_edge = &p->nodes[i - 1]->edge[DIR_STRAIGHT];
       }
     } else {
-      next_edge = &p->nodes[i-1]->edge[DIR_AHEAD];
+      next_edge = &p->nodes[i - 1]->edge[DIR_AHEAD];
     }
 
     dist_sum += next_edge->dist;
 
     int remaining_mm_to_node = dist_sum - stop_dist - travelled_dist;
-    if (remaining_mm_to_node < 0) remaining_mm_to_node = -stop_dist;
+    if (remaining_mm_to_node < 0)
+      remaining_mm_to_node = -stop_dist;
 
-    if (p->nodes[i-1]->type == NODE_BRANCH) {
+    if (p->nodes[i - 1]->type == NODE_BRANCH) {
       path_display_pos++;
     }
 
@@ -224,10 +227,10 @@ int sensor_display_times[SENSOR_LOG_LENGTH];
 int logged_sensors;
 int last_logged_sensors;
 
-
 void PrintSensorTrigger(int sensor_num, int sensor_time) {
   Putstr(COM2, SAVE_CURSOR);
-  if (logged_sensors < SENSOR_LOG_LENGTH) logged_sensors++;
+  if (logged_sensors < SENSOR_LOG_LENGTH)
+    logged_sensors++;
   last_logged_sensors = (last_logged_sensors + 1) % SENSOR_LOG_LENGTH;
   sensor_display_nums[last_logged_sensors] = sensor_num;
   sensor_display_times[last_logged_sensors] = sensor_time;
@@ -303,11 +306,11 @@ void DrawInitialScreen() {
 
   Putstr(COM2, RESET_ATTRIBUTES);
   Putstr(COM2, "\n\r1 ?    7 ?    13?    153?\n\r"
-             "2 ?    8 ?    14?    154?\n\r"
-             "3 ?    9 ?    15?    155?\n\r"
-             "4 ?    10?    16?    156?\n\r"
-             "5 ?    11?    17?\n\r"
-             "6 ?    12?    18?");
+               "2 ?    8 ?    14?    154?\n\r"
+               "3 ?    9 ?    15?    155?\n\r"
+               "4 ?    10?    16?    156?\n\r"
+               "5 ?    11?    17?\n\r"
+               "6 ?    12?    18?");
 
   Putstr(COM2, BLACK_FG);
   Putstr(COM2, WHITE_BG);
@@ -320,7 +323,6 @@ void DrawInitialScreen() {
   Putstr(COM2, RESET_ATTRIBUTES);
 
   Putstr(COM2, "\n\rPlease wait, initializing...\n\r# ");
-
 }
 
 void DrawTime(int t) {
@@ -367,7 +369,7 @@ void RenderSwitchChange(int sw, int state) {
 
   if (index >= 0 && index < NUM_SWITCHES) {
     Putstr(COM2, SAVE_CURSOR);
-    MoveTerminalCursor(3+7*(index/6)+(index>=18?1:0), SWITCH_LOCATION+1+index%6);
+    MoveTerminalCursor(3 + 7 * (index / 6) + (index >= 18 ? 1 : 0), SWITCH_LOCATION + 1 + index % 6);
     if (state == SWITCH_CURVED) {
       Putc(COM2, 'C');
     } else if (state == SWITCH_STRAIGHT) {
@@ -381,7 +383,7 @@ void RenderSwitchChange(int sw, int state) {
 
 void initSwitches(int *initSwitches) {
   for (int i = 0; i < NUM_SWITCHES; i++) {
-    int switchNumber = i+1;
+    int switchNumber = i + 1;
     if (switchNumber >= 19) {
       switchNumber += 134; // 19 -> 153, etc
     }
@@ -443,9 +445,9 @@ void clearBuckets() {
     predictionSize[i] = 0;
     prediction = 0.0f;
     for (int j = 0; j < SAMPLES; j++) {
-      bucketSamples[i*SAMPLES+j] = 0;
-      speedMultipliers[i*SAMPLES+j] = 1.0f;
-      predictions[i*SAMPLES+j] = 1.0f;
+      bucketSamples[i * SAMPLES + j] = 0;
+      speedMultipliers[i * SAMPLES + j] = 1.0f;
+      predictions[i * SAMPLES + j] = 1.0f;
     }
   }
 }
@@ -456,27 +458,27 @@ void registerSample(int sensor, int prevSensor, int sample, int time) {
       if (bucketSize[i] < SAMPLES) {
         int j = (i == 0 ? BUCKETS : i) - 1;
         if (bucketSensors[j] == prevSensor) {
-          bucketSamples[i*SAMPLES+bucketSize[i]] = sample;
+          bucketSamples[i * SAMPLES + bucketSize[i]] = sample;
           bucketSize[i]++;
         }
       }
       if (count > 1) {
         int total = 0;
         for (int j = 0; j < bucketSize[i]; j++) {
-          total += bucketSamples[i*SAMPLES+j];
+          total += bucketSamples[i * SAMPLES + j];
         }
-        bucketAvg[i] = total/(float)bucketSize[i];
-        speedMultipliers[i*SAMPLES+speedMultSize[i]] = ((float)sample)/(float)bucketAvg[i];
+        bucketAvg[i] = total / (float)bucketSize[i];
+        speedMultipliers[i * SAMPLES + speedMultSize[i]] = ((float)sample) / (float)bucketAvg[i];
         speedMultSize[i]++;
         int sampleWithLastOffset = sample - offset;
-        int predictedSample = prediction - (time-sampleWithLastOffset);
+        int predictedSample = prediction - (time - sampleWithLastOffset);
         offset = ((float)sample - predictedSample);
         float maxO = 5.0f;
         offset = minf(maxf(offset, -maxO), maxO);
         if (prediction != 0.0f) {
           predictionAccuracy = ((float)predictedSample) / ((float)sample);
         }
-        prediction = (float)time + bucketAvg[(i+1)%BUCKETS] + offset;
+        prediction = (float)time + bucketAvg[(i + 1) % BUCKETS] + offset;
       }
       // if (i == 7) {
       //   if (count > 3) {
@@ -522,8 +524,8 @@ void stopper() {
 void sensor_saver() {
   int stopper_tid = Create(2, stopper);
   RegisterAs(NS_SENSOR_SAVER);
-  char request_buffer[1024] __attribute__ ((aligned (4)));
-  packet_t *packet = (packet_t *) request_buffer;
+  char request_buffer[1024] __attribute__((aligned(4)));
+  packet_t *packet = (packet_t *)request_buffer;
   int lastSensorTime = -1;
   int sender;
 
@@ -558,11 +560,11 @@ void sensor_saver() {
       if (track[next2].type != NODE_SENSOR) {
         next2 = findSensorOrBranch(next2);
       }
-      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d, started at %d, intermediary %d", next1, i, next);
-      //KASSERT(next2 >= -1 && next2 < NUM_SENSORS, "next2 broken, got %d, started at %d, intermediary %d", next2, i, next);
+      // KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d, started at %d, intermediary %d", next1, i, next);
+      // KASSERT(next2 >= -1 && next2 < NUM_SENSORS, "next2 broken, got %d, started at %d, intermediary %d", next2, i, next);
     } else {
       next1 = next;
-      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d", next1);
+      // KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d", next1);
     }
 
     if (next1 >= 0 && next1 < NUM_SENSORS) {
@@ -618,53 +620,54 @@ void sensor_saver() {
     ReceiveS(&sender, request_buffer);
     switch (packet->type) {
     case SENSOR_DATA: {
-          sensor_data_t * data = (sensor_data_t *) request_buffer;
-          int curr_time = Time();
-          set_location(active_train, data->sensor_no);
-          sensor_reading_timestamps[data->sensor_no] = curr_time;
-          TriggerSensor(data->sensor_no, curr_time);
-          if (data->sensor_no == basis_node && set_to_stop) {
-            set_to_stop = false;
-            GetPath(&p, basis_node, stop_on_node);
-            SetPathSwitches(&p);
-            int dist_to_dest = p.dist;
-            int remaining_mm = dist_to_dest - StoppingDistance(active_train, active_speed);
-            int velocity = Velocity(active_train, active_speed);
-            // * 100 in order to get the amount of ticks (10ms) we need to wait
-            int wait_ticks = remaining_mm * 100 / velocity;
-            RecordLogf("waiting %6d ticks to reach %4s\n\r", wait_ticks, p.dest->name);
-            Send(stopper_tid, &active_train, sizeof(int), NULL, 0);
-            Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
-          }
+      sensor_data_t *data = (sensor_data_t *)request_buffer;
+      int curr_time = Time();
+      set_location(active_train, data->sensor_no);
+      sensor_reading_timestamps[data->sensor_no] = curr_time;
+      TriggerSensor(data->sensor_no, curr_time);
+      if (data->sensor_no == basis_node && set_to_stop) {
+        set_to_stop = false;
+        GetPath(&p, basis_node, stop_on_node);
+        SetPathSwitches(&p);
+        int dist_to_dest = p.dist;
+        int remaining_mm = dist_to_dest - StoppingDistance(active_train, active_speed);
+        int velocity = Velocity(active_train, active_speed);
+        // * 100 in order to get the amount of ticks (10ms) we need to wait
+        int wait_ticks = remaining_mm * 100 / velocity;
+        RecordLogf("waiting %6d ticks to reach %4s\n\r", wait_ticks, p.dest->name);
+        Send(stopper_tid, &active_train, sizeof(int), NULL, 0);
+        Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
+      }
 
-          if (set_to_stop_from && data->sensor_no == stop_on_node) {
-            set_to_stop_from = false;
-            SetTrainSpeed(active_train, 0);
-          }
+      if (set_to_stop_from && data->sensor_no == stop_on_node) {
+        set_to_stop_from = false;
+        SetTrainSpeed(active_train, 0);
+      }
 
-          int velocity = 0;
-          if (lastSensor != -1) {
-            for (int i = 0; i < 2; i++) {
-              if (prevSensor[data->sensor_no][i] == lastSensor) {
-                int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
-                velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
-                // RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
-              }
-            }
+      int velocity = 0;
+      if (lastSensor != -1) {
+        for (int i = 0; i < 2; i++) {
+          if (prevSensor[data->sensor_no][i] == lastSensor) {
+            int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
+            velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
+            // RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
           }
-          if (velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
-            record_velocity_sample(active_train, active_speed, velocity);
-          }
+        }
+      }
+      if (velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
+        record_velocity_sample(active_train, active_speed, velocity);
+      }
 
-          // int time = Time();
-          // int diffTime = time - lastSensorTime;
-          // if (lastSensor > 0) {
-          //   registerSample(data->sensor_no, lastSensor, diffTime, time);
-          // }
-          lastSensor = data->sensor_no;
-          lastSensorTime = curr_time;
-        break;
-    } default:
+      // int time = Time();
+      // int diffTime = time - lastSensorTime;
+      // if (lastSensor > 0) {
+      //   registerSample(data->sensor_no, lastSensor, diffTime, time);
+      // }
+      lastSensor = data->sensor_no;
+      lastSensorTime = curr_time;
+      break;
+    }
+    default:
       KASSERT(false, "Received unknown request type.");
     }
     ReplyN(sender);
@@ -704,16 +707,16 @@ void interactive() {
   Delay(25);
 
   int initialSwitchStates[NUM_SWITCHES];
-  initialSwitchStates[ 0] = SWITCH_CURVED;
-  initialSwitchStates[ 1] = SWITCH_CURVED;
-  initialSwitchStates[ 2] = SWITCH_STRAIGHT;
-  initialSwitchStates[ 3] = SWITCH_CURVED;
-  initialSwitchStates[ 4] = SWITCH_CURVED;
-  initialSwitchStates[ 5] = SWITCH_STRAIGHT;
-  initialSwitchStates[ 6] = SWITCH_STRAIGHT;
-  initialSwitchStates[ 7] = SWITCH_STRAIGHT;
-  initialSwitchStates[ 8] = SWITCH_STRAIGHT;
-  initialSwitchStates[ 9] = SWITCH_STRAIGHT;
+  initialSwitchStates[0] = SWITCH_CURVED;
+  initialSwitchStates[1] = SWITCH_CURVED;
+  initialSwitchStates[2] = SWITCH_STRAIGHT;
+  initialSwitchStates[3] = SWITCH_CURVED;
+  initialSwitchStates[4] = SWITCH_CURVED;
+  initialSwitchStates[5] = SWITCH_STRAIGHT;
+  initialSwitchStates[6] = SWITCH_STRAIGHT;
+  initialSwitchStates[7] = SWITCH_STRAIGHT;
+  initialSwitchStates[8] = SWITCH_STRAIGHT;
+  initialSwitchStates[9] = SWITCH_STRAIGHT;
   initialSwitchStates[10] = SWITCH_CURVED;
   initialSwitchStates[11] = SWITCH_STRAIGHT;
   initialSwitchStates[12] = SWITCH_STRAIGHT;
@@ -728,12 +731,12 @@ void interactive() {
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
 
-  char request_buffer[1024] __attribute__ ((aligned (4)));
-  packet_t *packet = (packet_t *) request_buffer;
-  interactive_echo_t *echo_data = (interactive_echo_t *) request_buffer;
-  cmd_t *base_cmd = (cmd_t *) request_buffer;
-  cmd_error_t *cmd_error = (cmd_error_t *) request_buffer;
-  cmd_data_t *cmd_data = (cmd_data_t *) request_buffer;
+  char request_buffer[1024] __attribute__((aligned(4)));
+  packet_t *packet = (packet_t *)request_buffer;
+  interactive_echo_t *echo_data = (interactive_echo_t *)request_buffer;
+  cmd_t *base_cmd = (cmd_t *)request_buffer;
+  cmd_error_t *cmd_error = (cmd_error_t *)request_buffer;
+  cmd_data_t *cmd_data = (cmd_data_t *)request_buffer;
 
   int lastSensor = -1;
   int lastSensorTime = -1;
@@ -749,187 +752,186 @@ void interactive() {
   while (true) {
     ReceiveS(&sender, request_buffer);
     switch (packet->type) {
-      case INTERACTIVE_ECHO:
-        Putstr(COM2, echo_data->echo);
-        break;
-      case INTERVAL_DETECT:
-        Putstr(COM2, SAVE_CURSOR);
-        int cur_time = Time();
-        DrawTime(cur_time);
-        DrawIdlePercent();
+    case INTERACTIVE_ECHO:
+      Putstr(COM2, echo_data->echo);
+      break;
+    case INTERVAL_DETECT:
+      Putstr(COM2, SAVE_CURSOR);
+      int cur_time = Time();
+      DrawTime(cur_time);
+      DrawIdlePercent();
 
-        if (is_pathing && path_update_counter >= 3) {
-          path_update_counter = 0;
-          UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
-        } else {
-          path_update_counter++;
+      if (is_pathing && path_update_counter >= 3) {
+        path_update_counter = 0;
+        UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
+      } else {
+        path_update_counter++;
+      }
+      Putstr(COM2, RECOVER_CURSOR);
+      break;
+    case INTERPRETED_COMMAND:
+      ClearLastCmdMessage();
+      MoveTerminalCursor(0, COMMAND_LOCATION + 1);
+      switch (base_cmd->type) {
+      case COMMAND_INVALID:
+        Putstr(COM2, cmd_error->error);
+        break;
+      case COMMAND_TRAIN_SPEED:
+        Putf(COM2, "Set train %d to speed %d", cmd_data->train, cmd_data->speed);
+        RecordLogf("Set train %d to speed %d\n\r", cmd_data->train, cmd_data->speed);
+        samples = 0;
+        lastTrain = cmd_data->train;
+        active_train = cmd_data->train;
+        active_speed = cmd_data->speed;
+        velocity_reading_delay_until = Time();
+        break;
+      case COMMAND_TRAIN_REVERSE:
+        Putf(COM2, "Train %d reverse", cmd_data->train);
+        break;
+      case COMMAND_SWITCH_TOGGLE:
+        RenderSwitchChange(cmd_data->switch_no, cmd_data->switch_dir);
+        Putf(COM2, "Set switch %d to %c", cmd_data->switch_no, cmd_data->switch_dir == DIR_STRAIGHT ? 'S' : 'C');
+        break;
+      case COMMAND_SWITCH_TOGGLE_ALL:
+        Putf(COM2, "Set all switches to %c", cmd_data->switch_dir == DIR_STRAIGHT ? 'S' : 'C');
+        for (int i = 0; i < NUM_SWITCHES; i++) {
+          int switchNumber = i + 1;
+          if (switchNumber >= 19) {
+            switchNumber += 134; // 19 -> 153, etc
+          }
+          RenderSwitchChange(switchNumber, cmd_data->switch_dir);
+        }
+        break;
+      case COMMAND_QUIT:
+        ExitKernel();
+        break;
+      case COMMAND_CLEAR_SENSOR_SAMPLES:
+        clearBuckets();
+        break;
+      case COMMAND_CLEAR_SENSOR_OFFSET:
+        prediction = 0.0f;
+        offset = 0;
+        lastSensor = -1;
+        break;
+      case COMMAND_PRINT_SENSOR_SAMPLES: {
+        Putstr(COM2, SAVE_CURSOR);
+        char buf[10];
+        int speedTotal = 0;
+        int n = 0;
+        for (int i = 0; i < BUCKETS; i++) {
+          MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
+          Putstr(COM2, CLEAR_LINE);
+          int total = 0;
+          for (int j = 0; j < bucketSize[i]; j++) {
+            total += bucketSamples[i * SAMPLES + j];
+          }
+          int avg = (sensorDistances[i] * 1000) / (total / bucketSize[i]);
+          if (avg > 0) {
+            speedTotal += avg;
+            n++;
+          }
+          Putf(COM2, "%d  -  %d", total / bucketSize[i], (int)(avg * 1000));
+
+          // for (int j = 0; j < bucketSize[i]; j++) {
+          //  MoveTerminalCursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
+          //  char buf[10];
+          //  ji2a(bucketSamples[i*SAMPLES+j], buf);
+          //  Putstr(COM2, buf);
+          //}
+        }
+        MoveTerminalCursor(0, COMMAND_LOCATION + 3);
+        Putf(COM2, "%d" RECOVER_CURSOR, speedTotal / n);
+        break;
+      }
+      case COMMAND_PRINT_SENSOR_MULTIPLIERS: {
+        Putstr(COM2, SAVE_CURSOR);
+        char buf[10];
+        for (int i = 0; i < BUCKETS; i++) {
+          MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
+          Putstr(COM2, CLEAR_LINE);
+          float total = 0;
+          for (int j = 0; j < speedMultSize[i]; j++) {
+            total += speedMultipliers[i * SAMPLES + j];
+          }
+          float avg = total / speedMultSize[i];
+          Puti(COM2, (int)(avg * 1000));
         }
         Putstr(COM2, RECOVER_CURSOR);
         break;
-      case INTERPRETED_COMMAND:
-        ClearLastCmdMessage();
-        MoveTerminalCursor(0, COMMAND_LOCATION + 1);
-        switch (base_cmd->type) {
-        case COMMAND_INVALID:
-          Putstr(COM2, cmd_error->error);
-          break;
-        case COMMAND_TRAIN_SPEED:
-          Putf(COM2, "Set train %d to speed %d", cmd_data->train, cmd_data->speed);
-          RecordLogf("Set train %d to speed %d\n\r", cmd_data->train, cmd_data->speed);
-          samples = 0;
-          lastTrain = cmd_data->train;
-          active_train = cmd_data->train;
-          active_speed = cmd_data->speed;
-          velocity_reading_delay_until = Time();
-          break;
-        case COMMAND_TRAIN_REVERSE:
-          Putf(COM2, "Train %d reverse", cmd_data->train);
-          break;
-        case COMMAND_SWITCH_TOGGLE:
-          RenderSwitchChange(cmd_data->switch_no, cmd_data->switch_dir);
-          Putf(COM2, "Set switch %d to %c", cmd_data->switch_no, cmd_data->switch_dir == DIR_STRAIGHT ? 'S' : 'C');
-          break;
-        case COMMAND_SWITCH_TOGGLE_ALL:
-          Putf(COM2, "Set all switches to %c", cmd_data->switch_dir == DIR_STRAIGHT ? 'S' : 'C');
-          for (int i = 0; i < NUM_SWITCHES; i++) {
-            int switchNumber = i+1;
-            if (switchNumber >= 19) {
-              switchNumber += 134; // 19 -> 153, etc
-            }
-            RenderSwitchChange(switchNumber, cmd_data->switch_dir);
-          }
-          break;
-        case COMMAND_QUIT:
-          ExitKernel();
-          break;
-        case COMMAND_CLEAR_SENSOR_SAMPLES:
-          clearBuckets();
-          break;
-        case COMMAND_CLEAR_SENSOR_OFFSET:
-          prediction = 0.0f;
-          offset = 0;
-          lastSensor = -1;
-          break;
-        case COMMAND_PRINT_SENSOR_SAMPLES: {
-          Putstr(COM2, SAVE_CURSOR);
-          char buf[10];
-          int speedTotal = 0;
-          int n = 0;
-          for (int i = 0; i < BUCKETS; i++) {
-            MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
-            Putstr(COM2, CLEAR_LINE);
-            int total = 0;
-            for (int j = 0; j < bucketSize[i]; j++) {
-              total += bucketSamples[i*SAMPLES+j];
-            }
-            int avg = (sensorDistances[i]*1000)/(total/bucketSize[i]);
-            if (avg > 0) {
-              speedTotal += avg;
-              n++;
-            }
-            Putf(COM2, "%d  -  %d", total/bucketSize[i], (int)(avg*1000));
-
-            //for (int j = 0; j < bucketSize[i]; j++) {
-            //  MoveTerminalCursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
-            //  char buf[10];
-            //  ji2a(bucketSamples[i*SAMPLES+j], buf);
-            //  Putstr(COM2, buf);
-            //}
-          }
-          MoveTerminalCursor(0, COMMAND_LOCATION + 3);
-          Putf(COM2, "%d" RECOVER_CURSOR, speedTotal / n);
-          break;
-        }
-        case COMMAND_PRINT_SENSOR_MULTIPLIERS: {
-          Putstr(COM2, SAVE_CURSOR);
-          char buf[10];
-          for (int i = 0; i < BUCKETS; i++) {
-            MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
-            Putstr(COM2, CLEAR_LINE);
-            float total = 0;
-            for (int j = 0; j < speedMultSize[i]; j++) {
-              total += speedMultipliers[i*SAMPLES+j];
-            }
-            float avg = total/speedMultSize[i];
-            Puti(COM2, (int)(avg*1000));
-          }
-          Putstr(COM2, RECOVER_CURSOR);
-          break;
-        }
-        case COMMAND_PATH:
-          GetPath(&p, cmd_data->src_node, cmd_data->dest_node);
-          DisplayPath(&p, -2, -2, 0, 0);
-          is_pathing = false;
-          break;
-        case COMMAND_NAVIGATE:
-          active_train = cmd_data->train;
-          // FIXME: navigate no longer has a speed, so this is hardcoded
-          active_speed = cmd_data->speed;
-          // velocity_reading_delay_until = Time();
-
-          // get the full path including BASIS_NODE and display it
-          // GetMultiDestinationPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME, cmd_data->dest_node);
-          // DisplayPath(&p, active_train, active_speed, 0, 0);
-          // is_pathing = true;
-          // pathing_start_time = Time();
-          // // set the trains destination, this makes the pathing logic fire
-          // // up when the train hits BASIS_NODE
-          // stop_on_node = cmd_data->dest_node;
-          // set_to_stop = true;
-          break;
-        case COMMAND_STOP_FROM:
-          if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
-            Putf(COM2, "Train must already be in motion and hit a sensor to path.");
-            break;
-          }
-          active_train = cmd_data->train;
-          active_speed = cmd_data->speed;
-          // get the path to the stopping from node
-          GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-          // display the path
-          DisplayPath(&p, active_train, active_speed, 0, 0);
-          is_pathing = true;
-          pathing_start_time = Time();
-          stop_on_node = cmd_data->dest_node;
-          set_to_stop_from = true;
-          break;
-        case COMMAND_SET_VELOCITY:
-          Putf(COM2, "Set velocity train=%d speed=%d to %dmm/s", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
-          set_velocity(cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
-          break;
-        case COMMAND_PRINT_VELOCITY:
-          Putf(COM2, "velocity=%dmm/s", Velocity(active_train, active_speed));
-          break;
-        case COMMAND_SET_LOCATION:
-          Putf(COM2, "Setting train=%d stopped location to node=%s", cmd_data->train, track[cmd_data->src_node].name);
-          set_location(cmd_data->train, cmd_data->src_node);
-          break;
-        case COMMAND_STOPPING_DISTANCE_OFFSET:
-          Putf(COM2, "Offsetting stopping distance train=%d speed=%d to %dmm", active_train, active_speed, cmd_data->extra_arg);
-          offset_stopping_distance(active_train, active_speed, cmd_data->extra_arg);
-          break;
-        case COMMAND_SET_STOPPING_DISTANCEN:
-          // Both this and the negative stopping distance are normalized
-        case COMMAND_SET_STOPPING_DISTANCE:
-          Putf(COM2, "Set stopping distance train=%d speed=%d to %dmm", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
-          set_stopping_distance(cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
-          break;
-        case COMMAND_MANUAL_SENSE:
-          Putf(COM2, "Manually triggering sensor %s", track[cmd_data->dest_node].name);
-          TriggerSensor(cmd_data->dest_node, Time());
-        }
-        MoveTerminalCursor(40, COMMAND_LOCATION + 2);
-        Putstr(COM2, CLEAR_LINE_BEFORE);
-        MoveTerminalCursor(0, COMMAND_LOCATION + 2);
-        Putstr(COM2, "# ");
+      }
+      case COMMAND_PATH:
+        GetPath(&p, cmd_data->src_node, cmd_data->dest_node);
+        DisplayPath(&p, -2, -2, 0, 0);
+        is_pathing = false;
         break;
-      default:
-        KASSERT(false, "Bad type received: got type=%d", packet->type);
+      case COMMAND_NAVIGATE:
+        active_train = cmd_data->train;
+        // FIXME: navigate no longer has a speed, so this is hardcoded
+        active_speed = cmd_data->speed;
+        // velocity_reading_delay_until = Time();
+
+        // get the full path including BASIS_NODE and display it
+        // GetMultiDestinationPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME, cmd_data->dest_node);
+        // DisplayPath(&p, active_train, active_speed, 0, 0);
+        // is_pathing = true;
+        // pathing_start_time = Time();
+        // // set the trains destination, this makes the pathing logic fire
+        // // up when the train hits BASIS_NODE
+        // stop_on_node = cmd_data->dest_node;
+        // set_to_stop = true;
         break;
+      case COMMAND_STOP_FROM:
+        if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
+          Putf(COM2, "Train must already be in motion and hit a sensor to path.");
+          break;
+        }
+        active_train = cmd_data->train;
+        active_speed = cmd_data->speed;
+        // get the path to the stopping from node
+        GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
+        // display the path
+        DisplayPath(&p, active_train, active_speed, 0, 0);
+        is_pathing = true;
+        pathing_start_time = Time();
+        stop_on_node = cmd_data->dest_node;
+        set_to_stop_from = true;
+        break;
+      case COMMAND_SET_VELOCITY:
+        Putf(COM2, "Set velocity train=%d speed=%d to %dmm/s", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
+        set_velocity(cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
+        break;
+      case COMMAND_PRINT_VELOCITY:
+        Putf(COM2, "velocity=%dmm/s", Velocity(active_train, active_speed));
+        break;
+      case COMMAND_SET_LOCATION:
+        Putf(COM2, "Setting train=%d stopped location to node=%s", cmd_data->train, track[cmd_data->src_node].name);
+        set_location(cmd_data->train, cmd_data->src_node);
+        break;
+      case COMMAND_STOPPING_DISTANCE_OFFSET:
+        Putf(COM2, "Offsetting stopping distance train=%d speed=%d to %dmm", active_train, active_speed, cmd_data->extra_arg);
+        offset_stopping_distance(active_train, active_speed, cmd_data->extra_arg);
+        break;
+      case COMMAND_SET_STOPPING_DISTANCEN:
+      // Both this and the negative stopping distance are normalized
+      case COMMAND_SET_STOPPING_DISTANCE:
+        Putf(COM2, "Set stopping distance train=%d speed=%d to %dmm", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
+        set_stopping_distance(cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
+        break;
+      case COMMAND_MANUAL_SENSE:
+        Putf(COM2, "Manually triggering sensor %s", track[cmd_data->dest_node].name);
+        TriggerSensor(cmd_data->dest_node, Time());
+      }
+      MoveTerminalCursor(40, COMMAND_LOCATION + 2);
+      Putstr(COM2, CLEAR_LINE_BEFORE);
+      MoveTerminalCursor(0, COMMAND_LOCATION + 2);
+      Putstr(COM2, "# ");
+      break;
+    default:
+      KASSERT(false, "Bad type received: got type=%d", packet->type);
+      break;
     }
     // NOTE: this is after because if the command parser runs again
     // it can/will write over the global_command_buffer
     ReplyN(sender);
-
   }
 }

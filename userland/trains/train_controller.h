@@ -1,7 +1,7 @@
 #pragma once
 
-#include <packet.h>
 #include <track/pathing.h>
+#include <packet.h>
 
 typedef enum {
   TRAIN_CONTROLLER_SET_SPEED,
@@ -30,7 +30,6 @@ void InitTrainControllers();
 
 int CreateTrainController(int train);
 
-
 /**
  * Commanding a train controller to take a basic action
  * @param train to command
@@ -41,11 +40,10 @@ int CreateTrainController(int train);
  */
 void TellTrainController(int train, int type, int speed);
 
-
 /**
  * Tell a train to navigate to a location
  * @param train to navigate
  * @param speed to travel at (temp for diagnostics)
  * @param path  to travel
  */
-void NavigateTrain(int train, int speed, path_t * path);
+void NavigateTrain(int train, int speed, path_t *path);

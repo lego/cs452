@@ -1,8 +1,8 @@
 #include <basic.h>
 #include <kernel.h>
+#include <courier.h>
 #include <jstring.h>
 #include <warehouse.h>
-#include <courier.h>
 
 #define DEFAULT_BUFFER_SIZE 256
 
@@ -30,7 +30,8 @@ void warehouse() {
 
   char data[setup.structLength];
 
-  char queue[setup.warehouseSize][setup.structLength]  __attribute__((aligned (4)));;
+  char queue[setup.warehouseSize][setup.structLength] __attribute__((aligned(4)));
+  ;
   // need to account for this in variable size warehouses
   int element_size[setup.warehouseSize];
 
@@ -40,19 +41,17 @@ void warehouse() {
   char courier_name[100];
   jstrappend(MyTaskName(), " - courier", courier_name);
 
-  int courier_tid = createCourierAndModify(
-      setup.courierPriority,
-      setup.forwardTo, MyTid(),
-      using_default_size ? 0 : setup.structLength, using_default_size ? 0 : setup.structLength, courier_name, setup.modifyFcn);
+  int courier_tid = createCourierAndModify(setup.courierPriority, setup.forwardTo, MyTid(), using_default_size ? 0 : setup.structLength, using_default_size ? 0 : setup.structLength, courier_name, setup.modifyFcn);
   bool courier_ready = false;
 
   int status;
 
   while (true) {
-    int end = (start+queueLength) % setup.warehouseSize;
+    int end = (start + queueLength) % setup.warehouseSize;
     status = Receive(&requester, queue[end], setup.structLength);
     // If we didn't receive anything, just continue
-    if (status < 0) continue;
+    if (status < 0)
+      continue;
     // Store the size of the data
     element_size[end] = status;
     if (requester == courier_tid) {

@@ -1,6 +1,6 @@
+#include <map.h>
 #include <stddef.h>
 #include <util.h>
-#include <map.h>
 
 void map_init(map_t *map, map_val_t *buf, int buf_size) {
   int i;
@@ -17,7 +17,7 @@ int map_insert(map_t *map, char *key, void *val) {
   // FIXME: return status if map is full
 
   map->size++;
-  unsigned long key_hash = hash((unsigned char *) key);
+  unsigned long key_hash = hash((unsigned char *)key);
   int idx = key_hash % map->max_size;
   while (map->values[idx].key != key && map->values[idx].key != NULL) {
     idx = (idx + 1) % map->max_size;
@@ -28,7 +28,7 @@ int map_insert(map_t *map, char *key, void *val) {
 }
 
 void *map_get(map_t *map, char *key) {
-  unsigned long key_hash = hash((unsigned char *) key);
+  unsigned long key_hash = hash((unsigned char *)key);
   int idx = key_hash % map->max_size;
   while (map->values[idx].key != key && map->values[idx].key != NULL) {
     idx = (idx + 1) % map->max_size;

@@ -3,6 +3,6 @@
 void clock_server();
 
 /* Clock server calls */
-int Delay(unsigned int delay );
+int Delay(unsigned int delay);
 int Time();
-int DelayUntil(unsigned long int until );
+int DelayUntil(unsigned long int until);

@@ -1,10 +1,10 @@
 #include <basic.h>
-#include <kernel.h>
-#include <trains/navigation.h>
-#include <track/track_node.h>
-#include <servers/clock_server.h>
 #include <bwio.h>
+#include <kernel.h>
+#include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
+#include <track/track_node.h>
+#include <trains/navigation.h>
 #include <trains/switch_controller.h>
 #include <train_command_server.h>
 
@@ -26,30 +26,30 @@ void InitNavigation() {
   navigation_intialized = true;
 
   for (i = 0; i < TRAINS_MAX; i++) {
-      int j;
-      for (j = 0; j < 15; j++) {
-        velocity[i][j] = -1;
-        stopping_distance[i][j] = 0;
+    int j;
+    for (j = 0; j < 15; j++) {
+      velocity[i][j] = -1;
+      stopping_distance[i][j] = 0;
 
-        velocitySampleStart[i][j] = 0;
-        int k;
-        for (k = 0; k < VELOCITY_SAMPLES_MAX; k++) {
-          velocitySamples[i][j][k] = 0;
-        }
+      velocitySampleStart[i][j] = 0;
+      int k;
+      for (k = 0; k < VELOCITY_SAMPLES_MAX; k++) {
+        velocitySamples[i][j][k] = 0;
       }
+    }
   }
 
   //// all units are millimetres
-  //velocity[69][10] = 460; // ~accurate
-  //velocity[69][11] = 530; // ~accurate, (cut a bit short, should remeasure)
-  //velocity[69][12] = 577; // ~accurate, averaged 575 - 579, tending to 579 (didnt spend too long)
-  //velocity[69][13] = 600; // ~accurate, averaged 590-610, didn't leave on for awhile
-  //velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
+  // velocity[69][10] = 460; // ~accurate
+  // velocity[69][11] = 530; // ~accurate, (cut a bit short, should remeasure)
+  // velocity[69][12] = 577; // ~accurate, averaged 575 - 579, tending to 579 (didnt spend too long)
+  // velocity[69][13] = 600; // ~accurate, averaged 590-610, didn't leave on for awhile
+  // velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
 
   stopping_distance[69][10] = 280 + 56 + 30; // reasonably accurate
-  stopping_distance[71][10] = 700; // reasonably accurate
-  stopping_distance[71][12] = 400; // reasonably accurate
-  stopping_distance[71][14] = -140; // reasonably accurate
+  stopping_distance[71][10] = 700;           // reasonably accurate
+  stopping_distance[71][12] = 400;           // reasonably accurate
+  stopping_distance[71][14] = -140;          // reasonably accurate
 
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;
@@ -63,9 +63,7 @@ void InitNavigation() {
   stopping_distance[70][5] = 230;
 }
 
-void set_location(int train, int location) {
-  state.train_locations[train] = location;
-}
+void set_location(int train, int location) { state.train_locations[train] = location; }
 
 int WhereAmI(int train) {
   KASSERT(state.train_locations[train] >= 0, "Train had bad location. train=%d location=%d", train, state.train_locations[train]);
@@ -77,15 +75,15 @@ void SetPathSwitches(path_t *p) {
   char dir;
   RecordLogf("SetPathSwitches %s ~> %s\n\r", p->src->name, p->dest->name);
   for (i = 0; i < p->len; i++) {
-    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
-      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+    if (i > 0 && p->nodes[i - 1]->type == NODE_BRANCH) {
+      if (p->nodes[i - 1]->edge[DIR_CURVED].dest == p->nodes[i]) {
         dir = 'C';
-        SetSwitch(p->nodes[i-1]->num, SWITCH_CURVED);
+        SetSwitch(p->nodes[i - 1]->num, SWITCH_CURVED);
       } else {
         dir = 'S';
-        SetSwitch(p->nodes[i-1]->num, SWITCH_STRAIGHT);
+        SetSwitch(p->nodes[i - 1]->num, SWITCH_STRAIGHT);
       }
-      RecordLogf("  Setting switch %s to %c", p->nodes[i-1]->name, dir);
+      RecordLogf("  Setting switch %s to %c", p->nodes[i - 1]->name, dir);
     }
   }
 }
@@ -106,11 +104,11 @@ void Navigate(int train, int speed, int src, int dest, bool include_stop) {
   GetPath(p, src, dest);
 
   for (i = 0; i < p->len; i++) {
-    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
-      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
-        SetSwitch(p->nodes[i-1]->num, SWITCH_CURVED);
+    if (i > 0 && p->nodes[i - 1]->type == NODE_BRANCH) {
+      if (p->nodes[i - 1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+        SetSwitch(p->nodes[i - 1]->num, SWITCH_CURVED);
       } else {
-        SetSwitch(p->nodes[i-1]->num, SWITCH_STRAIGHT);
+        SetSwitch(p->nodes[i - 1]->num, SWITCH_STRAIGHT);
       }
     }
   }
@@ -138,21 +136,13 @@ int GetDirection(int train, path_t *p) {
   return FORWARD_DIR;
 }
 
-int AccelDist(int train, int speed) {
-  return CENTIMETRES(20);
-}
+int AccelDist(int train, int speed) { return CENTIMETRES(20); }
 
-int DeaccelDist(int train, int speed) {
-  return CENTIMETRES(20);
-}
+int DeaccelDist(int train, int speed) { return CENTIMETRES(20); }
 
-int AccelTime(int train, int speed) {
-  return SECONDS(3);
-}
+int AccelTime(int train, int speed) { return SECONDS(3); }
 
-int DeaccelTime(int train, int speed) {
-  return SECONDS(3);
-}
+int DeaccelTime(int train, int speed) { return SECONDS(3); }
 
 // Calculate dist from velocity * time
 // (10 * 10 * 1000) / 1000
@@ -202,18 +192,12 @@ void record_velocity_sample(int train, int speed, int sample) {
     }
   }
   if (n > 0) {
-    velocity[train][speed] = total/n;
+    velocity[train][speed] = total / n;
   }
 }
 
-void set_velocity(int train, int speed, int velo) {
-  velocity[train][speed] = velo;
-}
+void set_velocity(int train, int speed, int velo) { velocity[train][speed] = velo; }
 
-void set_stopping_distance(int train, int speed, int distance) {
-  stopping_distance[train][speed] = distance;
-}
+void set_stopping_distance(int train, int speed, int distance) { stopping_distance[train][speed] = distance; }
 
-void offset_stopping_distance(int train, int speed, int offset) {
-  stopping_distance[train][speed] += offset;
-}
+void offset_stopping_distance(int train, int speed, int offset) { stopping_distance[train][speed] += offset; }

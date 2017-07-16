@@ -20,9 +20,7 @@ void msg_child_task() {
   Exit();
 }
 
-void empty_task() {
-  Exit();
-}
+void empty_task() { Exit(); }
 
 void timing_start_task() {
   io_time_t t = io_get_time();

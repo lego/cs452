@@ -1,9 +1,9 @@
-#include <worker.h>
 #include <bwio.h>
 #include <kernel.h>
 #include <servers/nameserver.h>
+#include <worker.h>
 
-void worker_code(int parent, void * data) {
+void worker_code(int parent, void *data) {
   bwprintf(COM2, "  worker started, and sending\n\r");
   Send(parent, NULL, 0, NULL, 0);
   bwprintf(COM2, "  worker send finished\n\r");
@@ -15,7 +15,6 @@ void worker_test_task() {
 
   Create(0, nameserver);
   bwprintf(COM2, "===Worker test===\n\r");
-
 
   bwprintf(COM2, "  creating worker\n\r");
   int worker_tid = _CreateWorker(2, worker_code, NULL, 0);

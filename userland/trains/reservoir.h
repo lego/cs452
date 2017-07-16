@@ -6,8 +6,8 @@
  * trains can traverse
  */
 
-#include <packet.h>
 #include <track/pathing.h>
+#include <packet.h>
 
 #define RESERVOIR_REQUEST_OK 0
 #define RESERVOIR_REQUEST_ERROR 1
@@ -45,7 +45,7 @@ void reservoir_task();
  *                   0 => OK
  *                   1 => FAILED (already owned)
  */
-int RequestSegment(reservoir_segments_t * segment);
+int RequestSegment(reservoir_segments_t *segment);
 
 /**
  * Release ownership over segments
@@ -54,7 +54,7 @@ int RequestSegment(reservoir_segments_t * segment);
  * causes a KASSERT
  * @param segment to release.
  */
-void ReleaseSegment(reservoir_segments_t * segment);
+void ReleaseSegment(reservoir_segments_t *segment);
 
 /**
  * Requests a path that has no owned segments
@@ -67,7 +67,7 @@ void ReleaseSegment(reservoir_segments_t * segment);
  *                     0 => OK
  *                     1 => FAILED (no direct path)
  */
-int RequestPath(path_t * output, int train, int src_node, int dest_node);
+int RequestPath(path_t *output, int train, int src_node, int dest_node);
 
 /**
  * Gets the owner of a segment

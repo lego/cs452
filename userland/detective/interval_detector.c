@@ -1,9 +1,9 @@
 #include <basic.h>
+#include <kernel.h>
 #include <detective/detector.h>
 #include <detective/interval_detector.h>
-#include <priorities.h>
-#include <kernel.h>
 #include <servers/clock_server.h>
+#include <priorities.h>
 
 volatile int interval_detector_counter = 0;
 
@@ -30,7 +30,7 @@ void interval_detector_task() {
   }
 }
 
-int StartIntervalDetector(const char * name, int send_to, int interval_ticks) {
+int StartIntervalDetector(const char *name, int send_to, int interval_ticks) {
   int tid = CreateWithName(PRIORITY_DELAY_DETECTOR, interval_detector_task, name);
   interval_detector_init_t init;
   init.send_to = send_to;

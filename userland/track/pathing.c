@@ -1,8 +1,7 @@
 #include <basic.h>
+#include <track/pathing.h>
 #include <heap.h>
 #include <jstring.h>
-#include <track/pathing.h>
-#include <track/pathing.h>
 
 bool pathing_initialized = false;
 
@@ -12,15 +11,15 @@ void InitPathing() {
   int i;
   pathing_initialized = true;
 
-  #if defined(USE_TRACKA)
+#if defined(USE_TRACKA)
   init_tracka(track);
-  #elif defined(USE_TRACKB)
+#elif defined(USE_TRACKB)
   init_trackb(track);
-  #elif defined(USE_TRACKTEST)
+#elif defined(USE_TRACKTEST)
   init_tracktest(track);
-  #else
-  #error Bad TRACK value provided to Makefile. Expected "A", "B", or "TEST"
-  #endif
+#else
+#error Bad TRACK value provided to Makefile. Expected "A", "B", or "TEST"
+#endif
 }
 
 int findSensorOrBranch(int start) {
@@ -31,7 +30,7 @@ int findSensorOrBranch(int start) {
     } else {
       current = -1;
     }
-  } while(current >= 0 && track[current].type != NODE_SENSOR && track[current].type != NODE_BRANCH);
+  } while (current >= 0 && track[current].type != NODE_SENSOR && track[current].type != NODE_BRANCH);
 
   return current;
 }
@@ -82,7 +81,6 @@ void GetPath(path_t *p, int src, int dest) {
   dijkstra(src, dest);
   p->len = get_path(src, dest, nodes, TRACK_MAX);
 
-
   p->dist = nodes[p->len - 1]->dist;
   p->src = &track[src];
   p->dest = &track[dest];
@@ -123,71 +121,70 @@ void PrintPath(path_t *p) {
 
   bwprintf(COM2, "Path %s ~> %s dist=%d len=%d\n\r", p->src->name, p->dest->name, p->dist, p->len);
   for (i = 0; i < p->len; i++) {
-    if (i > 0 && p->nodes[i-1]->type == NODE_BRANCH) {
+    if (i > 0 && p->nodes[i - 1]->type == NODE_BRANCH) {
       char dir;
-      if (p->nodes[i-1]->edge[DIR_CURVED].dest == p->nodes[i]) {
+      if (p->nodes[i - 1]->edge[DIR_CURVED].dest == p->nodes[i]) {
         dir = 'C';
       } else {
         dir = 'S';
       }
-      bwprintf(COM2, "    switch=%d set to %c\n\r", p->nodes[i-1]->num, dir);
+      bwprintf(COM2, "    switch=%d set to %c\n\r", p->nodes[i - 1]->num, dir);
     }
     bwprintf(COM2, "  node=%s\n\r", p->nodes[i]->name);
   }
 }
 
-
 void dijkstra(int src, int dest) {
-    KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
-    #define HEAP_SIZE TRACK_MAX + 1
-    heapnode_t heap_nodes[HEAP_SIZE];
-    heap_t heap = heap_create(heap_nodes, HEAP_SIZE);
-    heap_t *h = &heap;
+  KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
+#define HEAP_SIZE TRACK_MAX + 1
+  heapnode_t heap_nodes[HEAP_SIZE];
+  heap_t heap = heap_create(heap_nodes, HEAP_SIZE);
+  heap_t *h = &heap;
 
-    int i, j;
-    for (i = 0; i < TRACK_MAX; i++) {
-        track_node *v = &track[i];
-        v->dist = INT_MAX;
-        v->prev = 0;
-        v->visited = false;
+  int i, j;
+  for (i = 0; i < TRACK_MAX; i++) {
+    track_node *v = &track[i];
+    v->dist = INT_MAX;
+    v->prev = 0;
+    v->visited = false;
+  }
+  track_node *v = &track[src];
+  v->dist = 0;
+  heap_push(h, v->dist, (void *)src);
+  while (heap_size(h)) {
+    i = (int)heap_pop(h);
+    if (i == dest)
+      break;
+    v = &track[i];
+    v->visited = true;
+    int edges_len = 0;
+    track_edge *edges[2];
+    switch (v->type) {
+    case NODE_EXIT:
+      break;
+    case NODE_ENTER:
+    case NODE_SENSOR:
+    case NODE_MERGE:
+      edges[edges_len++] = &v->edge[DIR_AHEAD];
+      break;
+    case NODE_BRANCH:
+      edges[edges_len++] = &v->edge[DIR_STRAIGHT];
+      edges[edges_len++] = &v->edge[DIR_CURVED];
+      break;
+    default:
+      KASSERT(false, "Node type not handled. node_id=%d type=%d. src=%d dest=%d", v->id, v->type, src, dest);
+      break;
     }
-    track_node *v = &track[src];
-    v->dist = 0;
-    heap_push(h, v->dist, (void *) src);
-    while (heap_size(h)) {
-        i = (int) heap_pop(h);
-        if (i == dest)
-            break;
-        v = &track[i];
-        v->visited = true;
-        int edges_len = 0;
-        track_edge *edges[2];
-        switch (v->type) {
-          case NODE_EXIT:
-            break;
-          case NODE_ENTER:
-          case NODE_SENSOR:
-          case NODE_MERGE:
-            edges[edges_len++] = &v->edge[DIR_AHEAD];
-            break;
-          case NODE_BRANCH:
-            edges[edges_len++] = &v->edge[DIR_STRAIGHT];
-            edges[edges_len++] = &v->edge[DIR_CURVED];
-            break;
-          default:
-            KASSERT(false, "Node type not handled. node_id=%d type=%d. src=%d dest=%d", v->id, v->type, src, dest);
-            break;
-        }
-        for (j = 0; j < edges_len; j++) {
-            track_edge *e = edges[j];
-            track_node *u = e->dest;
-            if (!u->visited && v->dist + e->dist <= u->dist) {
-                u->prev = i;
-                u->dist = v->dist + e->dist;
-                heap_push(h, u->dist, (void *) u->id);
-            }
-        }
+    for (j = 0; j < edges_len; j++) {
+      track_edge *e = edges[j];
+      track_node *u = e->dest;
+      if (!u->visited && v->dist + e->dist <= u->dist) {
+        u->prev = i;
+        u->dist = v->dist + e->dist;
+        heap_push(h, u->dist, (void *)u->id);
+      }
     }
+  }
 }
 
 int get_path(int src, int dest, track_node **path, int path_buf_size) {

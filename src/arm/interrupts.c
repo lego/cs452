@@ -1,6 +1,6 @@
 #include <basic.h>
-#include <ts7200.h>
 #include <kern/interrupts.h>
+#include <ts7200.h>
 
 typedef int (*interrupt_handler)(int);
 
@@ -26,7 +26,6 @@ void interrupts_disable() {
   INTERRUPT_DISABLE(INTERRUPT_UART1);
   INTERRUPT_DISABLE(INTERRUPT_UART2);
 }
-
 
 void interrupts_enable_irq(await_event_t event_type) {
   if (event_type == EVENT_TIMER) {

@@ -1,23 +1,23 @@
 #include <bwio.h>
 #include <kernel.h>
-#include <servers/nameserver.h>
-#include <idle_task.h>
-#include <trains/navigation.h>
-#include <servers/clock_server.h>
-#include <servers/uart_tx_server.h>
-#include <servers/uart_rx_server.h>
 #include <detective/sensor_detector_multiplexer.h>
-#include <interactive.h>
-#include <interactive/command_parser.h>
 #include <interactive/command_interpreter.h>
-#include <train_command_server.h>
-#include <trains/switch_controller.h>
-#include <trains/executor.h>
-#include <trains/sensor_collector.h>
+#include <interactive/command_parser.h>
+#include <servers/clock_server.h>
+#include <servers/nameserver.h>
+#include <servers/uart_rx_server.h>
+#include <servers/uart_tx_server.h>
 #include <track/pathing.h>
+#include <trains/executor.h>
+#include <trains/navigation.h>
 #include <trains/reservoir.h>
-#include <priorities.h>
+#include <trains/sensor_collector.h>
+#include <trains/switch_controller.h>
 #include <trains/train_controller.h>
+#include <idle_task.h>
+#include <interactive.h>
+#include <priorities.h>
+#include <train_command_server.h>
 
 // from interactive
 void sensor_saver();
@@ -47,8 +47,8 @@ void train_control_entry_task() {
   Create(PRIORITY_SWITCH_CONTROLLER, switch_controller);
 
   // FIXME: priority
-  Create(PRIORITY_SWITCH_CONTROLLER+1, sensor_attributer);
-  Create(PRIORITY_SWITCH_CONTROLLER+2, sensor_collector_task);
+  Create(PRIORITY_SWITCH_CONTROLLER + 1, sensor_attributer);
+  Create(PRIORITY_SWITCH_CONTROLLER + 2, sensor_collector_task);
 
   Create(PRIORITY_INTERACTIVE, interactive);
   // FIXME: priority

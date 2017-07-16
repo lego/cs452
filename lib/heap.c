@@ -1,6 +1,6 @@
+#include <heap.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <heap.h>
 
 heap_t heap_create(heapnode_t *nodes, int size) {
   heap_t heap;
@@ -10,11 +10,9 @@ heap_t heap_create(heapnode_t *nodes, int size) {
   return heap;
 }
 
-int heap_size (heap_t *h) {
-  return h->len;
-}
+int heap_size(heap_t *h) { return h->len; }
 
-int heap_push (heap_t *h, int priority, void *data) {
+int heap_push(heap_t *h, int priority, void *data) {
   if (h->len + 1 >= h->size) {
     return -1;
   }
@@ -31,7 +29,7 @@ int heap_push (heap_t *h, int priority, void *data) {
   return 0;
 }
 
-void *heap_pop (heap_t *h) {
+void *heap_pop(heap_t *h) {
   int i, j, k;
   if (!h->len) {
     return NULL;
@@ -59,14 +57,14 @@ void *heap_pop (heap_t *h) {
   return data;
 }
 
-int heap_peek_priority (heap_t *h) {
+int heap_peek_priority(heap_t *h) {
   if (!h->len) {
     return -1;
   }
   return h->nodes[1].priority;
 }
 
-void *heap_peek (heap_t *h) {
+void *heap_peek(heap_t *h) {
   if (!h->len) {
     return NULL;
   }

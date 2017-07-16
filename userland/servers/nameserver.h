@@ -39,11 +39,10 @@ typedef struct {
 void nameserver();
 
 /* Nameserver calls */
-int RegisterAs( task_name_t name );
-int WhoIs( task_name_t name );
+int RegisterAs(task_name_t name);
+int WhoIs(task_name_t name);
 
-
-static inline int _WhoIsEnsured( task_name_t name, char * actual_name) {
+static inline int _WhoIsEnsured(task_name_t name, char *actual_name) {
   int result = WhoIs(name);
   KASSERT(result >= 0, "Expected WhoIs lookup did not succeed. attempted to lookup %s", actual_name);
   return result;

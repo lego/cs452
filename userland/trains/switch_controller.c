@@ -1,10 +1,10 @@
 #include <basic.h>
-#include <util.h>
-#include <trains/switch_controller.h>
-#include <servers/uart_tx_server.h>
-#include <servers/clock_server.h>
 #include <kernel.h>
+#include <servers/clock_server.h>
+#include <servers/uart_tx_server.h>
+#include <trains/switch_controller.h>
 #include <priorities.h>
+#include <util.h>
 
 static int switch_controller_tid = -1;
 

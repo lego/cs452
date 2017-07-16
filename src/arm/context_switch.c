@@ -1,8 +1,8 @@
 #include <basic.h>
 #include <bwio.h>
 #include <kern/context.h>
-#include <kern/interrupts.h>
 #include <kern/context_switch.h>
+#include <kern/interrupts.h>
 #include <kern/scheduler.h>
 #include <kern/task_descriptor.h>
 
@@ -14,12 +14,12 @@ void __prefetch_abort_handler();
 void __data_abort_handler();
 
 void context_switch_init() {
-  *((debugger_func*)0x24) = &__undefined_instruction_handler;  // undefined instr
-  *((interrupt_handler*)0x28) = (interrupt_handler)&__asm_swi_handler;
-  *((debugger_func*)0x2c) = &__prefetch_abort_handler;  // prefetch abort
-  *((debugger_func*)0x30) = &__data_abort_handler; // data abort
+  *((debugger_func *)0x24) = &__undefined_instruction_handler; // undefined instr
+  *((interrupt_handler *)0x28) = (interrupt_handler)&__asm_swi_handler;
+  *((debugger_func *)0x2c) = &__prefetch_abort_handler; // prefetch abort
+  *((debugger_func *)0x30) = &__data_abort_handler;     // data abort
   // none
-  *((interrupt_handler*)0x38) = (interrupt_handler)&__asm_hwi_handler;
+  *((interrupt_handler *)0x38) = (interrupt_handler)&__asm_hwi_handler;
 }
 char *undefined_instr_msg = SCROLL_DOWN_20 RED_BG "UNDEFINED INSTRUCTION EXCEPTION";
 char *prefetch_abort_msg = SCROLL_DOWN_20 RED_BG "PREFETCH ABORT";
@@ -221,7 +221,7 @@ void __hwint(void* stack) {
   active_task->stack_pointer = stack;
 }
 
-void __syscall(void* stack, kernel_request_t *arg) {
+void __syscall(void *stack, kernel_request_t *arg) {
   // copy over request
   ctx->descriptors[arg->tid].current_request = *arg;
 
@@ -234,5 +234,5 @@ void __syscall(void* stack, kernel_request_t *arg) {
 
 void context_switch(kernel_request_t *arg) {
   // NOTE: we pass the syscall number via. arg->syscall, and arg is r0
-  asm volatile ("swi #0\n\t");
+  asm volatile("swi #0\n\t");
 }

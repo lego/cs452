@@ -1,7 +1,7 @@
-#include <stddef.h>
-#include <kassert.h>
 #include <kernel.h>
 #include <kern/interrupts.h>
+#include <kassert.h>
+#include <stddef.h>
 
 // the current waiting task for various events
 // right now we only have event = 0, EVENT_TIMER
@@ -18,7 +18,6 @@ void interrupts_init() {
 
   interrupts_arch_init();
 }
-
 
 void interrupts_set_waiting_task(await_event_t event_type, task_descriptor_t *task) {
   KASSERT(0 <= event_type && event_type < EVENT_NUM_TYPES, "Event type is invalid");

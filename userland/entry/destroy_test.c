@@ -1,10 +1,10 @@
-#include <kernel.h>
 #include <bwio.h>
+#include <kernel.h>
+#include <kern/context.h>
+#include <servers/clock_server.h>
 #include <entries.h>
 #include <idle_task.h>
 #include <priorities.h>
-#include <servers/clock_server.h>
-#include <kern/context.h>
 
 void delaying_child_task() {
   int tid = MyTid();

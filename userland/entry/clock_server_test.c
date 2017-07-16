@@ -1,14 +1,13 @@
-#include <stddef.h>
 #include <debug.h>
+#include <stddef.h>
 
 #include <bwio.h>
 #include <kernel.h>
-#include <servers/nameserver.h>
 #include <servers/clock_server.h>
+#include <servers/nameserver.h>
 #include <idle_task.h>
 #include <io.h>
 #include <priorities.h>
-
 
 typedef struct {
   int delay_ticks;
@@ -37,7 +36,7 @@ void clock_server_test_child() {
     Delay(ticks);
     io_time_t last_time = curr_time;
     curr_time = io_get_time();
-    bwprintf(COM2, "tid=%d delay=%d completed_delays=%d ticktime=%dms cumtime=%dms\n\r", tid, ticks, i+1,  io_time_difference_ms(curr_time, last_time), io_time_difference_ms(curr_time, start_time));
+    bwprintf(COM2, "tid=%d delay=%d completed_delays=%d ticktime=%dms cumtime=%dms\n\r", tid, ticks, i + 1, io_time_difference_ms(curr_time, last_time), io_time_difference_ms(curr_time, start_time));
   }
 
   int time_ticks = Time();

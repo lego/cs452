@@ -36,20 +36,18 @@ void nameserver() {
       // FIXME: handle status
       status = Reply(source_tid, NULL, 0);
       break;
-    case WHOIS_CALL:
-      {
-        // If whois, get the value
-        // Reply -1 if no tid found, else reply tid
-        int val = mapping[req.name];
-        log_nameserver("nameserver resp name=%d tid=%d", req.name, val);
-        status = Reply(source_tid, &val, sizeof(int));
+    case WHOIS_CALL: {
+      // If whois, get the value
+      // Reply -1 if no tid found, else reply tid
+      int val = mapping[req.name];
+      log_nameserver("nameserver resp name=%d tid=%d", req.name, val);
+      status = Reply(source_tid, &val, sizeof(int));
 
-        // Reply failed, continue ?
-        if (status <= 0) {
-          // FIXME: handle status
-        }
+      // Reply failed, continue ?
+      if (status <= 0) {
+        // FIXME: handle status
       }
-      break;
+    } break;
     default:
       KASSERT(false, "Nameserver received unknown req.call_type: got call_type=%d", req.call_type);
     }
@@ -58,9 +56,9 @@ void nameserver() {
 
 // TODO: would be clever to overwrite a tasks diagnostic name with the registered name
 // helps with specialized tasks such as UART{1,2} servers
-int RegisterAs( task_name_t name ) {
+int RegisterAs(task_name_t name) {
   log_task("RegisterAs name=%d", active_task->tid, name);
-  if (nameserver_tid == -1){
+  if (nameserver_tid == -1) {
     // Don't make data syscall, but still reschedule
     Pass();
     return -1;
@@ -74,7 +72,7 @@ int RegisterAs( task_name_t name ) {
   return 0;
 }
 
-int WhoIs( task_name_t name ) {
+int WhoIs(task_name_t name) {
   log_task("WhoIs name=%d", active_task->tid, name);
   if (nameserver_tid == -1) {
     // Don't make data syscall, but still reschedule

@@ -16,4 +16,4 @@
  * @param  sensor_no to wait on
  * @return           returns the unique identifier (for sensor detectors)
  */
-int StartSensorDetector(const char * name, int send_to, int sensor_no);
+int StartSensorDetector(const char *name, int send_to, int sensor_no);

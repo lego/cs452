@@ -1,8 +1,8 @@
-#include <detective/detector.h>
-#include <detective/delay_detector.h>
-#include <priorities.h>
 #include <kernel.h>
+#include <detective/delay_detector.h>
+#include <detective/detector.h>
 #include <servers/clock_server.h>
+#include <priorities.h>
 
 volatile int delay_detector_counter = 1;
 
@@ -27,7 +27,7 @@ void delay_detector() {
   SendSN(init.send_to, msg);
 }
 
-int StartDelayDetector(const char * name, int send_to, int ticks) {
+int StartDelayDetector(const char *name, int send_to, int ticks) {
   int tid = CreateWithName(PRIORITY_DELAY_DETECTOR, delay_detector, name);
   delay_detector_init_t init;
   init.send_to = send_to;

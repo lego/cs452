@@ -1,11 +1,9 @@
-#include <util.h>
 #include <kassert.h>
+#include <util.h>
 
 #ifdef DEBUG_MODE
-void debugger() {
-}
+void debugger() {}
 #endif
-
 
 // See basic.h for why these are commented out
 // void *memcpy(void *destination, const void *source, unsigned num) {
@@ -23,8 +21,8 @@ void debugger() {
  */
 void jfastmemcpy(void *dest, const void *src, unsigned num) {
   // log_debug("num=%d num/4=%d vsrc=%x vdest=%x", num, num / 4, src, dest);
-  char *cdest = (char *) dest;
-  char *csrc = (char *) src;
+  char *cdest = (char *)dest;
+  char *csrc = (char *)src;
   int i;
 
   // int z = (unsigned int) csrc % 4;
@@ -37,8 +35,8 @@ void jfastmemcpy(void *dest, const void *src, unsigned num) {
   //
   // cdest += z;
   // csrc += z;
-  unsigned int *vdest = (unsigned int *) cdest;
-  unsigned int *vsrc = (unsigned int *) csrc;
+  unsigned int *vdest = (unsigned int *)cdest;
+  unsigned int *vsrc = (unsigned int *)csrc;
 
   // log_debug("num=%d num/4=%d vsrc=%x vdest=%x", num, num / 4, vsrc, vdest);
 
@@ -57,40 +55,38 @@ void jfastmemcpy(void *dest, const void *src, unsigned num) {
  * This memcpy will copy over a multiple words at a time, but also has some issues
  */
 void jasmmemcpy(unsigned int *dest, const unsigned int *src, unsigned num) {
-  #ifdef DEBUG_MODE
-  char *cdest = (char *) dest;
-  char *csrc = (char *) src;
+#ifdef DEBUG_MODE
+  char *cdest = (char *)dest;
+  char *csrc = (char *)src;
   int i;
   for (i = 0; i < num; i++)
     cdest[i] = csrc[i];
-  #else
+#else
   // reserved registers for memory transfer
   asm volatile("stmfd sp!, {r3-r10}\n\t");
   // copy 8 at a time
   while (num > 8) {
-    asm volatile (
-      "ldmia r1!, {r3-r10} \n\t"
-      "stmia r0!, {r3-r10} \n\t"
-    );
+    asm volatile("ldmia r1!, {r3-r10} \n\t"
+                 "stmia r0!, {r3-r10} \n\t");
     num -= 8;
   }
   asm volatile("ldmfd sp!, {r3-r10}\n\t");
 
   // copy remainder of 8
-  char *cdest = (char *) dest;
-  char *csrc = (char *) src;
+  char *cdest = (char *)dest;
+  char *csrc = (char *)src;
   int i;
   for (i = 0; i < num / 4; i++)
     dest[i] = src[i];
   i *= 4;
   for (; i < num / 4; i++)
     cdest[i] = csrc[i];
-  #endif
+#endif
 }
 
 void jslowmemcpy(void *dest, const void *src, unsigned num) {
-  char *cdest = (char *) dest;
-  char *csrc = (char *) src;
+  char *cdest = (char *)dest;
+  char *csrc = (char *)src;
   int i;
   for (i = 0; i < num; i++) {
     cdest[i] = csrc[i];
@@ -101,23 +97,26 @@ void jslowmemcpy(void *dest, const void *src, unsigned num) {
 #ifndef DEBUG_MODE
 // Basically alias, for compiler uses
 // If you do struct a = *struct b, it will use memcpy
-int memcpy(void *dest, const void *src, unsigned num) { jmemcpy(dest, src, num); return 0; }
+int memcpy(void *dest, const void *src, unsigned num) {
+  jmemcpy(dest, src, num);
+  return 0;
+}
 #endif
 
 void jmemcpy(void *dest, const void *src, unsigned num) {
   // phase 1: align dest AND src. how do we deal with very offset things?
   // FIXME: not done, so for now we fall back to jmemcpy
-  bool aligned = !(((unsigned int) src | (unsigned int) dest) & 0xFF);
+  bool aligned = !(((unsigned int)src | (unsigned int)dest) & 0xFF);
   if (aligned) {
-    unsigned int *vdest = (unsigned int *) dest;
-    unsigned int *vsrc = (unsigned int *) src;
+    unsigned int *vdest = (unsigned int *)dest;
+    unsigned int *vsrc = (unsigned int *)src;
     while (num >= 4) {
       num -= 4;
       *vdest++ = *vsrc++;
     }
     // FIXME: this could be just jmemcpy, but we're avoiding a function call
-    char *cdest = (char *) vdest;
-    char *csrc = (char *) vsrc;
+    char *cdest = (char *)vdest;
+    char *csrc = (char *)vsrc;
     while (num > 0) {
       *cdest++ = *csrc++;
       num--;
@@ -140,100 +139,99 @@ void jmemmove(void *destination, const void *source, unsigned num) {
     cdest[i] = temp[i];
 }
 
-
-int c2d( char ch ) {
-  if( ch >= '0' && ch <= '9' ) return ch - '0';
-  if( ch >= 'a' && ch <= 'f' ) return ch - 'a' + 10;
-  if( ch >= 'A' && ch <= 'F' ) return ch - 'A' + 10;
+int c2d(char ch) {
+  if (ch >= '0' && ch <= '9')
+    return ch - '0';
+  if (ch >= 'a' && ch <= 'f')
+    return ch - 'a' + 10;
+  if (ch >= 'A' && ch <= 'F')
+    return ch - 'A' + 10;
   return -1;
 }
 
-char a2i( char ch, char **src, int base, int *nump ) {
+char a2i(char ch, char **src, int base, int *nump) {
   int num, digit;
   char *p;
 
-  p = *src; num = 0;
-  while( ( digit = c2d( ch ) ) >= 0 ) {
-    if ( digit > base ) break;
-    num = num*base + digit;
+  p = *src;
+  num = 0;
+  while ((digit = c2d(ch)) >= 0) {
+    if (digit > base)
+      break;
+    num = num * base + digit;
     ch = *p++;
   }
-  *src = p; *nump = num;
+  *src = p;
+  *nump = num;
   return ch;
 }
 
-
-void ui2a( unsigned int num, unsigned int base, char *bf ) {
+void ui2a(unsigned int num, unsigned int base, char *bf) {
   int n = 0;
   int dgt;
   unsigned int d = 1;
 
-  while( (num / d) >= base ) d *= base;
-  while( d != 0 ) {
+  while ((num / d) >= base)
+    d *= base;
+  while (d != 0) {
     dgt = num / d;
     num %= d;
     d /= base;
-    if( n || dgt > 0 || d == 0 ) {
-      *bf++ = dgt + ( dgt < 10 ? '0' : 'a' - 10 );
+    if (n || dgt > 0 || d == 0) {
+      *bf++ = dgt + (dgt < 10 ? '0' : 'a' - 10);
       ++n;
     }
   }
   *bf = 0;
 }
 
-void i2a( int num, char *bf ) {
-  if( num < 0 ) {
+void i2a(int num, char *bf) {
+  if (num < 0) {
     num = -num;
     *bf++ = '-';
   }
-  ui2a( num, 10, bf );
+  ui2a(num, 10, bf);
 }
 
-void ul2a( unsigned long int num, unsigned int base, char *bf ) {
+void ul2a(unsigned long int num, unsigned int base, char *bf) {
   int n = 0;
   int dgt;
   unsigned int d = 1;
 
-  while( (num / d) >= base ) d *= base;
-  while( d != 0 ) {
+  while ((num / d) >= base)
+    d *= base;
+  while (d != 0) {
     dgt = num / d;
     num %= d;
     d /= base;
-    if( n || dgt > 0 || d == 0 ) {
-      *bf++ = dgt + ( dgt < 10 ? '0' : 'a' - 10 );
+    if (n || dgt > 0 || d == 0) {
+      *bf++ = dgt + (dgt < 10 ? '0' : 'a' - 10);
       ++n;
     }
   }
   *bf = 0;
 }
 
-
-void l2a( long int num, char *bf ) {
-  if( num < 0 ) {
+void l2a(long int num, char *bf) {
+  if (num < 0) {
     num = -num;
     *bf++ = '-';
   }
-  ul2a( num, 10, bf );
+  ul2a(num, 10, bf);
 }
 
-
-char c2x( char ch ) {
+char c2x(char ch) {
   KASSERT(ch < 16, "Bad character given. Got ch=%c", ch);
-  if ( (ch <= 9) ) return '0' + ch;
+  if ((ch <= 9))
+    return '0' + ch;
   return 'a' + ch - 10;
 }
 
-bool is_digit( char ch ) {
-  return '0' <= ch && ch <= '9';
-}
+bool is_digit(char ch) { return '0' <= ch && ch <= '9'; }
 
-bool is_alpha( char ch ) {
-  return ('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z');
-}
+bool is_alpha(char ch) { return ('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z'); }
 
-bool is_alphanumeric( char ch ) {
-  return is_alpha(ch) || is_digit(ch);
-}
+bool is_alphanumeric(char ch) { return is_alpha(ch) || is_digit(ch); }
 
 float minf(float a, float b) {
   if (a < b) {
