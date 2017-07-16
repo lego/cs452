@@ -28,4 +28,4 @@ void MoveTerminalCursor(unsigned int x, unsigned int y);
 int GetRxQueueLength(int channel);
 
 // Log types
-#define EXECUTOR_LOGGING 103
+#define EXECUTOR_LOGGING 150

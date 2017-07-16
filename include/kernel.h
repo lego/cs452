@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <io.h>
 
 // Hardcoded maximum used in a number of places

@@ -3,6 +3,8 @@
 #include <basic.h>
 #include <track/pathing.h>
 
+#define TRAINS_MAX 80
+
 #define VELOCITY_SAMPLES_MAX 5
 
 // Unit macros for our fixed point calculations

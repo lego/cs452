@@ -9,8 +9,9 @@
 #include <trains/reservoir.h>
 #include <trains/navigation.h>
 #include <track/pathing.h>
-#include <train_controller.h>
+#include <train_command_server.h>
 #include <interactive/commands.h>
+#include <trains/train_controller.h>
 
 // FIXME: priority
 #define SOME_PRIORITY 5
@@ -18,6 +19,8 @@
 // FIXME: globals : active_train, active_speed, from interactive.c
 extern int active_train;
 extern int active_speed;
+
+int train_controllers[TRAINS_MAX];
 
 typedef struct {
   // type = PATHING_WORKER_RESULT
@@ -51,20 +54,18 @@ void pathing_worker(int parent_tid, void * data) {
 
 void execute_command(cmd_data_t * cmd_data) {
   path_t p;
+  train_command_msg_t msg;
 
   // FIXME: do we want to tell a worker to do these things?
   switch (cmd_data->base.type) {
     case COMMAND_TRAIN_SPEED:
-      if (trainControllerTids[cmd_data->train] == -1) {
-        trainControllerTids[cmd_data->train] = CreateTrainController(cmd_data->train);
+      if (train_controllers[cmd_data->train] == -1) {
+        train_controllers[cmd_data->train] = CreateTrainController(cmd_data->train);
       }
-      {
-        train_controller_msg_t msg;
-        msg.type = TRAIN_CONTROLLER_COMMAND;
-        msg.command.type = TRAIN_CONTROLLER_SET_SPEED;
-        msg.command.speed = cmd_data->speed;
-        SendSN(trainControllerTids[cmd_data->train], msg);
-      }
+      msg.packet.type = TRAIN_CONTROLLER_COMMAND;
+      msg.type = TRAIN_CONTROLLER_SET_SPEED;
+      msg.speed = cmd_data->speed;
+      SendSN(train_controllers[cmd_data->train], msg);
       break;
     case COMMAND_TRAIN_REVERSE:
       ReverseTrain(cmd_data->train, 14);
@@ -112,6 +113,10 @@ void begin_train_controller(pathing_worker_result_t * result) {
 void executor_task() {
   int tid = MyTid();
   RegisterAs(NS_EXECUTOR);
+
+  for (int i = 0; i < TRAINS_MAX; i++) {
+    train_controllers[i] = -1;
+  }
 
   char request_buffer[1024] __attribute__ ((aligned (4)));
   packet_t * packet = (packet_t *) request_buffer;

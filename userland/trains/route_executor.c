@@ -6,7 +6,8 @@
 #include <track/pathing.h>
 #include <trains/route_executor.h>
 #include <trains/navigation.h>
-#include <train_controller.h>
+#include <train_command_server.h>
+#include <trains/train_controller.h>
 
 typedef struct {
   int train;
@@ -60,11 +61,11 @@ void route_executor_task() {
   ReceiveS(&sender, path);
   ReplyN(sender);
 
-  RecordLogf("Route executor has begun. train=%d route is %s ~> %s\n\r", init.train, path.src->name, path.dest->name);
+  Logf(EXECUTOR_LOGGING, "Route executor has begun. train=%d route is %s ~> %s\n\r", init.train, path.src->name, path.dest->name);
   int dist_sum = 0;
   for (int i = 0; i < path.len; i++) {
     dist_sum += path.nodes[i]->dist;
-    RecordLogf("  node %3s dist %4dmm\n\r", path.nodes[i]->name, dist_sum);
+    Logf(EXECUTOR_LOGGING, "  node %3s dist %4dmm\n\r", path.nodes[i]->name, dist_sum);
   }
 
   char request_buffer[256] __attribute__ ((aligned (4)));
@@ -80,6 +81,8 @@ void route_executor_task() {
 
   SetTrainSpeed(init.train, init.speed);
 
+  int eta_to_node = (dist_to_node * 100) / Velocity(init->train, init->speed);
+
   while (true) {
     status = ReceiveS(&sender, request_buffer);
     if (status < 0) continue;
@@ -87,17 +90,17 @@ void route_executor_task() {
     switch (packet->type) {
       case SENSOR_TIMEOUT_DETECTIVE:
         if (sensor_timeout_msg->action == DETECTIVE_TIMEOUT) {
-          RecordLogf("Detective timed out at uptime=%d\n\r", Time());
+          Logf(EXECUTOR_LOGGING, "Detective timed out at uptime=%d\n\r", Time());
         } else if (sensor_timeout_msg->action == DETECTIVE_SENSOR) {
           int hit_time = Time();
-          RecordLogf("Detective sensor hit at time=%d expected=%d offset=%d\n\r", hit_time, current + eta_to_node, hit_time - current - eta_to_node);
+          Logf(EXECUTOR_LOGGING, "Detective sensor hit at time=%d expected=%d offset=%d\n\r", hit_time, current + eta_to_node, hit_time - current - eta_to_node);
         }
         last_sensor_no = next_sensor_no;
         next_sensor_no = get_next_sensor(&path, last_sensor_no);
         if (next_sensor_no != -1) {
           set_up_next_detective(&path, &init, last_sensor_no, next_sensor_no, 0);
         } else {
-          RecordLogf("Route Executor has completed all sensors on route. Bye \\o\n\r");
+          Logf(EXECUTOR_LOGGING, "Route Executor has completed all sensors on route. Bye \\o\n\r");
           // FIXME: do proper cleanup line alerting Executor of location, stopping, etc.
           Destroy(tid);
         }

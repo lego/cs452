@@ -8,13 +8,12 @@
 #include <trains/sensor_collector.h>
 #include <trains/switch_controller.h>
 #include <trains/train_controller.h>
+#include <trains/navigation.h>
 #include <track/pathing.h>
 #include <priorities.h>
 
 #define NUM_SENSORS 80
 #define SENSOR_MEMORY 80
-
-#define TRAINS_MAX 80
 
 int sensor_attributer_tid = -1;
 

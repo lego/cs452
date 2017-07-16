@@ -7,8 +7,6 @@
 #include <trains/switch_controller.h>
 #include <train_command_server.h>
 
-#define TRAINS_MAX 80
-
 typedef struct TrainState {
   int train_locations[TRAINS_MAX];
 } train_state_t;

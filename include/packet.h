@@ -6,6 +6,11 @@ typedef enum {
    */
   SENSOR_DATA,
 
+  /**
+   * Train controller messages
+   */
+   TRAIN_CONTROLLER_COMMAND,
+
   /*
    * Detector messages
    */

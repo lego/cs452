@@ -1,28 +1,16 @@
 #pragma once
 
-enum {
-  TRAIN_CONTROLLER_SENSOR,
-  TRAIN_CONTROLLER_COMMAND,
-};
+#include <packet.h>
 
-enum {
+typedef enum {
   TRAIN_CONTROLLER_SET_SPEED,
-};
+} train_command_t;
 
 typedef struct {
-  int type;
-
-  union {
-    struct {
-      int sensor;
-      int time;
-    } sensor;
-
-    struct {
-      int type;
-      int speed;
-    } command;
-  };
-} train_controller_msg_t;
+  // type = TRAIN_CONTROLLER_COMMAND
+  packet_t packet;
+  train_command_t type;
+  int speed;
+} train_command_msg_t;
 
 int CreateTrainController(int train);

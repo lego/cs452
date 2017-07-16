@@ -10,7 +10,10 @@
 
 void train_controller() {
   int requester;
-  train_controller_msg_t msg;
+  char request_buffer[1024] __attribute__ ((aligned (4)));
+  packet_t * packet = (packet_t *) request_buffer;
+  train_command_msg_t * msg = (train_command_msg_t *) request_buffer;
+  sensor_data_t * sensor_data = (sensor_data_t *) request_buffer;
 
   int train;
   ReceiveS(&requester, train);
@@ -19,15 +22,15 @@ void train_controller() {
   RegisterTrain(train);
 
   while (true) {
-    ReceiveS(&requester, msg);
+    ReceiveS(&requester, request_buffer);
     ReplyN(requester);
-    switch (msg.type) {
-      case TRAIN_CONTROLLER_SENSOR:
+    switch (packet->type) {
+      case SENSOR_DATA:
         break;
       case TRAIN_CONTROLLER_COMMAND:
-        switch (msg.command.type) {
+        switch (msg->type) {
           case TRAIN_CONTROLLER_SET_SPEED:
-            SetTrainSpeed(train, msg.command.speed);
+            SetTrainSpeed(train, msg->speed);
             break;
         }
         break;
