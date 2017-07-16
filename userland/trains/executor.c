@@ -55,7 +55,16 @@ void execute_command(cmd_data_t * cmd_data) {
   // FIXME: do we want to tell a worker to do these things?
   switch (cmd_data->base.type) {
     case COMMAND_TRAIN_SPEED:
-      SetTrainSpeed(cmd_data->train, cmd_data->speed);
+      if (trainControllerTids[cmd_data->train] == -1) {
+        trainControllerTids[cmd_data->train] = CreateTrainController(cmd_data->train);
+      }
+      {
+        train_controller_msg_t msg;
+        msg.type = TRAIN_CONTROLLER_COMMAND;
+        msg.command.type = TRAIN_CONTROLLER_SET_SPEED;
+        msg.command.speed = cmd_data->speed;
+        SendSN(trainControllerTids[cmd_data->train], msg);
+      }
       break;
     case COMMAND_TRAIN_REVERSE:
       ReverseTrain(cmd_data->train, 14);

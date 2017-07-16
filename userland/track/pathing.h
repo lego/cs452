@@ -32,6 +32,9 @@ typedef struct Path {
 // Initializes the track information
 void InitPathing();
 
+// Finds the next sensor or branch, returns -1 on error or exit node
+int findSensorOrBranch(int start);
+
 // int src = WhereAmI(train);
 void SetPathSwitches(path_t *path);
 

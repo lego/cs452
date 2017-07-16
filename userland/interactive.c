@@ -9,10 +9,11 @@
 #include <terminal.h>
 #include <servers/uart_rx_server.h>
 #include <servers/uart_tx_server.h>
-#include <train_controller.h>
+#include <train_command_server.h>
 #include <kernel.h>
 #include <trains/navigation.h>
 #include <trains/sensor_collector.h>
+#include <trains/train_controller.h>
 #include <detective/interval_detector.h>
 #include <trains/switch_controller.h>
 #include <jstring.h>
@@ -501,19 +502,6 @@ int samples = 0;
 
 #define NUM_SENSORS 80
 
-int findSensorOrBranch(int start) {
-  int current = start;
-  do {
-    if (track[current].edge[DIR_AHEAD].dest != 0) {
-      current = track[current].edge[DIR_AHEAD].dest->id;
-    } else {
-      current = -1;
-    }
-  } while(current >= 0 && track[current].type != NODE_SENSOR && track[current].type != NODE_BRANCH);
-
-  return current;
-}
-
 void stopper() {
   int sender;
   int train;
@@ -754,6 +742,11 @@ void interactive() {
 
   ClearLastCmdMessage();
 
+  int trainControllerTids[TRAINS_MAX];
+  for (int i = 0; i < TRAINS_MAX; i++) {
+    trainControllerTids[i] = -1;
+  }
+
   while (true) {
     ReceiveS(&sender, request_buffer);
     switch (packet->type) {
@@ -804,7 +797,7 @@ void interactive() {
             if (switchNumber >= 19) {
               switchNumber += 134; // 19 -> 153, etc
             }
-            RenderSwitchChange(i, cmd_data->switch_dir);
+            RenderSwitchChange(switchNumber, cmd_data->switch_dir);
           }
           break;
         case COMMAND_QUIT:

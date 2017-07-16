@@ -1,8 +1,8 @@
 #pragma once
 
 enum {
-  SWITCH_CURVED,
   SWITCH_STRAIGHT,
+  SWITCH_CURVED,
 };
 
 #define NUM_SWITCHES 22

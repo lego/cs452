@@ -8,6 +8,9 @@
 #include <kern/context.h>
 #include <terminal.h>
 
+extern int next_starting_task;
+extern int last_started_task;
+
 #define REDBOOT_ENTRYPOINT 0x218000
 
 extern int main_fp;
@@ -187,9 +190,13 @@ void PrintTaskBacktrace(int tid) {
 
 void print_stats() {
   bwputstr(COM2, "\n\r" WHITE_BG BLACK_FG "===== STATS" RESET_ATTRIBUTES "\n\r");
+  if (last_started_task != -1) {
+    bwprintf(COM2, "Last task %d: %s\n\r", last_started_task, ctx->descriptors[last_started_task].name);
+    bwprintf(COM2, "  stack_pointer=%08x\n\r", (unsigned int) ctx->descriptors[last_started_task].stack_pointer);
+  }
   if (next_task_starting != -1) {
-    bwprintf(COM2, " Next/last task starting tid=%d %s\n\r", next_task_starting, ctx->descriptors[next_task_starting].name);
-    bwprintf(COM2, "  stack_pointer=%08x\n\r", (unsigned int) ctx->descriptors[next_task_starting].stack_pointer);
+    bwprintf(COM2, "Next task %d: %s\n\r", next_starting_task, ctx->descriptors[next_starting_task].name);
+    bwprintf(COM2, "  stack_pointer=%08x\n\r", (unsigned int) ctx->descriptors[next_starting_task].stack_pointer);
   }
   bwputstr(COM2, "Execution time\n\r");
   int i;
