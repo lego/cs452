@@ -66,3 +66,11 @@ void ReleaseSegment(reservoir_segments_t * segment);
  *                     1 => FAILED (no direct path)
  */
 int RequestPath(path_t * output, int train, int src_node, int dest_node);
+
+/**
+ * Gets the owner of a segment
+ * @param  node to request
+ * @return      owner
+ *              if no owner, returns -1
+ */
+int WhoOwnsSegment(int node);
