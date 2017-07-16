@@ -1,6 +1,7 @@
 #include <kernel.h>
 #include <jstring.h>
 #include <packet.h>
+#include <cbuffer.h>
 #include <detective/sensor_detector.h>
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
@@ -160,8 +161,35 @@ segment_t segment_from_dest_node(path_t *path, int dest_node) {
   return segment;
 }
 
-int reserve_track_from_sensor(int train, path_t *path, reservoir_segments_t *acquired, int sensor_idx, int next_node) {
+/**
+ * Unreserve all owned segments up until the sensor.
+ * If sensor_no is -1, we unreserve all segments currently reserved
+ */
+void release_track_before_sensor(int train, path_t *path, cbuffer_t *owned_segments, int sensor_no) {
+  reservoir_segments_t releasing;
+  releasing.len = 0;
+  while (cbuffer_size(owned_segments) != 0) {
+    int dest_node = (int) cbuffer_pop(owned_segments, NULL);
+    if (dest_node == sensor_no) {
+      // We don't want to unreserve the current sensor yet, so put it back
+      cbuffer_unpop(owned_segments, (void *) dest_node);
+      break;
+    }
+    releasing.segments[releasing.len++] = segment_from_dest_node(path, dest_node);
+  }
+  releasing.owner = train;
+
+  if (sensor_no == -1) {
+    Logf(EXECUTOR_LOGGING, "%d: releasing all owned segments (%d)", train, releasing.len);
+  } else {
+    Logf(EXECUTOR_LOGGING, "%d: releasing %2d segments before sensor %4s", train, releasing.len, path->nodes[sensor_no]->name);
+  }
+  ReleaseSegment(&releasing);
+}
+
+int reserve_track_from_sensor(int train, path_t *path, cbuffer_t *owned_segments, int sensor_idx, int next_node) {
   int stopdist = 450;
+  int initial_next_node = next_node;
 
   Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, path->nodes[sensor_idx]->name);
 
@@ -178,9 +206,6 @@ int reserve_track_from_sensor(int train, path_t *path, reservoir_segments_t *acq
 
     Logf(EXECUTOR_LOGGING, "%d: Resv from %4s: %4s. Specifically %4dmm after %s.", train, path->nodes[sensor]->name, path->nodes[next_node]->name, offset_from_sensor, path->nodes[sensor]->name);
 
-    // keep track of owned segments, storing them in a persistent segment struct
-    acquired->segments[data.len + acquired->len] = data.segments[data.len];
-
     // Generously add to reserve list
     // TODO: set up a list of tuples (dist, segment), where dist is how long to wait before reserving
     data.segments[data.len] = segment_from_dest_node(path, next_node);
@@ -193,18 +218,19 @@ int reserve_track_from_sensor(int train, path_t *path, reservoir_segments_t *acq
   int result = RequestSegment(&data);
   if (result == 1) {
     Logf(EXECUTOR_LOGGING, "%d: Route executor has ended due to segment collision", train);
-    Logf(EXECUTOR_LOGGING, "%d: releasing %d segments", train, acquired->len);
-    ReleaseSegment(acquired);
+    release_track_before_sensor(train, path, owned_segments, -1);
 
     // TODO: propogate message upwards about route failure
     // in additional signal a stop to occur on the end of the reserved segment
     DestroySelf();
   }
-  // Only after now do we "own" the segments, so reflect that in acquired
-  acquired->len += data.len;
 
-  Logf(EXECUTOR_LOGGING, "%d: Route executor has gotten %d more segments. Total now %d", train, data.len, acquired->len);
-
+  // Keep track of all owned segments
+  // NOTE: we only do this after a successful RequestSegment above
+  for (int i = initial_next_node; i < next_node; i++) {
+    cbuffer_add(owned_segments, (void *) i);
+  }
+  Logf(EXECUTOR_LOGGING, "%d: Route executor has gotten %d more segments. Total now %d", train, data.len, cbuffer_size(owned_segments));
   return next_node;
 }
 
@@ -215,14 +241,15 @@ void route_executor_task() {
 
   route_executor_init_t init;
   path_t path;
-  reservoir_segments_t releasing_segments;
   ReceiveS(&sender, init);
   ReplyN(sender);
   ReceiveS(&sender, path);
   ReplyN(sender);
-  releasing_segments.owner = init.train;
-  releasing_segments.len = 0;
 
+  // This is a list of segment dest_nodes (not actual segments)
+  void * owned_segments_buffer[30];
+  cbuffer_t owned_segments;
+  cbuffer_init(&owned_segments, owned_segments_buffer, 30);
 
   Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s", init.train, init.train, path.src->name, path.dest->name);
   int dist_sum = 0;
@@ -240,7 +267,7 @@ void route_executor_task() {
   int next_sensor_no = get_next_sensor(&path, 0);
 
   set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
-  int next_unreserved_node = reserve_track_from_sensor(init.train, &path, &releasing_segments, last_sensor_no, 1);
+  int next_unreserved_node = reserve_track_from_sensor(init.train, &path, &owned_segments, last_sensor_no, 1);
 
   while (true) {
     status = ReceiveS(&sender, request_buffer);
@@ -261,8 +288,11 @@ void route_executor_task() {
         }
         set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
 
+        // Release all of the track up until this sensor
+        release_track_before_sensor(init.train, &path, &owned_segments, last_sensor_no);
+
         // Reserve more track based on this sensor trigger
-        next_unreserved_node = reserve_track_from_sensor(init.train, &path, &releasing_segments, last_sensor_no, next_unreserved_node);
+        next_unreserved_node = reserve_track_from_sensor(init.train, &path, &owned_segments, last_sensor_no, next_unreserved_node);
         break;
       default:
         KASSERT(false, "Unexpected packet type=%d", packet->type);
