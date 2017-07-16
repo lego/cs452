@@ -6,6 +6,12 @@
 #define DETECTIVE_SENSOR 1
 
 /**
+ * Sensor Timeout detective combines the two results of the
+ * delay detector and sensor detector.
+ * i.e. it just provides a nicer way to call both (maybe excessive, hah, one to one for class spec)
+ */
+
+/**
  * Message sent from the Sensor Timeout Detective, informing the desired task
  * whether a timeout occured, or a sensor was detected
  */

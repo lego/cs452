@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <kernel.h>
 #include <util.h>
 #include <bwio.h>
 #include <servers/nameserver.h>

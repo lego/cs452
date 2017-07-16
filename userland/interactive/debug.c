@@ -34,7 +34,7 @@ void diagnostic_printer_task() {
   int buffers[4];
   while (true) {
     Delay(100);
-    SendEmptyWithResp(parent, buffers);
+    Send(parent, NULL, 0, buffers, sizeof(buffers));
   }
 }
 

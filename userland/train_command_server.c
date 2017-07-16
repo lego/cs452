@@ -1,5 +1,6 @@
 #include <train_command_server.h>
 #include <basic.h>
+#include <kernel.h>
 #include <bwio.h>
 #include <servers/nameserver.h>
 #include <servers/clock_server.h>

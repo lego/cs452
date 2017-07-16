@@ -66,7 +66,7 @@ void k3_entry_task() {
   Create(3, &k3_client_task);
   data.delay_ticks = 10;
   data.delay_amount = 20;
-  ReceiveN(&recv_tid);
+  Receive(&recv_tid, NULL, 0);
   ReplyS(recv_tid, data);
 
   // Client
@@ -76,7 +76,7 @@ void k3_entry_task() {
   Create(4, &k3_client_task);
   data.delay_ticks = 23;
   data.delay_amount = 9;
-  ReceiveN(&recv_tid);
+  Receive(&recv_tid, NULL, 0);
   ReplyS(recv_tid, data);
 
   // Client
@@ -86,7 +86,7 @@ void k3_entry_task() {
   Create(5, &k3_client_task);
   data.delay_ticks = 33;
   data.delay_amount = 6;
-  ReceiveN(&recv_tid);
+  Receive(&recv_tid, NULL, 0);
   ReplyS(recv_tid, data);
 
   // Client
@@ -96,7 +96,7 @@ void k3_entry_task() {
   Create(6, &k3_client_task);
   data.delay_ticks = 71;
   data.delay_amount = 3;
-  ReceiveN(&recv_tid);
+  Receive(&recv_tid, NULL, 0);
   ReplyS(recv_tid, data);
 }
 
