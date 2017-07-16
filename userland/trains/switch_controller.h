@@ -5,6 +5,8 @@ enum {
   SWITCH_CURVED,
 };
 
+#define NUM_SWITCHES 22
+
 void switch_controller();
 
 int SetSwitch(int sw, int state);

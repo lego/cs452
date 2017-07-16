@@ -2,6 +2,8 @@
 #include <kernel.h>
 #include <courier.h>
 
+#define DEFAULT_BUFFER_SIZE 1024
+
 typedef struct {
   int dst;
   int src;
@@ -23,15 +25,27 @@ void courier() {
   if (setup.dstLen > len) {
     len = setup.dstLen;
   }
-  char msgData[len];
+
+
+  // Default buffer size, for unprovided amounts
+  bool using_default_size = (len == 0);
+  if (using_default_size) {
+    len = DEFAULT_BUFFER_SIZE;
+    setup.srcLen = len;
+    setup.dstLen = len;
+  }
+
+  char msgData[len] __attribute__((aligned (4)));
 
   while (true) {
     result = Send(setup.src, NULL, 0, &msgData, setup.srcLen);
+    KASSERT(!using_default_size || result < DEFAULT_BUFFER_SIZE, "Default courier buffer. Please re-evaluate buffer sizes.");
     if (result < 0) Destroy(tid);
     if (setup.fcn != NULL) {
       setup.fcn(msgData);
     }
-    result = Send(setup.dst, &msgData, setup.dstLen, NULL, 0);
+    result = Send(setup.dst, &msgData, result, NULL, 0);
+    KASSERT(!using_default_size || result < DEFAULT_BUFFER_SIZE, "Default courier buffer overflowed. Please re-evaluate buffer sizes.");
     if (result < 0) Destroy(tid);
   }
 }

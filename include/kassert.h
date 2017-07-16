@@ -3,13 +3,11 @@
 #ifndef NO_KASSERT
 
 #include <bwio.h>
-#include <debug.h>
 
 #ifndef DEBUG_MODE
 
 #define assert(_)
-
-#include <kern/task_descriptor.h>
+#include <debug.h>
 #include <terminal.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
   cleanup(false); bwputstr(COM2, SCROLL_DOWN_20); \
@@ -26,10 +24,9 @@
 
 #else
 #include <assert.h>
-#include <stdlib.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
   bwprintf(COM2, "KASSERT: " msg "\n\r%s:%d %s\n\r", ## __VA_ARGS__, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
-  exit(1); } } while(0)
+   } } while(0)
 #endif
 
 #else

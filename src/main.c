@@ -21,8 +21,8 @@
 #include <priorities.h>
 #include <entries.h>
 
-int next_starting_task;
-int last_started_task;
+int next_starting_task = -1;
+int last_started_task = -1;
 
 static inline kernel_request_t *activate(task_descriptor_t *task) {
   return scheduler_activate_task(task);
@@ -77,7 +77,7 @@ int main() {
   io_enable_caches();
 
   /* create first user task */
-  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_ENTRY_TASK, ENTRY_FUNC, "First user task");
+  task_descriptor_t *first_user_task = td_create(ctx, KERNEL_TID, PRIORITY_ENTRY_TASK, ENTRY_FUNC, "First user task", false);
   scheduler_requeue_task(first_user_task);
 
   log_kmain("ready_queue_size=%d", scheduler_ready_queue_size());
@@ -111,6 +111,11 @@ int main() {
   #ifndef DEBUG_MODE
   cleanup(false);
   #endif
+
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
+  bwputc(COM1, 0x61);
 
   // io_disable_caches();
 

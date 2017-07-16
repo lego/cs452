@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <kernel.h>
 #include <trains/navigation.h>
 #include <track/track_node.h>
 #include <servers/clock_server.h>
@@ -6,8 +7,6 @@
 #include <servers/uart_tx_server.h>
 #include <trains/switch_controller.h>
 #include <train_command_server.h>
-
-#define TRAINS_MAX 80
 
 typedef struct TrainState {
   int train_locations[TRAINS_MAX];
@@ -55,6 +54,13 @@ void InitNavigation() {
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;
   }
+
+  // NOTE: fixture location for testing purposes, for non-active train #10
+  state.train_locations[70] = Name2Node("B6");
+  state.train_locations[69] = Name2Node("C9");
+  // calibrated and using as fixture
+  velocity[70][5] = 240;
+  stopping_distance[70][5] = 230;
 }
 
 void set_location(int train, int location) {

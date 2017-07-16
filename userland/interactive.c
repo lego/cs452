@@ -23,13 +23,6 @@
 #include <track/track_node.h>
 #include <track/pathing.h>
 
-#define TRAINS_MAX 80
-#define NUM_SWITCHES 22
-
-#define BASIS_NODE "A4"
-#define BASIS_NODE_NAME Name2Node(BASIS_NODE)
-#define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME
-
 // used for displaying the path, updated on 100ms intervals
 path_t *current_path;
 bool is_pathing;
@@ -91,11 +84,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
   MoveTerminalCursor(PATH_LOG_X, PATH_LOG_Y + path_display_pos);
   Putf(COM2, "Path from %s ~> %s", p->src->name, p->dest->name);
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-  Putf(COM2, "dist=%dmm", remaining_mm + stop_dist);
+  Putf(COM2, "dist %5dmm", remaining_mm + stop_dist);
   // only show ETA for navigation
   if (train != -2) {
-    MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-    Putstr(COM2, " timeleft=");
+    Putstr(COM2, "   timeleft=");
     PrintTicks(calculated_time);
   }
   int dist_sum = 0;
@@ -143,11 +135,10 @@ void DisplayPath(path_t *p, int train, int speed, int start_time, int curr_time)
 
     // print distance to individual node and time to it
     MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-    Putf(COM2, "dist=%dmm" CLEAR_LINE_AFTER, dist_sum);
+    Putf(COM2, "dist %5dmm", dist_sum);
     // only show ETA for navigating
     if (train != -2) {
-      MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-      Putstr(COM2, "eta=");
+      Putstr(COM2, "   eta=");
       PrintTicks(p->nodes[i]->expected_time);
     }
   }
@@ -173,9 +164,7 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
   if (remaining_mm < 0) remaining_mm = -stop_dist;
 
   MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-  Putf(COM2, "dist=%dmm" CLEAR_LINE_AFTER, remaining_mm + stop_dist);
-  MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-  Putstr(COM2, "timeleft=");
+  Putf(COM2, "dist %5dmm   timeleft=", remaining_mm + stop_dist);
   PrintTicks(calculated_time);
   int dist_sum = 0;
 
@@ -210,13 +199,11 @@ void UpdateDisplayPath(path_t *p, int train, int speed, int start_time, int curr
 
     // print distance to individual node and time to it
     MoveTerminalCursor(100, PATH_LOG_Y + path_display_pos);
-    Putf(COM2, "dist=%dmm" CLEAR_LINE_AFTER, remaining_mm_to_node + stop_dist);
+    Putf(COM2, "dist %5dmm   eta=", remaining_mm_to_node + stop_dist);
     // only show ETA for navigating
-    MoveTerminalCursor(115, PATH_LOG_Y + path_display_pos);
-    Putstr(COM2, "eta=");
     PrintTicks(p->nodes[i]->expected_time);
     if (p->nodes[i]->type == NODE_SENSOR && p->nodes[i]->actual_sensor_trip != -1) {
-      Putstr(COM2, " actual=");
+      Putstr(COM2, "  actual=");
       PrintTicks(p->nodes[i]->actual_sensor_trip);
     }
   }
@@ -371,8 +358,7 @@ void DrawIdlePercent() {
   Logs(101, buf);
 }
 
-void SetSwitchAndRender(int sw, int state) {
-  SetSwitch(sw, state);
+void RenderSwitchChange(int sw, int state) {
   int index = sw;
   if (index >= 153 && index <= 156) {
     index -= 134; // 153 -> 19, etc
@@ -399,7 +385,8 @@ void initSwitches(int *initSwitches) {
     if (switchNumber >= 19) {
       switchNumber += 134; // 19 -> 153, etc
     }
-    SetSwitchAndRender(switchNumber, initSwitches[i]);
+    RenderSwitchChange(switchNumber, initSwitches[i]);
+    SetSwitch(switchNumber, initSwitches[i]);
     Delay(6);
   }
 }
@@ -534,9 +521,9 @@ void stopper() {
 
 void sensor_saver() {
   int stopper_tid = Create(2, stopper);
-  RegisterAs(SENSOR_SAVER);
-  char req_buf[1024];
-  packet_t *packet = (packet_t *) req_buf;
+  RegisterAs(NS_SENSOR_SAVER);
+  char request_buffer[1024] __attribute__ ((aligned (4)));
+  packet_t *packet = (packet_t *) request_buffer;
   int lastSensorTime = -1;
   int sender;
 
@@ -628,10 +615,10 @@ void sensor_saver() {
   DECLARE_BASIS_NODE(basis_node);
 
   while (true) {
-    ReceiveS(&sender, req_buf);
+    ReceiveS(&sender, request_buffer);
     switch (packet->type) {
     case SENSOR_DATA: {
-          sensor_data_t * data = (sensor_data_t *) req_buf;
+          sensor_data_t * data = (sensor_data_t *) request_buffer;
           int curr_time = Time();
           set_location(active_train, data->sensor_no);
           sensor_reading_timestamps[data->sensor_no] = curr_time;
@@ -661,7 +648,7 @@ void sensor_saver() {
               if (prevSensor[data->sensor_no][i] == lastSensor) {
                 int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
                 velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
-                RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
+                // RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
               }
             }
           }
@@ -729,7 +716,7 @@ void interactive() {
   initialSwitchStates[ 9] = SWITCH_STRAIGHT;
   initialSwitchStates[10] = SWITCH_CURVED;
   initialSwitchStates[11] = SWITCH_STRAIGHT;
-  initialSwitchStates[12] = SWITCH_CURVED;
+  initialSwitchStates[12] = SWITCH_STRAIGHT;
   initialSwitchStates[13] = SWITCH_CURVED;
   initialSwitchStates[14] = SWITCH_CURVED;
   initialSwitchStates[15] = SWITCH_STRAIGHT;
@@ -741,12 +728,12 @@ void interactive() {
   initialSwitchStates[21] = SWITCH_CURVED;
   initSwitches(initialSwitchStates);
 
-  char req_buffer[1024];
-  packet_t *packet = (packet_t *) req_buffer;
-  interactive_echo_t *echo_data = (interactive_echo_t *) req_buffer;
-  cmd_t *base_cmd = (cmd_t *) req_buffer;
-  cmd_error_t *cmd_error = (cmd_error_t *) req_buffer;
-  cmd_data_t *cmd_data = (cmd_data_t *) req_buffer;
+  char request_buffer[1024] __attribute__ ((aligned (4)));
+  packet_t *packet = (packet_t *) request_buffer;
+  interactive_echo_t *echo_data = (interactive_echo_t *) request_buffer;
+  cmd_t *base_cmd = (cmd_t *) request_buffer;
+  cmd_error_t *cmd_error = (cmd_error_t *) request_buffer;
+  cmd_data_t *cmd_data = (cmd_data_t *) request_buffer;
 
   int lastSensor = -1;
   int lastSensorTime = -1;
@@ -760,7 +747,7 @@ void interactive() {
   }
 
   while (true) {
-    ReceiveS(&sender, req_buffer);
+    ReceiveS(&sender, request_buffer);
     switch (packet->type) {
       case INTERACTIVE_ECHO:
         Putstr(COM2, echo_data->echo);
@@ -789,16 +776,6 @@ void interactive() {
         case COMMAND_TRAIN_SPEED:
           Putf(COM2, "Set train %d to speed %d", cmd_data->train, cmd_data->speed);
           RecordLogf("Set train %d to speed %d\n\r", cmd_data->train, cmd_data->speed);
-          if (trainControllerTids[cmd_data->train] == -1) {
-            trainControllerTids[cmd_data->train] = CreateTrainController(cmd_data->train);
-          }
-          {
-            train_controller_msg_t msg;
-            msg.type = TRAIN_CONTROLLER_COMMAND;
-            msg.command.type = TRAIN_CONTROLLER_SET_SPEED;
-            msg.command.speed = cmd_data->speed;
-            SendSN(trainControllerTids[cmd_data->train], msg);
-          }
           samples = 0;
           lastTrain = cmd_data->train;
           active_train = cmd_data->train;
@@ -807,10 +784,9 @@ void interactive() {
           break;
         case COMMAND_TRAIN_REVERSE:
           Putf(COM2, "Train %d reverse", cmd_data->train);
-          ReverseTrain(cmd_data->train, 14);
           break;
         case COMMAND_SWITCH_TOGGLE:
-          SetSwitchAndRender(cmd_data->switch_no, cmd_data->switch_dir);
+          RenderSwitchChange(cmd_data->switch_no, cmd_data->switch_dir);
           Putf(COM2, "Set switch %d to %c", cmd_data->switch_no, cmd_data->switch_dir == DIR_STRAIGHT ? 'S' : 'C');
           break;
         case COMMAND_SWITCH_TOGGLE_ALL:
@@ -820,8 +796,7 @@ void interactive() {
             if (switchNumber >= 19) {
               switchNumber += 134; // 19 -> 153, etc
             }
-            SetSwitchAndRender(switchNumber, cmd_data->switch_dir);
-            Delay(6);
+            RenderSwitchChange(switchNumber, cmd_data->switch_dir);
           }
           break;
         case COMMAND_QUIT:
@@ -887,29 +862,20 @@ void interactive() {
           is_pathing = false;
           break;
         case COMMAND_NAVIGATE:
-          if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
-            Putf(COM2, "Train must already be in motion and hit a sensor to path.");
-            break;
-          }
-          RecordLogf("Basis is %d.\n\r", BASIS_NODE_NAME);
           active_train = cmd_data->train;
+          // FIXME: navigate no longer has a speed, so this is hardcoded
           active_speed = cmd_data->speed;
-          velocity_reading_delay_until = Time();
-          SetTrainSpeed(cmd_data->train, cmd_data->speed);
+          // velocity_reading_delay_until = Time();
 
-          // get the path to BASIS_NODE, our destination point
-          GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-          // set all the switches to go there
-          SetPathSwitches(&p);
           // get the full path including BASIS_NODE and display it
-          GetMultiDestinationPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME, cmd_data->dest_node);
-          DisplayPath(&p, active_train, active_speed, 0, 0);
-          is_pathing = true;
-          pathing_start_time = Time();
-          // set the trains destination, this makes the pathing logic fire
-          // up when the train hits BASIS_NODE
-          stop_on_node = cmd_data->dest_node;
-          set_to_stop = true;
+          // GetMultiDestinationPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME, cmd_data->dest_node);
+          // DisplayPath(&p, active_train, active_speed, 0, 0);
+          // is_pathing = true;
+          // pathing_start_time = Time();
+          // // set the trains destination, this makes the pathing logic fire
+          // // up when the train hits BASIS_NODE
+          // stop_on_node = cmd_data->dest_node;
+          // set_to_stop = true;
           break;
         case COMMAND_STOP_FROM:
           if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
@@ -920,8 +886,6 @@ void interactive() {
           active_speed = cmd_data->speed;
           // get the path to the stopping from node
           GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-          // set the switches for that route
-          SetPathSwitches(&p);
           // display the path
           DisplayPath(&p, active_train, active_speed, 0, 0);
           is_pathing = true;

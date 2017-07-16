@@ -65,7 +65,7 @@ void clock_server_test() {
   data.delay_ticks = 10;
   data.delay_amount = 10;
   log_task("Send child task data", tid);
-  ReceiveN(&recv_tid);
+  Receive(&recv_tid, NULL, 0);
   ReplyS(recv_tid, data);
   log_task("Task ended", tid);
 }

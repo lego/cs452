@@ -52,6 +52,9 @@ struct TaskDescriptor {
   void *stack_pointer;
   void (*entrypoint)();
 
+
+  bool is_recyclable;
+
   /* Diagnostics */
   io_time_t execution_time;
   io_time_t send_execution_time;
@@ -62,9 +65,9 @@ struct TaskDescriptor {
 
 typedef struct TaskDescriptor task_descriptor_t;
 
-task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name);
+task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name, bool is_recyclable);
 
 void td_free_stack(int tid);
 
-#define _TaskStackSize 0x10000
+#define _TaskStackSize 0x09000
 extern char *TaskStack;

@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <kernel.h>
 #include <util.h>
 #include <bwio.h>
 #include <servers/nameserver.h>
@@ -8,13 +9,12 @@
 #include <trains/sensor_collector.h>
 #include <trains/switch_controller.h>
 #include <trains/train_controller.h>
+#include <trains/navigation.h>
 #include <track/pathing.h>
 #include <priorities.h>
 
 #define NUM_SENSORS 80
 #define SENSOR_MEMORY 5
-
-#define TRAINS_MAX 80
 
 int sensor_attributer_tid = -1;
 
@@ -42,13 +42,14 @@ void sensor_notifier() {
   ReceiveS(&requester, attrib);
   ReplyN(requester);
 
-  uart_packet_t packet;
+  char packet_buffer[512] __attribute__ ((aligned (4)));;
+  uart_packet_fixed_size_t packet;
   packet.len = 6;
   packet.type = PACKET_SENSOR_DATA;
   jmemcpy(&packet.data[0], &attrib.time, sizeof(int));
   packet.data[4] = attrib.sensor;
   packet.data[5] = attrib.attribution;
-  PutPacket(&packet);
+  PutFixedPacket(&packet);
 
   Exit();
 }
@@ -141,8 +142,15 @@ void sensor_attributer() {
 void sensor_collector_task() {
   int tid = MyTid();
   int parent = MyParentTid();
+  int sensor_detector_multiplexer_tid = WhoIsEnsured(NS_SENSOR_DETECTOR_MULTIPLEXER);
+
+  sensor_data_t req_data;
+  req_data.packet.type = SENSOR_DATA;
+
   sensor_attributer_msg_t req;
   req.type = SENSOR_ATTRIB_NOTIFY_SENSOR;
+
+
   log_task("sensor_reader initialized parent=%d", tid, parent);
   int oldSensors[5];
   int sensors[5];
@@ -174,9 +182,12 @@ void sensor_collector_task() {
       if (sensors[i] != oldSensors[i]) {
         for (int j = 0; j < 16; j++) {
           if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
+            // Send to attributer
             req.arg1 = i*16+(15-j);
-
             SendSN(sensor_attributer_tid, req);
+            // Send to detector multiplexer
+            req_data.sensor_no = i*16+(15-j);
+            SendSN(sensor_detector_multiplexer_tid, req_data);
           }
         }
       }

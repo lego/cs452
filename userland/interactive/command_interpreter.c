@@ -73,7 +73,14 @@ static int GetSwitchDirection(parsed_command_t * data, int arg) {
   }
 }
 
-static void command_train_speed(int interactive_tid, parsed_command_t *data) {
+
+#define SendToBoth(cmd) do { \
+  SendSN(executor_tid, msg); \
+  SendSN(interactive_tid, msg); \
+  } while(0)
+
+
+static void command_train_speed(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 2);
   CMD_ASSERT_IS_TRAIN(data, 0);
   CMD_ASSERT_IS_SPEED(data, 1);
@@ -82,20 +89,20 @@ static void command_train_speed(int interactive_tid, parsed_command_t *data) {
   msg.base.type = COMMAND_TRAIN_SPEED;
   msg.train = GetInt(data, 0);
   msg.speed = GetInt(data, 1);
-  SendSN(interactive_tid, msg);
+  SendToBoth(msg);
 }
 
-static void command_train_reverse(int interactive_tid, parsed_command_t *data) {
+static void command_train_reverse(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 1);
   CMD_ASSERT_IS_TRAIN(data, 0);
   cmd_data_t msg;
   msg.base.packet.type = INTERPRETED_COMMAND;
   msg.base.type = COMMAND_TRAIN_REVERSE;
   msg.train = GetInt(data, 0);
-  SendSN(interactive_tid, msg);
+  SendToBoth(msg);
 }
 
-static void command_toggle_switch(int interactive_tid, parsed_command_t *data) {
+static void command_toggle_switch(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 2);
   CMD_ASSERT_IS_SWITCH(data, 0);
   CMD_ASSERT_IS_SWITCH_DIRECTION(data, 1);
@@ -104,10 +111,10 @@ static void command_toggle_switch(int interactive_tid, parsed_command_t *data) {
   msg.base.type = COMMAND_SWITCH_TOGGLE;
   msg.switch_no = GetInt(data, 0);
   msg.switch_dir = GetSwitchDirection(data, 1);
-  SendSN(interactive_tid, msg);
+  SendToBoth(msg);
 }
 
-static void command_toggle_all_switches(int interactive_tid, parsed_command_t *data) {
+static void command_toggle_all_switches(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 1);
   CMD_ASSERT_IS_SWITCH_DIRECTION(data, 0);
   cmd_data_t msg;
@@ -115,10 +122,10 @@ static void command_toggle_all_switches(int interactive_tid, parsed_command_t *d
   msg.base.type = COMMAND_SWITCH_TOGGLE_ALL;
   msg.switch_no = -1;
   msg.switch_dir = GetSwitchDirection(data, 0);
-  SendSN(interactive_tid, msg);
+  SendToBoth(msg);
 }
 
-static void command_navigate(int interactive_tid, parsed_command_t *data) {
+static void command_navigate(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 3);
   CMD_ASSERT_IS_TRAIN(data, 0);
   CMD_ASSERT_IS_SPEED(data, 1);
@@ -129,10 +136,10 @@ static void command_navigate(int interactive_tid, parsed_command_t *data) {
   msg.train = GetInt(data, 0);
   msg.speed = GetInt(data, 1);
   msg.dest_node = Name2Node(data->argv[2]);
-  SendSN(interactive_tid, msg);
+  SendToBoth(msg);
 }
 
-static void command_stop_from(int interactive_tid, parsed_command_t *data) {
+static void command_stop_from(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 3);
   CMD_ASSERT_IS_TRAIN(data, 0);
   CMD_ASSERT_IS_SPEED(data, 1);
@@ -143,10 +150,10 @@ static void command_stop_from(int interactive_tid, parsed_command_t *data) {
   msg.train = GetInt(data, 0);
   msg.speed = GetInt(data, 1);
   msg.dest_node = Name2Node(data->argv[2]);
-  SendSN(interactive_tid, msg);
+  SendToBoth(msg);
 }
 
-static void command_path(int interactive_tid, parsed_command_t *data) {
+static void command_path(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 2);
   CMD_ASSERT_IS_NODE(data, 0);
   CMD_ASSERT_IS_NODE(data, 1);
@@ -155,10 +162,11 @@ static void command_path(int interactive_tid, parsed_command_t *data) {
   msg.base.type = COMMAND_PATH;
   msg.src_node = Name2Node(data->argv[0]);
   msg.dest_node = Name2Node(data->argv[1]);
+  // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
 
-static void command_set_velocity(int interactive_tid, parsed_command_t *data) {
+static void command_set_velocity(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 3);
   CMD_ASSERT_IS_TRAIN(data, 0);
   CMD_ASSERT_IS_SPEED(data, 1);
@@ -169,10 +177,11 @@ static void command_set_velocity(int interactive_tid, parsed_command_t *data) {
   msg.train = GetInt(data, 0);
   msg.speed = GetInt(data, 1);
   msg.extra_arg = GetInt(data, 2);
+  // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
 
-static void command_set_location(int interactive_tid, parsed_command_t *data) {
+static void command_set_location(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 2);
   CMD_ASSERT_IS_TRAIN(data, 0);
   CMD_ASSERT_IS_NODE(data, 1);
@@ -181,20 +190,22 @@ static void command_set_location(int interactive_tid, parsed_command_t *data) {
   msg.base.type = COMMAND_SET_LOCATION;
   msg.train = GetInt(data, 0);
   msg.src_node = Name2Node(data->argv[1]);
+  // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
 
-static void command_set_stopping_distance_offset(int interactive_tid, parsed_command_t *data) {
+static void command_set_stopping_distance_offset(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 1);
   CMD_ASSERT_IS_INT(data, 0);
   cmd_data_t msg;
   msg.base.packet.type = INTERPRETED_COMMAND;
   msg.base.type = COMMAND_STOPPING_DISTANCE_OFFSET;
   msg.extra_arg = GetInt(data, 0);
+  // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
 
-static void command_set_stopping_distance(int interactive_tid, parsed_command_t *data) {
+static void command_set_stopping_distance(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 3);
   CMD_ASSERT_IS_TRAIN(data, 0);
   CMD_ASSERT_IS_SPEED(data, 1);
@@ -205,10 +216,11 @@ static void command_set_stopping_distance(int interactive_tid, parsed_command_t 
   msg.train = GetInt(data, 0);
   msg.speed = GetInt(data, 1);
   msg.extra_arg = GetInt(data, 2);
+  // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
 
-static void command_set_stopping_distanceneg(int interactive_tid, parsed_command_t *data) {
+static void command_set_stopping_distanceneg(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 3);
   CMD_ASSERT_IS_TRAIN(data, 0);
   CMD_ASSERT_IS_SPEED(data, 1);
@@ -219,10 +231,11 @@ static void command_set_stopping_distanceneg(int interactive_tid, parsed_command
   msg.train = GetInt(data, 0);
   msg.speed = GetInt(data, 1);
   msg.extra_arg = -GetInt(data, 2);
+  // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
 
-static void command_manual_sense(int interactive_tid, parsed_command_t *data) {
+static void command_manual_sense(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 1);
   CMD_ASSERT_IS_NODE(data, 0);
   cmd_data_t msg;
@@ -236,16 +249,20 @@ static void command_manual_sense(int interactive_tid, parsed_command_t *data) {
     SendSN(interactive_tid, cmd);
     return;
   }
-
+  // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
 
-#define DEF_CASE(cmd, cmd_func) case cmd: cmd_func(interactive_tid, data); break;
+#define DEF_CASE(cmd, cmd_func) case cmd: cmd_func(interactive_tid, executor_tid, data); break;
 
 void command_interpreter_task() {
   int tid = MyTid();
   RegisterAs(NS_COMMAND_INTERPRETER);
+
+  // FIXME: possibly replace these TIDs with warehouses funneling to them
+  // This should definitely be the case for low-prio interactive
   int interactive_tid = WhoIsEnsured(NS_INTERACTIVE);
+  int executor_tid = WhoIsEnsured(NS_EXECUTOR);
 
   int sender;
   char req_buf[1024];

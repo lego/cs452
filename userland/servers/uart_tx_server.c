@@ -33,31 +33,34 @@ void uart_tx_notifier() {
 
   log_uart_server("uart_tx_notifier initialized tid=%d channel=%d", tid, channel);
 
-  uart_packet_t packet;
+  char request_buffer[512] __attribute__ ((aligned (4)));
+  uart_packet_t * packet = (uart_packet_t *) request_buffer;
+  char * packet_data = request_buffer + sizeof(uart_packet_t);
 
   while (true) {
-    ReceiveS(&requester, packet);
+    int bytes = ReceiveS(&requester, request_buffer);
+    KASSERT(bytes < 512, "Packet buffer overflown. Re-evaluate buffer sizes.");
     ReplyN(requester);
     log_uart_server("uart_notifer channel=%d", channel);
     switch(channel) {
       case COM1:
-        for (int i = 0; i < packet.len; i++) {
-          AwaitEventPut(EVENT_UART1_TX, packet.data[i]);
-          log_uart_server("uart_notifer COM1 putc=%c", packet.data[i]);
+        for (int i = 0; i < packet->len; i++) {
+          AwaitEventPut(EVENT_UART1_TX, packet_data[i]);
+          log_uart_server("uart_notifer COM1 putc=%c", packet_data[i]);
         }
         break;
       case COM2:
 #if NONTERMINAL_OUTPUT
-        AwaitEventPut(EVENT_UART2_TX, packet.len);
-        AwaitEventPut(EVENT_UART2_TX, packet.type);
+        AwaitEventPut(EVENT_UART2_TX, packet->len);
+        AwaitEventPut(EVENT_UART2_TX, packet->type);
 #else
-        if (packet.type != 1) {
+        if (packet->type != 1) {
           break;
         }
 #endif
-        for (int i = 0; i < packet.len; i++) {
-          AwaitEventPut(EVENT_UART2_TX, packet.data[i]);
-          log_uart_server("uart_notifer COM2 putc=%c", packet.data[i]);
+        for (int i = 0; i < packet->len; i++) {
+          AwaitEventPut(EVENT_UART2_TX, packet_data[i]);
+          log_uart_server("uart_notifer COM2 putc=%c", packet_data[i]);
         }
         break;
     }
@@ -98,8 +101,12 @@ void uart_tx_server() {
 
   uart_request_t request;
 
-  uart_packet_t packet;
-  packet.type = 1;
+
+  char request_buffer[512] __attribute__ ((aligned (4)));
+  uart_packet_t * packet = (uart_packet_t *) request_buffer;
+  char * packet_data = request_buffer + sizeof(uart_packet_t);
+
+  packet->type = 1;
 
   ReceiveS(&requester, request);
   int channel = request.channel;
@@ -107,9 +114,9 @@ void uart_tx_server() {
   ReplyN(requester);
 
   if (channel == COM1) {
-    RegisterAs(UART1_TX_SERVER);
+    RegisterAs(NS_UART1_TX_SERVER);
   } else if (channel == COM2) {
-    RegisterAs(UART2_TX_SERVER);
+    RegisterAs(NS_UART2_TX_SERVER);
   }
 
   char outputQueue[OUTPUT_QUEUE_MAX];
@@ -122,7 +129,7 @@ void uart_tx_server() {
 
   char * courier_name = (channel == COM1) ? "UART1 TX server courier" : "UART2 TX server courier";
 
-  int courier_tid = createCourier(courier_priority, warehouse_tid, tid, sizeof(uart_packet_t), courier_name);
+  int courier_tid = createCourier(courier_priority, warehouse_tid, tid, 0, courier_name);
 
   log_uart_server("uart_server initialized channel=%d tid=%d", channel, tid);
 
@@ -144,9 +151,9 @@ void uart_tx_server() {
           }
           request.ch++;
           if (ready && outputQueueLength == 0) {
-            packet.len = 1;
-            packet.data[0] = c;
-            ReplyS(courier_tid, packet);
+            packet->len = 1;
+            packet_data[0] = c;
+            Reply(courier_tid, request_buffer, sizeof(uart_packet_t) + packet->len);
             ready = false;
           } else {
             KASSERT(outputQueueLength < OUTPUT_QUEUE_MAX, "UART output server queue has reached its limits for channel %d!", channel);
@@ -167,17 +174,17 @@ void uart_tx_server() {
     }
 
     if (ready && outputQueueLength > 0) {
-      packet.len = outputQueueLength;
-      if (packet.len > RESPONSE_BUFFER_SIZE) {
-        packet.len = RESPONSE_BUFFER_SIZE;
+      packet->len = outputQueueLength;
+      if (packet->len > RESPONSE_BUFFER_SIZE) {
+        packet->len = RESPONSE_BUFFER_SIZE;
       }
-      for (int i = 0; i < packet.len; i++) {
+      for (int i = 0; i < packet->len; i++) {
         int index = (outputStart+i) % OUTPUT_QUEUE_MAX;
-        packet.data[i] = outputQueue[index];
+        packet_data[i] = outputQueue[index];
       }
-      outputStart = (outputStart+packet.len) % OUTPUT_QUEUE_MAX;
-      outputQueueLength -= packet.len;
-      ReplyS(courier_tid, packet);
+      outputStart = (outputStart+packet->len) % OUTPUT_QUEUE_MAX;
+      outputQueueLength -= packet->len;
+      Reply(courier_tid, request_buffer, sizeof(uart_packet_t) + packet->len);
       ready = false;
     }
   }
@@ -197,7 +204,7 @@ void uart_tx() {
       uart1_tx_notifier_tid,
       PACKET_QUEUE_MAX,
       PRIORITY_UART1_TX_SERVER,
-      sizeof(uart_packet_t),
+      0,
       "UART1 TX warehouse");
 
   uart2_tx_warehouse_tid = createWarehouse(
@@ -205,7 +212,7 @@ void uart_tx() {
       uart2_tx_notifier_tid,
       PACKET_QUEUE_MAX,
       PRIORITY_UART2_TX_SERVER,
-      sizeof(uart_packet_t),
+      0,
       "UART2 TX warehouse");
 
   uart1_tx_server_tid = Create(PRIORITY_UART1_TX_SERVER, uart_tx_server);
@@ -221,7 +228,7 @@ void uart_tx() {
       uart2_tx_warehouse_tid,
       LOGGING_PACKET_QUEUE,
       PRIORITY_LOGGING_COURIER,
-      sizeof(uart_packet_t),
+      0,
       "UART2 TX logging warehouse");
 }
 
@@ -292,8 +299,8 @@ int PutPacket(uart_packet_t *packet) {
     KASSERT(false, "UART tx server not initialized");
     return -1;
   }
-
-  SendSN(server_tid, *packet);
+  KASSERT(packet->len < 2048, "Packet length was a bit large. Ensure it's okay, len=%d", packet->len);
+  Send(server_tid, packet, packet->len + sizeof(uart_packet_t), NULL, 0);
   return 0;
 }
 
@@ -304,10 +311,20 @@ int Logp(uart_packet_t *packet) {
     return -1;
   }
 
-  SendSN(logging_warehouse_tid, *packet);
-
+  KASSERT(packet->len < 2048, "Packet length was a bit large. Ensure it's okay, len=%d", packet->len);
+  Send(logging_warehouse_tid, packet, packet->len + sizeof(uart_packet_t), NULL, 0);
   return 0;
 }
+
+int Logf(int type, char *fmt, ...) {
+  char buf[512];
+  va_list va;
+  va_start(va,fmt);
+  jformat(buf, 512, fmt, va);
+  va_end(va);
+  return Logs(type, buf);
+}
+
 
 int Logs(int type, const char *str) {
   log_task("Logp str=%d", active_task->tid, packet.type);
@@ -317,40 +334,24 @@ int Logs(int type, const char *str) {
   }
 
   int slen = jstrlen(str);
-  uart_packet_t packet;
-  packet.type = type;
-  packet.len = slen;
-  jmemcpy(&packet.data, str, slen*sizeof(char));
+  char message_buffer[1024] __attribute__ ((aligned (4)));;
+  uart_packet_t * packet = (uart_packet_t *) message_buffer;
+  char * packet_data = message_buffer + sizeof(uart_packet_t);
+  packet->type = type;
+  packet->len = slen;
+  jmemcpy(packet_data, str, slen*sizeof(char));
 
-  SendSN(logging_warehouse_tid, packet);
+  int size = sizeof(uart_packet_t) + slen;
+  KASSERT(size <= 1024, "Message buffer overflow. Re-evaluate buffer sizes");
+  Send(logging_warehouse_tid, message_buffer, size, NULL, 0);
 
   return 0;
 }
 
-int Logf(int type, char *fmt, ...) {
-  char buf[2048];
-  va_list va;
-  va_start(va,fmt);
-  jformat(buf, 2048, fmt, va);
-  va_end(va);
-  return Logs(type, buf);
-}
-
 void MoveTerminalCursor(unsigned int x, unsigned int y) {
-  // FIXME: make this happen in one Putstr operation for escape sequence continuity
-  char bf[12];
-  Putc(COM2, ESCAPE_CH);
-  Putc(COM2, '[');
-
-  ui2a(y, 10, bf);
-  Putstr(COM2, bf);
-
-  Putc(COM2, ';');
-
-  ui2a(x, 10, bf);
-  Putstr(COM2, bf);
-
-  Putc(COM2, 'H');
+  char buffer[12];
+  jformatf(buffer, sizeof(buffer), "\e[%d;%dH", y, x);
+  Putstr(COM2, buffer);
 }
 
 int GetTxQueueLength( int channel ) {

@@ -6,6 +6,12 @@ typedef enum {
    */
   SENSOR_DATA,
 
+  /**
+   * Train controller messages
+   */
+   TRAIN_CONTROLLER_COMMAND,
+   TRAIN_NAVIGATE_COMMAND,
+
   /*
    * Detector messages
    */
@@ -13,6 +19,8 @@ typedef enum {
   SENSOR_DETECT,
   SENSOR_TIMEOUT_DETECTIVE,
   INTERVAL_DETECT,
+
+  SENSOR_DETECTOR_REQUEST, // Message from detector to multiplexer for data
 
   // Messages from command_parser
   PARSED_COMMAND,
@@ -25,11 +33,17 @@ typedef enum {
   INTERACTIVE_TIME_UPDATE,
   INTERACTIVE_ECHO,
 
+  /*
+   * Messages to Executor task
+   */
+  PATHING_WORKER_RESULT,
+
   /**
-   * Reservoir messages
+   * Messages to Reservoir task
    */
   RESERVOIR_REQUEST,
   RESERVOIR_RELEASE,
+  RESERVOIR_PATHING_REQUEST,
 } packet_type_t;
 
 typedef struct {

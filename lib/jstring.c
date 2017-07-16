@@ -3,9 +3,9 @@
 #include <jstring.h>
 #include <util.h>
 
-unsigned int jstrlen(const char *c) {
+unsigned int jstrlen(const char *str) {
   int len = 0;
-  while(c[len] != 0) len++;
+  while(str[len] != 0) len++;
   return len;
 }
 
@@ -69,36 +69,6 @@ void jstrappendc(const char *str1, const char c, char *buf) {
   *buf = '\0';
 }
 
-char **jstrsplit(char *str, char delimiter) {
-  // int i;
-  // unsigned int len = strlen(str);
-  //
-  // // count for how many new strings there will be
-  // int str_count = str[0] == delimiter ? 0 : 1;
-  // bool in_delimiter = str[0] == delimiter;
-  // for (i = 1; i < len; i++) {
-  //   if (str[i] == delimiter && in_delimiter) continue;
-  //   if (str[i] != delimiter && !in_delimiter) continue;
-  //   str_count++;
-  //   in_delimiter = str[i] == delimiter;
-  // }
-  //
-  // char **strings = jalloc(sizeof(char **) * str_count);
-  //
-  // // count the length of each string
-  // in_delimiter = str[0] == delimiter;
-  // int curr_strlen = str[0] == delimiter ? 0 : 1;
-  // for (i = 1; i < len; i++) {
-  //   if (str[i] == delimiter && in_delimiter) continue;
-  //   if (str[i] != delimiter && !in_delimiter) continue;
-  //   if (str[i] != delimiter && !in_delimiter) continue;
-  //   str_count++;
-  //   in_delimiter = str[i] == delimiter;
-  // }
-  // return strings;
-  return NULL;
-}
-
 int jstrsplit_count(char *str, char delimiter) {
   int i;
   unsigned int len = jstrlen(str);
@@ -117,7 +87,7 @@ int jstrsplit_count(char *str, char delimiter) {
 }
 
 
-int jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
+void jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
   int i;
   unsigned int len = jstrlen(str);
   // FIXME: this will fail if the buffer is > 256, due to char size limits
@@ -132,7 +102,7 @@ int jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
   // put NULL for char ** end
   buffer[str_count] = '\0';
   // edge case, empty string
-  if (str_count == 0) return 0;
+  if (str_count == 0) return;
 
   // Set the split characters into the buffer, with offsets in the beginning
   char *current_str = buffer + str_count + 1;
@@ -166,7 +136,7 @@ int jstrsplit_buf(char *str, char delimiter, char *buffer, int buffer_size) {
   // add zero byte for last char, edge case if there is no final delim
   *current_str = '\0';
 
-  return 0;
+  return;
 }
 
 int jc2i(char c) {
@@ -348,7 +318,7 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
         used_buf++;
       }
     }
-    KASSERT(used_buf < buf_size, "jformatf provided buffer overflowed: fmt=\"%s\"", fmt);
+    KASSERT(used_buf < buf_size, "jformatf provided buffer overflowed: fmt=\"%s\" used=%d size=%d", fmt, used_size, buf_size);
   }
 }
 

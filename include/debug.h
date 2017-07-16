@@ -50,10 +50,6 @@ void PrintAllTaskStacks(int focused_task);
 
 #define NOP do {} while(0)
 
-// Dangerous global use, but used only for debug lines
-#include <kern/task_descriptor.h>
-extern volatile task_descriptor_t *active_task;
-
 #include <bwio.h>
 
 #if DEBUG_MODE
