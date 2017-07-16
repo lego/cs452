@@ -861,6 +861,10 @@ void interactive() {
           is_pathing = false;
           break;
         case COMMAND_NAVIGATE:
+          if (WhereAmI(cmd_data->train) == -1) {
+            Putf(COM2, "Train must have a current location to navigate.");
+            break;
+          }
           active_train = cmd_data->train;
           // FIXME: navigate no longer has a speed, so this is hardcoded
           active_speed = cmd_data->speed;

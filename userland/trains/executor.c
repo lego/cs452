@@ -83,6 +83,8 @@ void execute_command(cmd_data_t * cmd_data) {
       break;
     case COMMAND_NAVIGATE:
       Logf(EXECUTOR_LOGGING, "Executor starting pathing worker");
+      // If we have no starting location, don't do anything (interactive logs this)
+      if (WhereAmI(cmd_data->train) == -1) break;
       _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
       break;
 
