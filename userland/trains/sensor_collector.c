@@ -115,30 +115,20 @@ void sensor_attributer() {
           if (attrib == -1 && active_train != -1) {
             attrib = active_train;
             active_train = -1;
-            lastTrainAtSensor[sensor][0] = attrib;
-          } else {
-            int node = track[sensor].reverse->id;
-            for (int i = 0; i < 3 && attrib == -1; i++) {
-              node = findSensorOrBranch(node);
-              while (node >= 0 && track[node].type == NODE_BRANCH) {
-                int state = GetSwitchState(track[node].num);
-                node = track[node].edge[state].dest->id;
-                if (track[node].type != NODE_SENSOR) {
-                  node = findSensorOrBranch(node);
-                }
-              }
-              if (node >= 0 && track[node].type == NODE_SENSOR) {
-                int reverseNode = track[node].reverse->id;
-                if (lastTrainAtSensor[reverseNode][0] != -1) {
-                  attrib = lastTrainAtSensor[reverseNode][0];
-                  lastTrainAtSensor[reverseNode][0] = -1;
-                  lastTrainAtSensor[sensor][0] = attrib;
+          }
+          if (attrib != -1) {
+            int node = nextSensor(sensor);
+            if (node != -1) {
+              for (int i = 0; i < SENSOR_MEMORY; i++) {
+                if (lastTrainAtSensor[node][i] == -1) {
+                  lastTrainAtSensor[node][i] = attrib;
+                  break;
                 }
               }
             }
           }
           // TODO: break this out into a AlertSensorAttribution func
-          int notifier = Create(PRIORITY_UART2_TX_SERVER, sensor_notifier);
+          int notifier = CreateRecyclable(PRIORITY_UART2_TX_SERVER, sensor_notifier);
           // Send sensor data
           Send(notifier, data, sizeof(sensor_data_t), NULL, 0);
           // Send train attributed to
