@@ -705,7 +705,6 @@ void interactive() {
 
   // FIXME: priority
   int time_keeper_id = StartIntervalDetector("interactive time keeper", tid, 10);
-  int sensor_saver_tid = Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
   int sender;
   idle_execution_time = 0;
   last_time_idle_displayed = 0;

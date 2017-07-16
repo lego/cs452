@@ -23,6 +23,7 @@ int Putf(int channel, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 int PutPacket(uart_packet_t *packet);
 int Logp(uart_packet_t *packet);
 int Logs(int type, const char *str);
+int Logf(int type, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 void MoveTerminalCursor(unsigned int x, unsigned int y);
 int GetRxQueueLength(int channel);
 

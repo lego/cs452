@@ -33,10 +33,9 @@ void train_control_entry_task() {
   Create(PRIORITY_TRAIN_COMMAND_SERVER, train_command_server);
   Create(PRIORITY_SWITCH_CONTROLLER, switch_controller);
 
-  Create(PRIORITY_UART1_RX_SERVER, sensor_saver);
   // FIXME: priority
-  Create(PRIORITY_UART1_RX_SERVER+1, sensor_attributer);
-  Create(PRIORITY_UART1_RX_SERVER+2, sensor_collector_task);
+  Create(PRIORITY_SWITCH_CONTROLLER+1, sensor_attributer);
+  Create(PRIORITY_SWITCH_CONTROLLER+2, sensor_collector_task);
 
   Create(PRIORITY_INTERACTIVE, interactive);
   // FIXME: priority

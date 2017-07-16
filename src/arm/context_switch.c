@@ -33,8 +33,10 @@ asm (
 ".global __asm_start_task\n"
 ".global __asm_switch_to_task\n"
 
-
 "__undefined_instruction_handler:\n\t"
+  "mov r0, #0\n\t"
+  "bl cleanup\n\t"
+
   "mov r0, #1\n\t"
   "ldr r1, =undefined_instr_msg\n\t"
   "ldr r1, [r1]\n\t"
@@ -42,6 +44,9 @@ asm (
   "b __abort_handler\n\t"
 
 "__prefetch_abort_handler:\n\t"
+  "mov r0, #0\n\t"
+  "bl cleanup\n\t"
+
   "mov r0, #1\n\t"
   "ldr r1, =prefetch_abort_msg\n\t"
   "ldr r1, [r1]\n\t"
@@ -49,6 +54,9 @@ asm (
   "b __abort_handler\n\t"
 
 "__data_abort_handler:\n\t"
+  "mov r0, #0\n\t"
+  "bl cleanup\n\t"
+
   "mov r0, #1\n\t"
   "ldr r1, =data_abort_msg\n\t"
   "ldr r1, [r1]\n\t"
@@ -80,9 +88,6 @@ asm (
   "mov r1, lr\n\t"
   "msr cpsr_c, #211\n\t"
   "bl bwputr\n\t"
-
-  "mov r0, #0\n\t"
-  "bl cleanup\n\t"
 
   "b exit_kernel\n\t"
 
