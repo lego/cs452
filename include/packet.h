@@ -10,6 +10,7 @@ typedef enum {
    * Train controller messages
    */
    TRAIN_CONTROLLER_COMMAND,
+   TRAIN_NAVIGATE_COMMAND,
 
   /*
    * Detector messages

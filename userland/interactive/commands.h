@@ -2,6 +2,19 @@
 
 #include <packet.h>
 
+/**
+ * Defining a new command:
+ *   - Add the command enum here
+ *   - Add the command string into command_parser.c (e.g. reverse = "rv")
+ *   - Add the case into command_interpreter, i.e. an enum, and a validation function
+ *     these validation functions have helper macros for asserting correct inputs
+ *     such as count, int type, etc.
+ *   - Consume command type:
+ *     interpreted commands are sent to interactive_tid for display purposes,
+ *     and executor_tid for actions to execute (e.g. switches, trains)
+ *     NOTE: SendToBoth is done in order to display in interactive and action
+ */
+
 typedef enum {
   COMMAND_INVALID,
 

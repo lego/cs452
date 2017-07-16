@@ -2,6 +2,7 @@
 #include <detective/sensor_timeout_detective.h>
 #include <detective/sensor_detector.h>
 #include <detective/delay_detector.h>
+#include <servers/uart_tx_server.h>
 #include <track/pathing.h>
 #include <priorities.h>
 #include <kernel.h>

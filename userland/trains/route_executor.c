@@ -3,6 +3,7 @@
 #include <packet.h>
 #include <detective/sensor_timeout_detective.h>
 #include <servers/clock_server.h>
+#include <servers/uart_tx_server.h>
 #include <track/pathing.h>
 #include <trains/route_executor.h>
 #include <trains/navigation.h>
@@ -80,8 +81,6 @@ void route_executor_task() {
   int current = Time();
 
   SetTrainSpeed(init.train, init.speed);
-
-  int eta_to_node = (dist_to_node * 100) / Velocity(init->train, init->speed);
 
   while (true) {
     status = ReceiveS(&sender, request_buffer);
