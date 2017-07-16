@@ -5,6 +5,7 @@
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
 #include <track/pathing.h>
+#include <trains/reservoir.h>
 #include <trains/route_executor.h>
 #include <trains/navigation.h>
 #include <train_command_server.h>
@@ -40,8 +41,52 @@ void set_up_next_detector(path_t * path, route_executor_init_t * init, int last_
   StartSensorDetector(name, MyTid(), next_sensor->id);
 }
 
-void reserve_track_from(int from_node, int to_node) {
-  Logf(EXECUTOR_LOGGING, "would have reserved track from %s to %s", track[from_node].name, track[to_node].name);
+void reserve_track_from(int train, path_t * path, reservoir_segments_t * releasing_segments, int from_node, int to_node) {
+
+  // Create the list of segments were going to own
+  // FIXME: come up with with 1) a better segment struct 2) an easier way to get
+  // data out of paths
+  reservoir_segments_t data;
+  data.owner = train;
+  data.len = to_node - from_node;
+  int segments_idx = 0;
+  for (int i = from_node; i < to_node; i++) {
+    track_node * src = path->nodes[i];
+    data.segments[segments_idx].track_node = path->nodes[i]->id;
+    switch (src->type) {
+    case NODE_BRANCH:
+      if (src->edge[DIR_CURVED].dest == path->nodes[i+1]) {
+         data.segments[segments_idx].dir = DIR_CURVED;
+      }
+      else {
+        data.segments[segments_idx].dir = DIR_STRAIGHT;
+      }
+      break;
+    default:
+      data.segments[segments_idx].dir = DIR_AHEAD;
+      break;
+    }
+
+    // keep track of owned segments, storing them in a persistent segment struct
+    releasing_segments->segments[segments_idx + releasing_segments->len].track_node = data.segments[segments_idx].track_node;
+    releasing_segments->segments[segments_idx + releasing_segments->len].dir = data.segments[segments_idx].dir;
+    segments_idx++;
+  }
+
+  Logf(EXECUTOR_LOGGING, "%d: reserving track from %s to %s", train, path->nodes[from_node]->name, path->nodes[to_node]->name);
+
+  int result = RequestSegment(&data);
+  if (result == 1) {
+    Logf(EXECUTOR_LOGGING, "%d: Route executor has ended due to segment collision", train);
+    Logf(EXECUTOR_LOGGING, "%d: releasing %d segments", train, releasing_segments->len);
+    ReleaseSegment(releasing_segments);
+
+    // TODO: propogate message upwards about route failure
+    // in additional signal a stop to occur on the end of the reserved segment
+    DestroySelf();
+  }
+  // Only after now do we "own" the segments, so reflect that in releasing_segments
+  releasing_segments->len += data.len;
 }
 
 void route_executor_task() {
@@ -51,25 +96,32 @@ void route_executor_task() {
 
   route_executor_init_t init;
   path_t path;
+  reservoir_segments_t releasing_segments;
   ReceiveS(&sender, init);
   ReplyN(sender);
   ReceiveS(&sender, path);
   ReplyN(sender);
+  releasing_segments.owner = init.train;
+  releasing_segments.len = 0;
 
-  Logf(EXECUTOR_LOGGING, "Route executor has begun. train=%d route is %s ~> %s", init.train, path.src->name, path.dest->name);
+
+  Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s", init.train, init.train, path.src->name, path.dest->name);
   int dist_sum = 0;
   for (int i = 0; i < path.len; i++) {
     dist_sum += path.nodes[i]->dist;
-    Logf(EXECUTOR_LOGGING, "  node %3s dist %4dmm", path.nodes[i]->name, dist_sum);
+    Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", init.train, path.nodes[i]->name, dist_sum);
   }
 
   char request_buffer[256] __attribute__ ((aligned (4)));
   packet_t * packet = (packet_t *) request_buffer;
   detector_message_t * detector_msg = (detector_message_t *) request_buffer;
 
+  // These are the sensor indices in the path node list
   int last_sensor_no = 0;
   int next_sensor_no = get_next_sensor(&path, 0);
-  int current = Time();
+
+  set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
+  reserve_track_from(init.train, &path, &releasing_segments, last_sensor_no, next_sensor_no);
 
   while (true) {
     status = ReceiveS(&sender, request_buffer);
@@ -77,18 +129,16 @@ void route_executor_task() {
     status = ReplyN(sender);
     switch (packet->type) {
       case SENSOR_DETECT:
-        Logf(EXECUTOR_LOGGING, "Detector sensor %s hit at time=%d", track[detector_msg->details].name, Time());
+        Logf(EXECUTOR_LOGGING, "%d: Detector sensor %s hit at time=%d", init.train, track[detector_msg->details].name, Time());
         last_sensor_no = next_sensor_no;
         next_sensor_no = get_next_sensor(&path, last_sensor_no);
-        if (next_sensor_no != -1) {
-          set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
-        } else {
-          Logf(EXECUTOR_LOGGING, "Route Executor has completed all sensors on route. Bye \\o");
+        if (next_sensor_no == -1) {
+          Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", init.train);
           // FIXME: do proper cleanup line alerting Executor of location, stopping, etc.
           Destroy(tid);
         }
-        reserve_track_from(last_sensor_no, next_sensor_no);
-        current = Time();
+        set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
+        reserve_track_from(init.train, &path, &releasing_segments, last_sensor_no, next_sensor_no);
         break;
       default:
         KASSERT(false, "Unexpected packet type=%d", packet->type);

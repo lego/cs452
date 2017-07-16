@@ -2,6 +2,7 @@
 #include <kernel.h>
 #include <trains/reservoir.h>
 #include <track/pathing.h>
+#include <servers/uart_tx_server.h>
 
 int reservoir_tid = -1;
 
@@ -22,9 +23,10 @@ static inline int get_segment_owner(segment_t * segment) {
     return -1;
 }
 
-bool all_segments_available(reservoir_segments_t * request) {
+bool all_segments_available(reservoir_segments_t * request, int owner) {
   for (int i = 0; i < request->len; i++) {
-    if (get_segment_owner(&request->segments[i]) != -1) return false;
+    int segment_owner = get_segment_owner(&request->segments[i]);
+    if (segment_owner != -1 && segment_owner != owner) return false;
   }
   return true;
 }
@@ -60,7 +62,7 @@ void reservoir_task() {
   int tid = MyTid();
   reservoir_tid = tid;
 
-  char request_buffer[128] __attribute__ ((aligned (4)));
+  char request_buffer[256] __attribute__ ((aligned (4)));
   KASSERT(sizeof(request_buffer) >= sizeof(reservoir_segments_t), "Buffer isn't large enough.");
   KASSERT(sizeof(request_buffer) >= sizeof(pathing_request_t), "Buffer isn't large enough.");
   packet_t * packet = (packet_t *) request_buffer;
@@ -73,19 +75,19 @@ void reservoir_task() {
     ReceiveS(&sender, request_buffer);
     switch (packet->type) {
     case RESERVOIR_REQUEST:
-      if (all_segments_available(resv_request)) {
-        set_segment_ownership(resv_request, sender);
+      if (all_segments_available(resv_request, resv_request->owner)) {
+        set_segment_ownership(resv_request, resv_request->owner);
         ReplyStatus(sender, RESERVOIR_REQUEST_OK);
       } else {
         ReplyStatus(sender, RESERVOIR_REQUEST_ERROR);
       }
       break;
     case RESERVOIR_RELEASE:
-      release_segments(resv_request, sender);
+      release_segments(resv_request, resv_request->owner);
       ReplyN(sender);
       break;
     case RESERVOIR_PATHING_REQUEST:
-      process_pathing_request(&result_path, path_request, sender);
+      process_pathing_request(&result_path, path_request, resv_request->owner);
       // FIXME: if no path found due to ownership, ReplyN
       ReplyS(sender, result_path);
       break;

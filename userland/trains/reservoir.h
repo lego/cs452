@@ -14,13 +14,14 @@
 
 /**
  * segment_t specifies a track segment, i.e. edge, from a node and direction
+ * TODO: maybe extend this to be either an edge or a node?
  */
 typedef struct {
   // a track node
   int track_node;
   // either DIR_AHEAD
   // or DIR_CURVED and DIR_STRAIGHT
-  int dir;
+  unsigned char dir;
 } segment_t;
 
 typedef struct {
@@ -28,8 +29,9 @@ typedef struct {
   // RESERVOIR_REQUEST or RESERVOIR_RELEASE
   packet_t packet;
 
+  int owner;
   // Reasonable upper limit to request or release at one time
-  segment_t segments[12];
+  segment_t segments[16];
   int len;
 } reservoir_segments_t;
 

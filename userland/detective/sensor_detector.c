@@ -2,6 +2,7 @@
 #include <detective/sensor_detector.h>
 #include <trains/sensor_collector.h>
 #include <servers/nameserver.h>
+#include <servers/uart_tx_server.h>
 #include <track/pathing.h>
 #include <priorities.h>
 #include <kernel.h>
@@ -31,6 +32,8 @@ void sensor_detector() {
   request.type = SENSOR_DETECTOR_REQUEST;
 
   sensor_data_t data;
+
+  Logf(EXECUTOR_LOGGING, "Detector started for %s", track[init.sensor_no].name);
 
   // Listen to all sensor data, waiting for the one we want
   while (true) {

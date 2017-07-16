@@ -55,6 +55,12 @@ void Pass( );
 void Destroy( int tid );
 
 /**
+ * Destroy self, for avoiding active_task to spread into other files, while
+ * not passing around a tid
+ */
+#define DestroySelf() Destroy(MyTid())
+
+/**
  * Exit the task, ending execution
  */
 void Exit( );

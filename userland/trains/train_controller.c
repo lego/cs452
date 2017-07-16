@@ -41,7 +41,6 @@ void train_controller() {
   train_navigate_t * navigate_msg = (train_navigate_t *) request_buffer;
 
   path_t navigation_data;
-  Logf(EXECUTOR_LOGGING, "TC started");
 
   int train;
   ReceiveS(&requester, train);
@@ -52,7 +51,6 @@ void train_controller() {
   while (true) {
     ReceiveS(&requester, request_buffer);
     ReplyN(requester);
-    Logf(EXECUTOR_LOGGING, "TC received msg");
     switch (packet->type) {
       case SENSOR_DATA:
         break;

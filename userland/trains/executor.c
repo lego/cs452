@@ -114,7 +114,7 @@ void executor_task() {
   while (true) {
     ReceiveS(&sender, request_buffer);
     ReplyN(sender);
-    Logf(EXECUTOR_LOGGING, "Executor got message type=%d\n\r", packet->type);
+    Logf(EXECUTOR_LOGGING, "Executor got message type=%d", packet->type);
     switch (packet->type) {
     // Command line input invocations
     case INTERPRETED_COMMAND:
