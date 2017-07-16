@@ -29,7 +29,7 @@ void no_reply_child_task() {
   RecordLogf("Entering no_reply_child_task tid=%d\n\r", tid);
   int i;
   RecordLogf("Receiving no_reply_child_task tid=%d\n\r", tid);
-  ReceiveN(&i);
+  Receive(&i, NULL, 0);
   RecordLogf("Destroying self (no_reply_child_task) tid=%d\n\r", tid);
   Destroy(tid);
 }

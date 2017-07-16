@@ -1,6 +1,7 @@
 #include <trains/train_controller.h>
 #include <basic.h>
 #include <bwio.h>
+#include <kernel.h>
 #include <servers/nameserver.h>
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>

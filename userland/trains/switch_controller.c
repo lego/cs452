@@ -3,6 +3,7 @@
 #include <trains/switch_controller.h>
 #include <servers/uart_tx_server.h>
 #include <servers/clock_server.h>
+#include <kernel.h>
 #include <priorities.h>
 
 static int switch_controller_tid = -1;

@@ -3,6 +3,11 @@
 #include <basic.h>
 #include <track/pathing.h>
 
+/**
+ * Navigation related functions. All of these have to do with state or
+ * calibration (location, velo, accel, stopdist, etc.)
+ */
+
 #define TRAINS_MAX 80
 
 #define VELOCITY_SAMPLES_MAX 5
@@ -13,17 +18,27 @@
 #define SECONDS(amt) MILLISECONDS(amt * 1000)
 #define MILLISECONDS(amt) amt
 
-// Initializes calibration information
+/**
+ * Initializes calibration information.
+ */
 void InitNavigation();
 
+/**
+ * Set the location of a train
+ */
 void set_location(int train, int location);
 
 void SetPathSwitches(path_t *path);
 
+/**
+ * Get the stopping distance of a train
+ */
 int StoppingDistance(int train, int speed);
 
-// Gets where the current train is
-// NOTE: assumes the train is stationary
+/**
+ * Get the current node location of the train.
+ * This currently is the latest sensor hit by the train.
+ */
 int WhereAmI(int train);
 
 // Navigates a train from A to B

@@ -16,6 +16,13 @@ extern int last_started_task;
 extern int main_fp;
 extern int next_task_starting;
 
+/**
+ * Dumps memory in hex and ASCII around mem, specifically len amount spread
+ * before and after
+ * @param description to show ahead of the dump
+ * @param mem         to print
+ * @param len         total bytes to print (NOTE: MUST BE 4 BYTE MULTIPLE)
+ */
 void hex_dump(char *description, char *mem, int len) {
   KASSERT(len % 4 == 0, "Can only dump groups of 4 bytes, expected len%%4==0, got len=%d", len);
   int i;
@@ -46,6 +53,11 @@ void hex_dump(char *description, char *mem, int len) {
 
 char *name_not_found = "(name not found)";
 
+/**
+ * Gets a function name, given the functions beginning program counter
+ * @param  pc
+ * @return    a name, or "(name not found)" if there was an issue.
+ */
 char *get_func_name(unsigned int *pc) {
   // check if a name is present via. the upper bits of the addr being 0xFF
   unsigned int name_length = *(pc - 1) & 0xFF;
@@ -225,41 +237,56 @@ void print_logs() {
 
 typedef void (*interrupt_handler)(void);
 
+/**
+ * This function is what returns back to redboot in a privilaged mode, otherwise
+ * redboot will fail. it needs to be in SVC mode to work, so we use this as
+ * an SWI handler to enter privilaged mode
+ */
 void __exit_kernel_svc() {
-  // return to redboot, this is just a fcn return for the main fcn
-  // it needs to be in SVC mode to work
-
   asm volatile ("msr cpsr_c, #211");
   asm volatile ("sub sp, %0, #16" : : "r" (main_fp));
   asm volatile ("ldmfd sp, {sl, fp, sp, pc}");
 }
 
-void exit_kernel(int already_called_clear) {
-  // return to redboot, this is just a fcn return for the main fcn
-  // it needs to be in SVC mode to work
+/**
+ * Cleanly exits the kernel into redboot doing nothing else.
+ * In order to do this we need to be in privilaged mode, so we set the handler
+ * then call into privilaged mode
+ */
+void exit_kernel() {
   *((interrupt_handler*)0x28) = (interrupt_handler)&__exit_kernel_svc;
-  // go into __exit_kernel_svc as SVC
-  asm volatile ("mov r0, %0" :  : "r" (already_called_clear));
+  // go into __exit_kernel_svc as IRQ (privilaged)
   asm volatile ("swi #5");
 }
 
-void cleanup(bool print_stacks) {
-  // Clear out any interrupt bits
-  // This is needed because for some reason if we run our program more than
-  //   once, on the second time we immediately hit the interrupt handler
-  //   before starting a user task, even though we should start with
-  //   interrupts disabled
-  // TODO: figure out why ^
-  // NOTE: others were having this issue too
 
-  // Make sure to clear out any pending packet data, also sends a signal that the program has finished
+//
+// This is needed because for some reason if we run our program more than
+//   once, on the second time we immediately hit the interrupt handler
+//   before starting a user task, even though we should start with
+//   interrupts disabled
+// TODO: figure out why ^
+// NOTE: others were having this issue too
+
+/**
+ * Cleans up before we exit, among that is:
+ *   - Clear out any interrupt bits
+ *   - Turning off the track
+ *   - Setting good exit values (UART2 FIFO ON)
+ *   - Logs information on the program, uptime, stats, stacks
+ */
+void cleanup(bool print_stacks) {
+
+  // Make sure to clear out any pending packet data, also
+  // sends a signal that the program has finished to the GUI
   for (int i = 0; i < 260; i++) {
     bwputc(COM2, 0x0);
   }
 
   interrupts_clear_all();
+
   // We have to do this a few times, otherwise it doesn't turn off
-  // Smells like bad CTS or something?
+  // Smells like bad CTS?
   bwputc(COM1, 0x61);
   bwputc(COM1, 0x61);
   bwputc(COM1, 0x61);
@@ -272,6 +299,8 @@ void cleanup(bool print_stacks) {
   bwputstr(COM2, "\n\r" WHITE_BG BLACK_FG "===== TASK STACKS" RESET_ATTRIBUTES "\n\r");
   bwputstr(COM2, "Bug Joey to have this implemented :'(\n\t ");
 
+  // Right now no one prints all stacks, because this breaks on certain tasks
+  // Usually that happens if they were interrupted, but also other times
   if (print_stacks) {
     if (active_task) {
       PrintAllTaskStacks(active_task->tid);

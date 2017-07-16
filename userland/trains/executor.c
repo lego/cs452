@@ -1,4 +1,5 @@
 #include <worker.h>
+#include <kernel.h>
 #include <packet.h>
 #include <trains/executor.h>
 #include <servers/nameserver.h>

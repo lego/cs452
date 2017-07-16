@@ -1,4 +1,5 @@
 #include <basic.h>
+#include <kernel.h>
 #include <trains/navigation.h>
 #include <track/track_node.h>
 #include <servers/clock_server.h>

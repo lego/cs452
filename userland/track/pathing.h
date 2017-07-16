@@ -4,11 +4,18 @@
 #include <track/track_node.h>
 #include <track/track_data.h>
 
+/**
+ * Path and track graph related functions. This has functions involving:
+ *   - generating a path
+ *   - interacting with nodes (lookups, finding closest sensor)
+ */
+
 #define PATH_MAX 80
 
 #define VELOCITY_SAMPLES_MAX 5
 
-// used in interactive and trains/executor
+// used in interactive and trains/executor for the old stopping and navigation
+// TODO: remove all usage
 #define BASIS_NODE "A4"
 #define BASIS_NODE_NAME Name2Node(BASIS_NODE)
 #define DECLARE_BASIS_NODE(name) int name = BASIS_NODE_NAME
@@ -23,19 +30,12 @@ typedef struct Path {
   track_node *nodes[PATH_MAX];
 } path_t;
 
-// Unit macros for our fixed point calculations
-#define CENTIMETRES(amt) MILLIMETRES(amt * 10)
-#define MILLIMETRES(amt) amt
-#define SECONDS(amt) MILLISECONDS(amt * 1000)
-#define MILLISECONDS(amt) amt
-
 // Initializes the track information
 void InitPathing();
 
 // Finds the next sensor or branch, returns -1 on error or exit node
 int findSensorOrBranch(int start);
 
-// int src = WhereAmI(train);
 void SetPathSwitches(path_t *path);
 
 int StoppingDistance(int train, int speed);

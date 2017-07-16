@@ -20,7 +20,7 @@ void worker_test_task() {
   bwprintf(COM2, "  creating worker\n\r");
   int worker_tid = _CreateWorker(2, worker_code, NULL, 0);
   bwprintf(COM2, "  receiving from worker\n\r");
-  ReceiveN(&sender);
+  Receive(&sender, NULL, 0);
   bwprintf(COM2, "  replying to tid=%d worker_tid=%d\n\r", sender, worker_tid);
   ReplyN(sender);
   bwprintf(COM2, "  MAIN TASK DONE\n\r");

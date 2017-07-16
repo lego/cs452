@@ -1,8 +1,9 @@
 #pragma once
 
 /**
- * Subscribes to the Sensor Collector for all sensor data, receives
- * Sensor Detectors and multiplexes the incoming sensor data to all detectors
+ * Subscribes to the Sensor Collector for all sensor data.
+ * Receives requests from Sensor Detectors and multiplexes all
+ * incoming sensor data to all detectors currently waiting
  *
  * Receives:
  *  SENSOR_DATA from Sensor Collector and
