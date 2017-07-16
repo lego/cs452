@@ -32,6 +32,15 @@ int CreateTrainController(int train);
 
 
 /**
+ * Alert a train controller about a sensor trigger attributed to it
+ * @param train     attributed to trigger
+ * @param sensor_no triggered
+ * @param timestamp of triggering
+ */
+void AlertTrainController(int train, int sensor_no, int timestamp);
+
+
+/**
  * Commanding a train controller to take a basic action
  * @param train to command
  * @param type  of action:

@@ -56,14 +56,15 @@ void InitNavigation() {
   }
 
   // NOTE: fixture location for testing purposes, for non-active train #10
-  state.train_locations[70] = Name2Node("B6");
+  state.train_locations[70] = Name2Node("A4");
   state.train_locations[69] = Name2Node("C9");
   // calibrated and using as fixture
   velocity[70][5] = 240;
   stopping_distance[70][5] = 230;
 }
 
-void set_location(int train, int location) {
+void SetTrainLocation(int train, int location) {
+  KASSERT(train >= 0 && train < 80, "Cannot set out of bounds train. Got train=%d", train);
   state.train_locations[train] = location;
 }
 

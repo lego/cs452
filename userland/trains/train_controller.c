@@ -54,6 +54,9 @@ void train_controller() {
     ReplyN(requester);
     switch (packet->type) {
       case SENSOR_DATA:
+        SetTrainLocation(train, sensor_data->sensor_no);
+        // TODO: add other offset and calibration functions
+        // (or move them from interactive)
         break;
       case TRAIN_CONTROLLER_COMMAND:
         execute_basic_command(train, msg);
@@ -77,6 +80,16 @@ static void ensure_train_controller(int train) {
   if (train_controllers[train] == -1) {
     CreateTrainController(train);
   }
+}
+
+void AlertTrainController(int train, int sensor_no, int timestamp) {
+  Logf(EXECUTOR_LOGGING, "alerting train=%d sensor=%d timestamp=%d", train, sensor_no, timestamp);
+  ensure_train_controller(train);
+  sensor_data_t data;
+  data.packet.type = SENSOR_DATA;
+  data.sensor_no = sensor_no;
+  data.timestamp = timestamp;
+  SendSN(train_controllers[train], data);
 }
 
 void TellTrainController(int train, int type, int speed) {

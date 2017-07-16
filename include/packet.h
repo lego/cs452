@@ -6,6 +6,9 @@ typedef enum {
    */
   SENSOR_DATA,
 
+  // sensor attribution internal message
+  SENSOR_ATTRIB_ASSIGN_TRAIN,
+
   /**
    * Train controller messages
    */

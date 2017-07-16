@@ -620,7 +620,6 @@ void sensor_saver() {
     case SENSOR_DATA: {
           sensor_data_t * data = (sensor_data_t *) request_buffer;
           int curr_time = Time();
-          set_location(active_train, data->sensor_no);
           sensor_reading_timestamps[data->sensor_no] = curr_time;
           TriggerSensor(data->sensor_no, curr_time);
           if (data->sensor_no == basis_node && set_to_stop) {
@@ -902,7 +901,7 @@ void interactive() {
           break;
         case COMMAND_SET_LOCATION:
           Putf(COM2, "Setting train=%d stopped location to node=%s", cmd_data->train, track[cmd_data->src_node].name);
-          set_location(cmd_data->train, cmd_data->src_node);
+          SetTrainLocation(cmd_data->train, cmd_data->src_node);
           break;
         case COMMAND_STOPPING_DISTANCE_OFFSET:
           Putf(COM2, "Offsetting stopping distance train=%d speed=%d to %dmm", active_train, active_speed, cmd_data->extra_arg);

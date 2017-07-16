@@ -26,7 +26,7 @@ void InitNavigation();
 /**
  * Set the location of a train
  */
-void set_location(int train, int location);
+void SetTrainLocation(int train, int location);
 
 void SetPathSwitches(path_t *path);
 

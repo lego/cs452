@@ -1,3 +1,4 @@
+#include <packet.h>
 #include <basic.h>
 #include <kernel.h>
 #include <util.h>
@@ -18,40 +19,37 @@
 
 int sensor_attributer_tid = -1;
 
-enum {
-  SENSOR_ATTRIB_ASSIGN_TRAIN,
-  SENSOR_ATTRIB_NOTIFY_SENSOR
-};
-
 typedef struct {
-  int type;
-  int arg1;
-  int arg2;
-} sensor_attributer_msg_t;
+  // type = SENSOR_ATTRIB_ASSIGN_TRAIN
+  packet_t packet;
 
-typedef struct {
-  int sensor;
-  int attribution;
-  int time;
-} sensor_attribution_t;
+  int train;
+} sensor_attributer_req_t;
 
 void sensor_notifier() {
   int requester;
 
-  sensor_attribution_t attrib;
-  ReceiveS(&requester, attrib);
+  int train;
+  sensor_data_t data;
+
+  ReceiveS(&requester, data);
+  ReplyN(requester);
+  ReceiveS(&requester, train);
   ReplyN(requester);
 
-  char packet_buffer[512] __attribute__ ((aligned (4)));;
+  // Send sensor attribution to UI
   uart_packet_fixed_size_t packet;
   packet.len = 6;
   packet.type = PACKET_SENSOR_DATA;
-  jmemcpy(&packet.data[0], &attrib.time, sizeof(int));
-  packet.data[4] = attrib.sensor;
-  packet.data[5] = attrib.attribution;
+  jmemcpy(&packet.data[0], &data.timestamp, sizeof(int));
+  packet.data[4] = data.sensor_no;
+  packet.data[5] = train;
   PutFixedPacket(&packet);
 
-  Exit();
+  // Send sensor attribution to train
+  if (train != -1) {
+    AlertTrainController(train, data.sensor_no, data.timestamp);
+  }
 }
 
 int nextSensor(int node) {
@@ -92,49 +90,63 @@ void sensor_attributer() {
   }
 
   int requester;
-  sensor_attributer_msg_t request;
+  char buffer[128] __attribute__((aligned (4)));
+  packet_t *packet = (packet_t *)buffer;
+  sensor_attributer_req_t *request = (sensor_attributer_req_t *)buffer;
+  sensor_data_t *data = (sensor_data_t *)buffer;
 
   while (true) {
-    ReceiveS(&requester, request);
+    ReceiveS(&requester, buffer);
     ReplyN(requester);
-    switch (request.type) {
+    switch (packet->type) {
       case SENSOR_ATTRIB_ASSIGN_TRAIN:
         KASSERT(active_train == -1, "More than one unknown train active at the same time. Cannot do sensor attribution.");
-        active_train = request.arg1;
+        active_train = request->train;
         trainControllerTids[active_train] = requester;
         break;
-      case SENSOR_ATTRIB_NOTIFY_SENSOR: {
+      case SENSOR_DATA: {
           int attrib = -1;
-          if (lastTrainAtSensor[request.arg1][0] != -1) {
-            attrib = lastTrainAtSensor[request.arg1][0];
-            jmemmove(&lastTrainAtSensor[request.arg1][0], &lastTrainAtSensor[request.arg1][1], (SENSOR_MEMORY-1)*sizeof(int));
-            lastTrainAtSensor[request.arg1][SENSOR_MEMORY-1] = -1;
+          int sensor = data->sensor_no;
+          if (lastTrainAtSensor[sensor][0] != -1) {
+            attrib = lastTrainAtSensor[sensor][0];
+            jmemmove(&lastTrainAtSensor[sensor][0], &lastTrainAtSensor[sensor][1], (SENSOR_MEMORY-1)*sizeof(int));
+            lastTrainAtSensor[sensor][SENSOR_MEMORY-1] = -1;
           }
           if (attrib == -1 && active_train != -1) {
             attrib = active_train;
             active_train = -1;
-          }
-          if (attrib != -1) {
-            int node = nextSensor(request.arg1);
-            if (node != -1) {
-              for (int i = 0; i < SENSOR_MEMORY; i++) {
-                if (lastTrainAtSensor[node][i] == -1) {
-                  lastTrainAtSensor[node][i] = attrib;
-                  break;
+            lastTrainAtSensor[sensor][0] = attrib;
+          } else {
+            int node = track[sensor].reverse->id;
+            for (int i = 0; i < 3 && attrib == -1; i++) {
+              node = findSensorOrBranch(node);
+              while (node >= 0 && track[node].type == NODE_BRANCH) {
+                int state = GetSwitchState(track[node].num);
+                node = track[node].edge[state].dest->id;
+                if (track[node].type != NODE_SENSOR) {
+                  node = findSensorOrBranch(node);
+                }
+              }
+              if (node >= 0 && track[node].type == NODE_SENSOR) {
+                int reverseNode = track[node].reverse->id;
+                if (lastTrainAtSensor[reverseNode][0] != -1) {
+                  attrib = lastTrainAtSensor[reverseNode][0];
+                  lastTrainAtSensor[reverseNode][0] = -1;
+                  lastTrainAtSensor[sensor][0] = attrib;
                 }
               }
             }
           }
+          // TODO: break this out into a AlertSensorAttribution func
           int notifier = Create(PRIORITY_UART2_TX_SERVER, sensor_notifier);
-          sensor_attribution_t attrib_data;
-          attrib_data.sensor = request.arg1;
-          attrib_data.attribution = attrib;
-          attrib_data.time = request.arg2;
-          SendSN(notifier, attrib_data);
+          // Send sensor data
+          Send(notifier, data, sizeof(sensor_data_t), NULL, 0);
+          // Send train attributed to
+          SendSN(notifier, attrib);
         }
         break;
       default:
-        KASSERT(false, "Unknown sensor attrib request type, got %d", request.type);
+        KASSERT(false, "Unhandled packet type=%d", packet->type);
     }
   }
 }
@@ -144,12 +156,8 @@ void sensor_collector_task() {
   int parent = MyParentTid();
   int sensor_detector_multiplexer_tid = WhoIsEnsured(NS_SENSOR_DETECTOR_MULTIPLEXER);
 
-  sensor_data_t req_data;
-  req_data.packet.type = SENSOR_DATA;
-
-  sensor_attributer_msg_t req;
-  req.type = SENSOR_ATTRIB_NOTIFY_SENSOR;
-
+  sensor_data_t req;
+  req.packet.type = SENSOR_DATA;
 
   log_task("sensor_reader initialized parent=%d", tid, parent);
   int oldSensors[5];
@@ -177,17 +185,16 @@ void sensor_collector_task() {
       sensors[i] = (high << 8) | low;
     }
     log_task("sensor_reader read", tid);
-    req.arg2 = Time();
+    req.timestamp = Time();
     for (int i = 0; i < 5; i++) {
       if (sensors[i] != oldSensors[i]) {
         for (int j = 0; j < 16; j++) {
           if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
             // Send to attributer
-            req.arg1 = i*16+(15-j);
+            req.sensor_no = i*16+(15-j);
             SendSN(sensor_attributer_tid, req);
             // Send to detector multiplexer
-            req_data.sensor_no = i*16+(15-j);
-            SendSN(sensor_detector_multiplexer_tid, req_data);
+            SendSN(sensor_detector_multiplexer_tid, req);
           }
         }
       }
@@ -204,9 +211,9 @@ int RegisterTrain(int train) {
     KASSERT(false, "Sensor Attributer server not initialized");
     return -1;
   }
-  sensor_attributer_msg_t request;
-  request.type = SENSOR_ATTRIB_ASSIGN_TRAIN;
-  request.arg1 = train;
+  sensor_attributer_req_t request;
+  request.packet.type = SENSOR_ATTRIB_ASSIGN_TRAIN;
+  request.train = train;
   SendSN(sensor_attributer_tid, request);
   return 0;
 }

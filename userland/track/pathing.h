@@ -48,7 +48,15 @@ void PrintPath(path_t *p);
 // Navigates a train from A to B
 void Navigate(int train, int speed, int src, int dest, bool include_stop);
 
+/**
+ * Translates a node name to the node number
+ */
 int Name2Node(char *name);
+
+/**
+ * Gets the reverse node ID for a given node.
+ */
+int GetReverseNode(int node);
 
 void dijkstra(int src, int dest);
 

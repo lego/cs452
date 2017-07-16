@@ -1,22 +1,42 @@
 #include <bwio.h>
-#include <trains/navigation.h>
+#include <track/pathing.h>
 #include <kernel.h>
 
 void navigation_test() {
-  InitNavigation();
+  InitPathing();
 
-  #if defined(USE_TRACKTEST)
-  int EN1 = Name2Node("EN1");
-  int EN2 = Name2Node("EN2");
-  int EN3 = Name2Node("EN3");
-  int EX1 = Name2Node("EX1");
-  int EX2 = Name2Node("EX2");
-  int EX3 = Name2Node("EX3");
-  #elif defined(USE_TRACKA) || defined(USE_TRACKB)
   path_t p;
-  GetMultiDestinationPath(&p, Name2Node("E14"), Name2Node("C10"), Name2Node("E14"));
+  GetPath(&p, Name2Node("A4"), Name2Node("D5"));
   PrintPath(&p);
-  #endif
+
+  int stopdist = 450;
+
+  bwprintf(COM2, "Running with stopdist 250\n\r");
+
+  // for (int i = p.len - 1; i > 0; i--) {
+  for (int i = 1; i < p.len; i++) {
+    track_node *curr_node = p.nodes[i];
+    // Find first node where the dist - stopdist is too small
+    for (int j = 0; j < i; j++) {
+      if (curr_node->dist - p.nodes[j]->dist < stopdist) {
+        // We need to find the sensor before this node for knowing when we need
+        // to reserve and from what sensor
+        for (int k = j - 1; k >= 0; k--) {
+          if (k < 1) {
+            bwprintf(COM2, "Resv at beginning on %4s: %4s.\n\r", p.src->name, curr_node->name);
+            j = p.len; // break outer loop also
+            break;
+          }
+          if (p.nodes[k]->type == NODE_SENSOR) {
+            bwprintf(COM2, "Resv based on %4s: %4s. Resv %4dmm after %4s\n\r", p.nodes[k]->name, curr_node->name, curr_node->dist - p.nodes[k]->dist - stopdist, p.nodes[k]->name);
+            j = p.len; // break outer loop also
+            break;
+          }
+        }
+      }
+    }
+
+  }
 
   ExitKernel();
 }
