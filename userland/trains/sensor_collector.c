@@ -91,14 +91,14 @@ void sensor_attributer() {
             int node = track[request.arg1].reverse->id;
             for (int i = 0; i < 3 && attrib == -1; i++) {
               node = findSensorOrBranch(node);
-              while (track[node].type == NODE_BRANCH) {
+              while (node >= 0 && track[node].type == NODE_BRANCH) {
                 int state = GetSwitchState(track[node].num);
                 node = track[node].edge[state].dest->id;
                 if (track[node].type != NODE_SENSOR) {
                   node = findSensorOrBranch(node);
                 }
               }
-              if (track[node].type == NODE_SENSOR) {
+              if (node >= 0 && track[node].type == NODE_SENSOR) {
                 int reverseNode = track[node].reverse->id;
                 if (lastTrainAtSensor[reverseNode][0] != -1) {
                   attrib = lastTrainAtSensor[reverseNode][0];

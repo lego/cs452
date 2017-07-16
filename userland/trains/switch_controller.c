@@ -46,6 +46,9 @@ void switch_controller() {
   int solenoid_off_tid = -1;
 
   int switchState[NUM_SWITCHES];
+  for (int i = 0; i < NUM_SWITCHES; i++) {
+    switchState[i] = SWITCH_STRAIGHT;
+  }
 
   while (1) {
     ReceiveS(&requester, request);

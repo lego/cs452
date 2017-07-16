@@ -337,6 +337,15 @@ int Logs(int type, const char *str) {
   return 0;
 }
 
+int Logf(int type, char *fmt, ...) {
+  char buf[2048];
+  va_list va;
+  va_start(va,fmt);
+  jformat(buf, 2048, fmt, va);
+  va_end(va);
+  return Logs(type, buf);
+}
+
 void MoveTerminalCursor(unsigned int x, unsigned int y) {
   char buffer[12];
   jformatf(buffer, sizeof(buffer), "\e[%d;%dH", y, x);
