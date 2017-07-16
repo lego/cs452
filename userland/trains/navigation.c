@@ -63,7 +63,8 @@ void InitNavigation() {
   stopping_distance[70][5] = 230;
 }
 
-void set_location(int train, int location) {
+void SetTrainLocation(int train, int location) {
+  KASSERT(train >= 0 && train < 80, "Cannot set out of bounds train. Got train=%d", train);
   state.train_locations[train] = location;
 }
 
