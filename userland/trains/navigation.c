@@ -69,7 +69,7 @@ void SetTrainLocation(int train, int location) {
 }
 
 int WhereAmI(int train) {
-  KASSERT(state.train_locations[train] >= 0, "Train had bad location. train=%d location=%d", train, state.train_locations[train]);
+  KASSERT(train >= 0 && train < 80, "Cannot use out of bounds train. Got train=%d", train);
   return state.train_locations[train];
 }
 
