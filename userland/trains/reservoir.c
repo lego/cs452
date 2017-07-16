@@ -98,7 +98,7 @@ void reservoir_task() {
 
 int RequestSegment(reservoir_segments_t *segment) {
   KASSERT(reservoir_tid >= 0, "Reservoir not started");
-  KASSERT(segment->len > 0 && segment->len < 12, "Segment overflowed");
+  KASSERT(segment->len >= 0 && segment->len < 12, "Segment overflowed. size=%d max=%d", segment->len, 12);
   // TODO: kassert valid segments and directions
   segment->packet.type = RESERVOIR_REQUEST;
   int result;
@@ -108,7 +108,7 @@ int RequestSegment(reservoir_segments_t *segment) {
 
 void ReleaseSegment(reservoir_segments_t *segment) {
   KASSERT(reservoir_tid >= 0, "Reservoir not started");
-  KASSERT(segment->len > 0 && segment->len < 12, "Segment overflowed");
+  KASSERT(segment->len >= 0 && segment->len < 12, "Segment overflowed. size=%d max=%d", segment->len, 12);
   // TODO: kassert valid segments and directions
   segment->packet.type = RESERVOIR_RELEASE;
   Send(reservoir_tid, segment, sizeof(reservoir_segments_t), NULL, 0);

@@ -89,6 +89,125 @@ void reserve_track_from(int train, path_t * path, reservoir_segments_t * releasi
   releasing_segments->len += data.len;
 }
 
+void reserve_initial_segments(int train, path_t *path, reservoir_segments_t *releasing_segments) {
+  int stopdist = 450;
+  Logf(EXECUTOR_LOGGING, "Getting starting reservation with stopdist %3dmm", stopdist);
+  for (int i = 1; i < path->len; i++) {
+    track_node * curr_node = path->nodes[i];
+    for (int j = i - 1; j >= 0; j--) {
+      if (j < 1) {
+        // TODO: make reservation
+        Logf(EXECUTOR_LOGGING, "Resv at beginning on %4s: %4s.", path->nodes[j]->name, curr_node->name);
+        break;
+      }
+    }
+  }
+}
+
+/**
+ * Gets the sensor before a node (with a stopdist offset).
+ *
+ * What this means is that if we want to reserve the track portion and be sure
+ * we can stop on it, we have to reserve it when we see a particular sensor trigger
+ *
+ * @param path     to check with
+ * @param node_idx to desire the segment reservation
+ * @param stopdist offset for reserving
+ */
+int get_sensor_before_node(path_t *path, int node_idx, int stopdist) {
+  track_node *curr_node = path->nodes[node_idx];
+  for (int j = 0; j < node_idx; j++) {
+    if (curr_node->dist - path->nodes[j]->dist < stopdist) {
+      // We need to find the sensor before this node for knowing when we need
+      // to reserve and from what sensor
+      for (int k = j - 1; k >= 0; k--) {
+        if (k < 1) {
+          return 0; // reserve from the beginning, start position
+        }
+        if (path->nodes[k]->type == NODE_SENSOR) {
+          // reserve precisely node[idx] - node[k].dist - stopdist
+          // away from node k
+          return k;
+        }
+      }
+    }
+  }
+
+  // If we didnt' catch anything
+  // it's because there src ~> node[idx] is shorter than stopping dist
+  return 0; // reserve from the beginning
+}
+
+segment_t segment_from_dest_node(path_t *path, int dest_node) {
+  KASSERT(dest_node > 0, "The beginning of the path isn't a valid destination node for this. node %4s", path->nodes[dest_node]->name);
+
+  segment_t segment;
+  track_node *src = path->nodes[dest_node - 1];
+  segment.track_node = src->id;
+  switch (src->type) {
+  case NODE_BRANCH:
+    if (src->edge[DIR_CURVED].dest == path->nodes[dest_node]) {
+       segment.dir = DIR_CURVED;
+    }
+    else {
+      segment.dir = DIR_STRAIGHT;
+    }
+    break;
+  default:
+    segment.dir = DIR_AHEAD;
+    break;
+  }
+  return segment;
+}
+
+int reserve_track_from_sensor(int train, path_t *path, reservoir_segments_t *acquired, int sensor_idx, int next_node) {
+  int stopdist = 450;
+
+  Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, path->nodes[sensor_idx]->name);
+
+  reservoir_segments_t data;
+  data.owner = train;
+  data.len = 0;
+
+  int sensor;
+  // While all the next nodes are acquired by this sensors trigger, keep getting more
+  while ((sensor = get_sensor_before_node(path, next_node, stopdist)) == sensor_idx) {
+    // If we care to do a delay'd reservation acquisition,
+    // otherwise generously reserve it now
+    int offset_from_sensor = path->nodes[next_node]->dist - path->nodes[sensor]->dist - stopdist;
+
+    Logf(EXECUTOR_LOGGING, "%d: Resv from %4s: %4s. Specifically %4dmm after %s.", train, path->nodes[sensor]->name, path->nodes[next_node]->name, offset_from_sensor, path->nodes[sensor]->name);
+
+    // keep track of owned segments, storing them in a persistent segment struct
+    acquired->segments[data.len + acquired->len] = data.segments[data.len];
+
+    // Generously add to reserve list
+    // TODO: set up a list of tuples (dist, segment), where dist is how long to wait before reserving
+    data.segments[data.len] = segment_from_dest_node(path, next_node);
+    data.len++;
+
+    // Move to the next node
+    next_node++;
+  }
+
+  int result = RequestSegment(&data);
+  if (result == 1) {
+    Logf(EXECUTOR_LOGGING, "%d: Route executor has ended due to segment collision", train);
+    Logf(EXECUTOR_LOGGING, "%d: releasing %d segments", train, acquired->len);
+    ReleaseSegment(acquired);
+
+    // TODO: propogate message upwards about route failure
+    // in additional signal a stop to occur on the end of the reserved segment
+    DestroySelf();
+  }
+  // Only after now do we "own" the segments, so reflect that in acquired
+  acquired->len += data.len;
+
+  Logf(EXECUTOR_LOGGING, "%d: Route executor has gotten %d more segments. Total now %d", train, data.len, acquired->len);
+
+  return next_node;
+}
+
 void route_executor_task() {
   int tid = MyTid();
   int sender;
@@ -121,7 +240,7 @@ void route_executor_task() {
   int next_sensor_no = get_next_sensor(&path, 0);
 
   set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
-  reserve_track_from(init.train, &path, &releasing_segments, last_sensor_no, next_sensor_no);
+  int next_unreserved_node = reserve_track_from_sensor(init.train, &path, &releasing_segments, last_sensor_no, 1);
 
   while (true) {
     status = ReceiveS(&sender, request_buffer);
@@ -130,7 +249,10 @@ void route_executor_task() {
     switch (packet->type) {
       case SENSOR_DETECT:
         Logf(EXECUTOR_LOGGING, "%d: Detector sensor %s hit at time=%d", init.train, track[detector_msg->details].name, Time());
+        // FIXME: maybe use the data.sensor_no? Technically this is the same now,
+        // but will differ if we have sensor timeouts (i.e. multiple simultaneous detectors)
         last_sensor_no = next_sensor_no;
+        // FIgure out next sensor and set up detector for it
         next_sensor_no = get_next_sensor(&path, last_sensor_no);
         if (next_sensor_no == -1) {
           Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", init.train);
@@ -138,7 +260,9 @@ void route_executor_task() {
           Destroy(tid);
         }
         set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
-        reserve_track_from(init.train, &path, &releasing_segments, last_sensor_no, next_sensor_no);
+
+        // Reserve more track based on this sensor trigger
+        next_unreserved_node = reserve_track_from_sensor(init.train, &path, &releasing_segments, last_sensor_no, next_unreserved_node);
         break;
       default:
         KASSERT(false, "Unexpected packet type=%d", packet->type);

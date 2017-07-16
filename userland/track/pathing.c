@@ -2,7 +2,6 @@
 #include <heap.h>
 #include <jstring.h>
 #include <track/pathing.h>
-#include <track/pathing.h>
 
 bool pathing_initialized = false;
 
@@ -64,6 +63,12 @@ int Name2Node(char *name) {
   }
   return -1;
 }
+
+int GetReverseNode(int node) {
+  KASSERT(pathing_initialized, "pathing not initialized");
+  return track[node].reverse->id;
+}
+
 
 void GetPath(path_t *p, int src, int dest) {
   KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
@@ -132,7 +137,7 @@ void PrintPath(path_t *p) {
       }
       bwprintf(COM2, "    switch=%d set to %c\n\r", p->nodes[i-1]->num, dir);
     }
-    bwprintf(COM2, "  node=%s\n\r", p->nodes[i]->name);
+    bwprintf(COM2, "  node %4s  dist=%5dmm\n\r", p->nodes[i]->name, p->nodes[i]->dist);
   }
 }
 
