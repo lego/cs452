@@ -5,7 +5,6 @@
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
 #include <trains/switch_controller.h>
-#include <trains/route_executor.h>
 #include <trains/reservoir.h>
 #include <trains/navigation.h>
 #include <track/pathing.h>
@@ -23,6 +22,7 @@ extern int active_speed;
 typedef struct {
   // type = PATHING_WORKER_RESULT
   packet_t packet;
+
   int train;
   int speed;
   // TODO: maybe make this a heap pointer?
@@ -96,11 +96,6 @@ void execute_command(cmd_data_t * cmd_data) {
   }
 }
 
-void begin_train_controller(pathing_worker_result_t * result) {
-  // FIXME: priority
-  CreateRouteExecutor(6, result->train, result->speed, &result->path);
-}
-
 void executor_task() {
   int tid = MyTid();
   RegisterAs(NS_EXECUTOR);
@@ -122,7 +117,7 @@ void executor_task() {
         break;
       case PATHING_WORKER_RESULT:
         RecordLogf("Executor got pathing worker result\n\r");
-        begin_train_controller(pathing_result);
+        NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
         break;
       default:
         KASSERT(false, "Got unexpected packet type=%d", packet->type);

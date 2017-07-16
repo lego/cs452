@@ -98,6 +98,9 @@ void jslowmemcpy(void *dest, const void *src, unsigned num) {
   return;
 }
 
+// Basically alias, for compiler uses
+// If you do struct a = *struct b, it will use memcpy
+int memcpy(void *dest, const void *src, unsigned num) { jmemcpy(dest, src, num); return 0; }
 
 void jmemcpy(void *dest, const void *src, unsigned num) {
   // phase 1: align dest AND src. how do we deal with very offset things?

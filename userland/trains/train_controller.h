@@ -36,3 +36,12 @@ int CreateTrainController(int train);
  * @param speed (additional parameter)
  */
 void TellTrainController(int train, int type, int speed);
+
+
+/**
+ * Tell a train to navigate to a location
+ * @param train to navigate
+ * @param speed to travel at (temp for diagnostics)
+ * @param path  to travel
+ */
+void NavigateTrain(int train, int speed, path_t * path);

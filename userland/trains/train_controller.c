@@ -77,3 +77,13 @@ void TellTrainController(int train, int type, int speed) {
   msg.speed = speed;
   SendSN(train_controllers[train], msg);
 }
+
+
+void NavigateTrain(int train, int speed, path_t * path) {
+  ensure_train_controller(train);
+  train_navigate_t msg;
+  msg.packet.type = TRAIN_NAVIGATE_COMMAND;
+  msg.speed = speed;
+  msg.path = *path;
+  SendSN(train_controllers[train], msg);
+}
