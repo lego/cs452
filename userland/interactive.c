@@ -521,7 +521,7 @@ void stopper() {
 
 void sensor_saver() {
   int stopper_tid = Create(2, stopper);
-  RegisterAs(SENSOR_SAVER);
+  RegisterAs(NS_SENSOR_SAVER);
   char request_buffer[1024] __attribute__ ((aligned (4)));
   packet_t *packet = (packet_t *) request_buffer;
   int lastSensorTime = -1;

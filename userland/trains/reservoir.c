@@ -130,7 +130,7 @@ int WhoOwnsSegment(int node) {
   // Because we're not doing much in this, we shouldn't need to go do a Send
   // TODO: KASSERT for the node?
   segment_t segment;
-  segment.node = node;
+  segment.track_node = node;
   segment.dir = DIR_AHEAD;
   // FIXME: a bit of an assumption here: segments are edges, so technically
   // there could be two different edge owners

@@ -36,7 +36,7 @@ void waitUntilDone(void* code) {
 
 void producer() {
   bwprintf(COM2, "P: Registering as PRODUCER_TEST with tid: %d\n\r", MyTid());
-  RegisterAs(PRODUCER_TEST);
+  RegisterAs(NS_PRODUCER_TEST);
   bwprintf(COM2, "P: Exit RegisterAs\n\r");
 
   int source_tid = -1;
@@ -52,7 +52,7 @@ void producer() {
 
 void consumer() {
   bwprintf(COM2, "C: Requesting PRODUCER_TEST tid\n\r");
-  int producer_tid = WhoIs(PRODUCER_TEST);
+  int producer_tid = WhoIs(NS_PRODUCER_TEST);
   bwprintf(COM2, "C: Received %d for PRODUCER_TEST\n\r", producer_tid);
   int i;
   for (i = 0; i < 3; i++) {
@@ -159,7 +159,7 @@ typedef struct {
 void rps_client() {
   int losses = 0;
 
-  int rps_server_tid = WhoIs(RPS_SERVER);
+  int rps_server_tid = WhoIs(NS_RPS_SERVER);
 
   rps_message_t sendMessage;
   rps_message_t receiveMessage;
@@ -204,7 +204,7 @@ void print_move(int player, int move) {
 }
 
 void rps_server() {
-  RegisterAs(RPS_SERVER);
+  RegisterAs(NS_RPS_SERVER);
 
   int i;
 

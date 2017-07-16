@@ -77,9 +77,9 @@ void uart_rx_server() {
   ReplyN(requester);
 
   if (channel == COM1) {
-    RegisterAs(UART1_RX_SERVER);
+    RegisterAs(NS_UART1_RX_SERVER);
   } else if (channel == COM2) {
-    RegisterAs(UART2_RX_SERVER);
+    RegisterAs(NS_UART2_RX_SERVER);
   }
 
   char outputQueue[OUTPUT_QUEUE_MAX];

@@ -56,7 +56,7 @@ void train_command_task() {
 
 void train_command_server() {
   train_command_server_tid = MyTid();
-  RegisterAs(TRAIN_CONTROLLER_SERVER);
+  RegisterAs(NS_TRAIN_CONTROLLER_SERVER);
   const int NUM_WORKERS = 4;
   int workers[NUM_WORKERS];
   bool workerReady[NUM_WORKERS];

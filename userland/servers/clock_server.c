@@ -22,7 +22,7 @@ typedef struct {
 
 void clock_notifier() {
   int tid = MyTid();
-  RegisterAs(CLOCK_NOTIFIER);
+  RegisterAs(NS_CLOCK_NOTIFIER);
   log_clock_server("clock_notifier initialized", tid);
   int clock_server_tid = MyParentTid();
 
@@ -52,7 +52,7 @@ void clock_server() {
   heapnode_t queue_nodes[MAX_TASKS + 1];
   heap_t delay_queue = heap_create(queue_nodes, MAX_TASKS + 1);
 
-  RegisterAs(CLOCK_SERVER);
+  RegisterAs(NS_CLOCK_SERVER);
   Create(PRIORITY_CLOCK_NOTIFIER, clock_notifier);
 
   log_clock_server("clock_server initialized", tid);

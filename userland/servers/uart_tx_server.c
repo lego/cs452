@@ -107,9 +107,9 @@ void uart_tx_server() {
   ReplyN(requester);
 
   if (channel == COM1) {
-    RegisterAs(UART1_TX_SERVER);
+    RegisterAs(NS_UART1_TX_SERVER);
   } else if (channel == COM2) {
-    RegisterAs(UART2_TX_SERVER);
+    RegisterAs(NS_UART2_TX_SERVER);
   }
 
   char outputQueue[OUTPUT_QUEUE_MAX];
