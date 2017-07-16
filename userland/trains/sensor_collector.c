@@ -12,7 +12,7 @@
 #include <priorities.h>
 
 #define NUM_SENSORS 80
-#define SENSOR_MEMORY 80
+#define SENSOR_MEMORY 5
 
 #define TRAINS_MAX 80
 
@@ -53,6 +53,26 @@ void sensor_notifier() {
   Exit();
 }
 
+int nextSensor(int node) {
+  Logs(PACKET_LOG_INFO, track[node].name);
+  node = findSensorOrBranch(node);
+  Logs(PACKET_LOG_INFO, track[node].name);
+  while (node >= 0 && track[node].type == NODE_BRANCH) {
+    int state = GetSwitchState(track[node].num);
+    node = track[node].edge[state].dest->id;
+    Logs(PACKET_LOG_INFO, track[node].name);
+    if (track[node].type != NODE_SENSOR) {
+      node = findSensorOrBranch(node);
+      Logs(PACKET_LOG_INFO, track[node].name);
+    }
+  }
+  Logs(PACKET_LOG_INFO, " ");
+  if (node >= 0 && track[node].type == NODE_SENSOR) {
+    return node;
+  }
+  return -1;
+}
+
 void sensor_attributer() {
   sensor_attributer_tid = MyTid();
 
@@ -84,27 +104,22 @@ void sensor_attributer() {
         break;
       case SENSOR_ATTRIB_NOTIFY_SENSOR: {
           int attrib = -1;
-          if (active_train != -1) {
+          if (lastTrainAtSensor[request.arg1][0] != -1) {
+            attrib = lastTrainAtSensor[request.arg1][0];
+            jmemmove(&lastTrainAtSensor[request.arg1][0], &lastTrainAtSensor[request.arg1][1], (SENSOR_MEMORY-1)*sizeof(int));
+            lastTrainAtSensor[request.arg1][SENSOR_MEMORY-1] = -1;
+          }
+          if (attrib == -1 && active_train != -1) {
             attrib = active_train;
             active_train = -1;
-            lastTrainAtSensor[request.arg1][0] = attrib;
-          } else {
-            int node = track[request.arg1].reverse->id;
-            for (int i = 0; i < 3 && attrib == -1; i++) {
-              node = findSensorOrBranch(node);
-              while (node >= 0 && track[node].type == NODE_BRANCH) {
-                int state = GetSwitchState(track[node].num);
-                node = track[node].edge[state].dest->id;
-                if (track[node].type != NODE_SENSOR) {
-                  node = findSensorOrBranch(node);
-                }
-              }
-              if (node >= 0 && track[node].type == NODE_SENSOR) {
-                int reverseNode = track[node].reverse->id;
-                if (lastTrainAtSensor[reverseNode][0] != -1) {
-                  attrib = lastTrainAtSensor[reverseNode][0];
-                  lastTrainAtSensor[reverseNode][0] = -1;
-                  lastTrainAtSensor[request.arg1][0] = attrib;
+          }
+          if (attrib != -1) {
+            int node = nextSensor(request.arg1);
+            if (node != -1) {
+              for (int i = 0; i < SENSOR_MEMORY; i++) {
+                if (lastTrainAtSensor[node][i] == -1) {
+                  lastTrainAtSensor[node][i] = attrib;
+                  break;
                 }
               }
             }

@@ -49,7 +49,7 @@ void switch_controller() {
 
   int switchState[NUM_SWITCHES];
   for (int i = 0; i < NUM_SWITCHES; i++) {
-    switchState[i] = SWITCH_STRAIGHT;
+    switchState[i] = -1;
   }
 
   while (1) {
@@ -57,7 +57,11 @@ void switch_controller() {
     if (request.type == SWITCH_GET) {
       int index = switch_to_index(request.index);
       KASSERT(index != -1, "Asked for invalid switch %d", request.index);
-      ReplyS(requester, switchState[index]);
+      int state = switchState[index];
+      if (switchState[index] == -1) {
+        state = SWITCH_STRAIGHT;
+      }
+      ReplyS(requester, state);
     } else if (request.type == SWITCH_SET) {
       ReplyN(requester);
       int index = switch_to_index(request.index);
