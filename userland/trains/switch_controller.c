@@ -76,13 +76,13 @@ void switch_controller() {
         solenoid_off_tid = Create(PRIORITY_SWITCH_CONTROLLER_SOLENOIDS_OFF, solenoid_off);
         {
           int time = Time();
-          uart_packet_t packet;
+          uart_packet_fixed_size_t packet;
           packet.len = 6;
           packet.type = PACKET_SWITCH_DATA;
           jmemcpy(&packet.data[0], &time, sizeof(int));
           packet.data[4] = request.index;
           packet.data[5] = request.value;
-          PutPacket(&packet);
+          PutFixedPacket(&packet);
         }
       }
     }

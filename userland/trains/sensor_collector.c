@@ -42,13 +42,14 @@ void sensor_notifier() {
   ReceiveS(&requester, attrib);
   ReplyN(requester);
 
-  uart_packet_t packet;
+  char packet_buffer[512] __attribute__ ((aligned (4)));;
+  uart_packet_fixed_size_t packet;
   packet.len = 6;
   packet.type = PACKET_SENSOR_DATA;
   jmemcpy(&packet.data[0], &attrib.time, sizeof(int));
   packet.data[4] = attrib.sensor;
   packet.data[5] = attrib.attribution;
-  PutPacket(&packet);
+  PutFixedPacket(&packet);
 
   Exit();
 }
