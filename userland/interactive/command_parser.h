@@ -3,6 +3,18 @@
 #include <packet.h>
 #include <interactive/commands.h>
 
+/**
+ * Command Parser is responsible for parsing a full command line string and
+ * splicing it into (command enum, argc, argv).
+ * Within command_parser is an enumeration of command string => enum
+ *
+ * Receives from:
+ *  UART 2 Rx (Getc)
+ *
+ * Sends to:
+ *   Command Interpreter
+ */
+
 #define MAX_ARGV 4
 
 typedef struct {

@@ -37,7 +37,7 @@ typedef struct {
 void pathing_worker(int parent_tid, void * data) {
   cmd_data_t * cmd = (cmd_data_t *) data;
   pathing_worker_result_t result;
-  RecordLogf("Pathing working started\n\r");
+  Logf(EXECUTOR_LOGGING, "Pathing working started");
 
   // get the path to BASIS_NODE, our destination point
   int src_node = WhereAmI(cmd->train);
@@ -50,6 +50,10 @@ void pathing_worker(int parent_tid, void * data) {
   SendSN(parent_tid, result);
 }
 
+/**
+ * Executes a CLI command. This is to separate this switch statement of CLI results
+ * from the state machine that is the executor
+ */
 void execute_command(cmd_data_t * cmd_data) {
   path_t p;
 
@@ -77,7 +81,7 @@ void execute_command(cmd_data_t * cmd_data) {
       }
       break;
     case COMMAND_NAVIGATE:
-      RecordLogf("Executor starting pathing worker\n\r");
+      Logf(EXECUTOR_LOGGING, "Executor starting pathing worker");
       _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
       break;
 
@@ -110,19 +114,23 @@ void executor_task() {
   while (true) {
     ReceiveS(&sender, request_buffer);
     ReplyN(sender);
-    RecordLogf("Executor got message type=%d\n\r", packet->type);
-    switch (packet->type)
-     {
-      case INTERPRETED_COMMAND:
-        execute_command(cmd);
-        break;
-      case PATHING_WORKER_RESULT:
-        RecordLogf("Executor got pathing worker result\n\r");
-        NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
-        break;
-      default:
-        KASSERT(false, "Got unexpected packet type=%d", packet->type);
-        break;
+    Logf(EXECUTOR_LOGGING, "Executor got message type=%d\n\r", packet->type);
+    switch (packet->type) {
+    // Command line input invocations
+    case INTERPRETED_COMMAND:
+      execute_command(cmd);
+      break;
+    // Returned pathin result data
+    case PATHING_WORKER_RESULT:
+      Logf(EXECUTOR_LOGGING, "Executor got pathing worker result");
+      NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
+      break;
+    // TODO: anticipated future cases
+    // NAVIGATION_FAILURE => when a train's path is interrupted. This is essentially
+    //   a request for a new path
+    default:
+      KASSERT(false, "Got unexpected packet type=%d", packet->type);
+      break;
     }
   }
 }

@@ -6,6 +6,7 @@
 #include <servers/uart_tx_server.h>
 #include <train_command_server.h>
 #include <trains/sensor_collector.h>
+#include <trains/route_executor.h>
 #include <trains/navigation.h>
 #include <priorities.h>
 
@@ -26,8 +27,9 @@ static void execute_basic_command(int train, train_command_msg_t * msg) {
   }
 }
 
-static void start_navigation(path_t * path) {
-  // TODO: navigation stuff
+static void start_navigation(int train, path_t * path) {
+  // FIXME: priority
+  CreateRouteExecutor(10, train, path);
 }
 
 void train_controller() {
@@ -36,7 +38,7 @@ void train_controller() {
   packet_t * packet = (packet_t *) request_buffer;
   train_command_msg_t * msg = (train_command_msg_t *) request_buffer;
   sensor_data_t * sensor_data = (sensor_data_t *) request_buffer;
-  train_navigate_t * navigate_data = (train_navigate_t *) request_buffer;
+  train_navigate_t * navigate_msg = (train_navigate_t *) request_buffer;
 
   path_t navigation_data;
   Logf(EXECUTOR_LOGGING, "TC started");
@@ -44,10 +46,8 @@ void train_controller() {
   int train;
   ReceiveS(&requester, train);
   ReplyN(requester);
-  Logf(EXECUTOR_LOGGING, "TC initialized");
 
   RegisterTrain(train);
-  Logf(EXECUTOR_LOGGING, "TC registered");
 
   while (true) {
     ReceiveS(&requester, request_buffer);
@@ -60,8 +60,8 @@ void train_controller() {
         execute_basic_command(train, msg);
         break;
       case TRAIN_NAVIGATE_COMMAND:
-        navigation_data = navigate_data->path; // Persist the path
-        start_navigation(&navigation_data);
+        navigation_data = navigate_msg->path; // Persist the path
+        start_navigation(train, &navigation_data);
         break;
     }
   }
@@ -75,7 +75,6 @@ int CreateTrainController(int train) {
 }
 
 static void ensure_train_controller(int train) {
-  Logf(EXECUTOR_LOGGING, "train_controllers[%d]=%d", train, train_controllers[train]);
   if (train_controllers[train] == -1) {
     CreateTrainController(train);
   }
@@ -94,6 +93,7 @@ void TellTrainController(int train, int type, int speed) {
 
 void NavigateTrain(int train, int speed, path_t * path) {
   ensure_train_controller(train);
+  Logf(EXECUTOR_LOGGING, "navigating train=%d (tid=%d)", train, train_controllers[train]);
   train_navigate_t msg;
   msg.packet.type = TRAIN_NAVIGATE_COMMAND;
   msg.speed = speed;

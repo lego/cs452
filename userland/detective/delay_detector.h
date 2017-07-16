@@ -1,5 +1,7 @@
 #pragma once
 
+#include <detective/detector.h>
+
 /**
  * Begins a delay detector
  * @param name    of the detector

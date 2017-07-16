@@ -26,7 +26,7 @@ void sensor_timeout_detective() {
   ReceiveS(&sender, init);
   ReplyN(sender);
 
-  Logf(EXECUTOR_LOGGING, "Started sensor timeout detective: timeout=%d sensor=%s\n\r", init.timeout, track[init.sensor_no].name);
+  Logf(EXECUTOR_LOGGING, "Started sensor timeout detective: timeout=%d sensor=%s", init.timeout, track[init.sensor_no].name);
 
   char buffer[128];
   jformatf(buffer, sizeof(buffer), "SenTimeDet %d - sense %s", init.identifier, track[init.sensor_no].name);
