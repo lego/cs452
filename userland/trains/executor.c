@@ -8,6 +8,7 @@
 #include <trains/switch_controller.h>
 #include <trains/reservoir.h>
 #include <trains/navigation.h>
+#include <trains/route_executor.h>
 #include <track/pathing.h>
 #include <train_command_server.h>
 #include <interactive/commands.h>
@@ -104,14 +105,28 @@ void execute_command(cmd_data_t * cmd_data) {
   }
 }
 
+bool routing_trains[TRAINS_MAX];
+
+void handle_failure(route_failure_t *data) {
+  for (int i = 0; i < TRAINS_MAX; i++) {
+    if (routing_trains[i])
+      TellTrainController(i, TRAIN_CONTROLLER_SET_SPEED, 0);
+  }
+}
+
 void executor_task() {
   int tid = MyTid();
   RegisterAs(NS_EXECUTOR);
+
+  for (int i = 0; i < TRAINS_MAX; i++) {
+    routing_trains[i] = false;
+  }
 
   char request_buffer[1024] __attribute__ ((aligned (4)));
   packet_t * packet = (packet_t *) request_buffer;
   cmd_data_t * cmd = (cmd_data_t *) request_buffer;
   pathing_worker_result_t * pathing_result = (pathing_worker_result_t *) request_buffer;
+  route_failure_t *route_failure = (route_failure_t *) request_buffer;
   int sender;
 
   while (true) {
@@ -123,9 +138,13 @@ void executor_task() {
     case INTERPRETED_COMMAND:
       execute_command(cmd);
       break;
+    case ROUTE_FAILURE:
+      handle_failure(route_failure);
+      break;
     // Returned pathin result data
     case PATHING_WORKER_RESULT:
       Logf(EXECUTOR_LOGGING, "Executor got pathing worker result");
+      routing_trains[pathing_result->train] = true;
       NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
       break;
     // TODO: anticipated future cases

@@ -13,8 +13,13 @@ typedef enum {
   /**
    * Train controller messages
    */
-   TRAIN_CONTROLLER_COMMAND,
-   TRAIN_NAVIGATE_COMMAND,
+  TRAIN_CONTROLLER_COMMAND,
+  TRAIN_NAVIGATE_COMMAND,
+
+  /**
+   * Route executor messages
+   */
+  ROUTE_FAILURE,
 
   /*
    * Detector messages

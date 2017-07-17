@@ -5,6 +5,7 @@
 #include <detective/sensor_detector.h>
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
+#include <servers/nameserver.h>
 #include <track/pathing.h>
 #include <trains/reservoir.h>
 #include <trains/route_executor.h>
@@ -42,53 +43,53 @@ void set_up_next_detector(path_t * path, route_executor_init_t * init, int last_
   StartSensorDetector(name, MyTid(), next_sensor->id);
 }
 
-void reserve_track_from(int train, path_t * path, reservoir_segments_t * releasing_segments, int from_node, int to_node) {
-
-  // Create the list of segments were going to own
-  // FIXME: come up with with 1) a better segment struct 2) an easier way to get
-  // data out of paths
-  reservoir_segments_t data;
-  data.owner = train;
-  data.len = to_node - from_node;
-  int segments_idx = 0;
-  for (int i = from_node; i < to_node; i++) {
-    track_node * src = path->nodes[i];
-    data.segments[segments_idx].track_node = path->nodes[i]->id;
-    switch (src->type) {
-    case NODE_BRANCH:
-      if (src->edge[DIR_CURVED].dest == path->nodes[i+1]) {
-         data.segments[segments_idx].dir = DIR_CURVED;
-      }
-      else {
-        data.segments[segments_idx].dir = DIR_STRAIGHT;
-      }
-      break;
-    default:
-      data.segments[segments_idx].dir = DIR_AHEAD;
-      break;
-    }
-
-    // keep track of owned segments, storing them in a persistent segment struct
-    releasing_segments->segments[segments_idx + releasing_segments->len].track_node = data.segments[segments_idx].track_node;
-    releasing_segments->segments[segments_idx + releasing_segments->len].dir = data.segments[segments_idx].dir;
-    segments_idx++;
-  }
-
-  Logf(EXECUTOR_LOGGING, "%d: reserving track from %s to %s", train, path->nodes[from_node]->name, path->nodes[to_node]->name);
-
-  int result = RequestSegment(&data);
-  if (result == 1) {
-    Logf(EXECUTOR_LOGGING, "%d: Route executor has ended due to segment collision", train);
-    Logf(EXECUTOR_LOGGING, "%d: releasing %d segments", train, releasing_segments->len);
-    ReleaseSegment(releasing_segments);
-
-    // TODO: propogate message upwards about route failure
-    // in additional signal a stop to occur on the end of the reserved segment
-    DestroySelf();
-  }
-  // Only after now do we "own" the segments, so reflect that in releasing_segments
-  releasing_segments->len += data.len;
-}
+// void reserve_track_from(int train, path_t * path, reservoir_segments_t * releasing_segments, int from_node, int to_node) {
+//
+//   // Create the list of segments were going to own
+//   // FIXME: come up with with 1) a better segment struct 2) an easier way to get
+//   // data out of paths
+//   reservoir_segments_t data;
+//   data.owner = train;
+//   data.len = to_node - from_node;
+//   int segments_idx = 0;
+//   for (int i = from_node; i < to_node; i++) {
+//     track_node * src = path->nodes[i];
+//     data.segments[segments_idx].track_node = path->nodes[i]->id;
+//     switch (src->type) {
+//     case NODE_BRANCH:
+//       if (src->edge[DIR_CURVED].dest == path->nodes[i+1]) {
+//          data.segments[segments_idx].dir = DIR_CURVED;
+//       }
+//       else {
+//         data.segments[segments_idx].dir = DIR_STRAIGHT;
+//       }
+//       break;
+//     default:
+//       data.segments[segments_idx].dir = DIR_AHEAD;
+//       break;
+//     }
+//
+//     // keep track of owned segments, storing them in a persistent segment struct
+//     releasing_segments->segments[segments_idx + releasing_segments->len].track_node = data.segments[segments_idx].track_node;
+//     releasing_segments->segments[segments_idx + releasing_segments->len].dir = data.segments[segments_idx].dir;
+//     segments_idx++;
+//   }
+//
+//   Logf(EXECUTOR_LOGGING, "%d: reserving track from %s to %s", train, path->nodes[from_node]->name, path->nodes[to_node]->name);
+//
+//   int result = RequestSegment(&data);
+//   if (result == 1) {
+//     Logf(EXECUTOR_LOGGING, "%d: Route executor has ended due to segment collision", train);
+//     Logf(EXECUTOR_LOGGING, "%d: releasing %d segments", train, releasing_segments->len);
+//     ReleaseSegment(releasing_segments);
+//
+//     // TODO: propogate message upwards about route failure
+//     // in additional signal a stop to occur on the end of the reserved segment
+//     DestroySelf();
+//   }
+//   // Only after now do we "own" the segments, so reflect that in releasing_segments
+//   releasing_segments->len += data.len;
+// }
 
 void reserve_initial_segments(int train, path_t *path, reservoir_segments_t *releasing_segments) {
   int stopdist = 450;
@@ -222,6 +223,11 @@ int reserve_track_from_sensor(int train, path_t *path, cbuffer_t *owned_segments
 
     // TODO: propogate message upwards about route failure
     // in additional signal a stop to occur on the end of the reserved segment
+    int executor_tid = WhoIsEnsured(NS_EXECUTOR);
+    route_failure_t failure_msg;
+    failure_msg.train = train;
+    SendSN(executor_tid, failure_msg);
+
     DestroySelf();
   }
 

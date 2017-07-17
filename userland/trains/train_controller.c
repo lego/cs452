@@ -45,7 +45,8 @@ void reverse_train_task() {
     Putcs(COM1, buf, 2);
 }
 
-static void start_navigation(int train, path_t * path) {
+static void start_navigation(int train, int speed, path_t * path) {
+  SetTrainSpeed(train, speed);
   // FIXME: priority
   CreateRouteExecutor(10, train, path);
 }
@@ -99,7 +100,7 @@ void train_controller() {
         break;
       case TRAIN_NAVIGATE_COMMAND:
         navigation_data = navigate_msg->path; // Persist the path
-        start_navigation(train, &navigation_data);
+        start_navigation(train, navigate_msg->speed, &navigation_data);
         break;
     }
   }

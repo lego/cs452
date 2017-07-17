@@ -1,6 +1,15 @@
 #pragma once
 
+#include <packet.h>
 #include <track/pathing.h>
+
+typedef struct {
+  // type = ROUTE_FAILURE
+  packet_t packet;
+
+  int train;
+  int location;
+} route_failure_t;
 
 /**
  * The Route Executor tracks information for a particular route that is
