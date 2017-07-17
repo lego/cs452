@@ -31,6 +31,30 @@ int get_next_sensor(path_t * path, int last_sensor_no) {
   return -1;
 }
 
+void set_switches(path_t *path, int last_unreserved_node, int next_unreserved_node) {
+  for (int i = last_unreserved_node; i < next_unreserved_node - 1; i++) {
+    // FIXME: this will break if the path->dest is a branch, as we assume at
+    // least one node after a branch exists
+    track_node *src = path->nodes[i];
+    if (src->type == NODE_BRANCH) {
+      if (src->edge[DIR_CURVED].dest == path->nodes[i+1]) {
+        SetSwitch(src->num, SWITCH_CURVED);
+      }
+      else {
+        SetSwitch(src->num, SWITCH_STRAIGHT);
+      }
+    }
+  }
+}
+
+
+int do_navigation_stop(path_t *path, int last_sensor_no, int train, int speed) {
+  int distance_before_stopping = path->node_dist[path->len - 1] - path->node_dist[last_sensor_no] - StoppingDistance(train, speed);
+  int wait_ticks = distance_before_stopping * 100 / Velocity(train, speed);
+  Logf(EXECUTOR_LOGGING, "NavStop: dist from %4s to %4s is %dmm. Minus stopdist is %dmm. Velocity is %d. Wait ticks is %d", path->nodes[last_sensor_no]->name, path->nodes[path->len - 1]->name, path->node_dist[path->len - 1] - path->node_dist[last_sensor_no], distance_before_stopping, Velocity(train, speed), wait_ticks);
+  return StartDelayDetector("route stopper", MyTid(), wait_ticks);
+}
+
 void set_up_next_detector(path_t * path, route_executor_init_t * init, int last_sensor_no, int next_sensor_no) {
   track_node * next_sensor = NULL;
   if (next_sensor_no != -1) {
@@ -48,68 +72,19 @@ void set_up_next_detector(path_t * path, route_executor_init_t * init, int last_
   StartSensorDetector(name, MyTid(), next_sensor->id);
 }
 
-// void reserve_track_from(int train, path_t * path, reservoir_segments_t * releasing_segments, int from_node, int to_node) {
-//
-//   // Create the list of segments were going to own
-//   // FIXME: come up with with 1) a better segment struct 2) an easier way to get
-//   // data out of paths
-//   reservoir_segments_t data;
-//   data.owner = train;
-//   data.len = to_node - from_node;
-//   int segments_idx = 0;
-//   for (int i = from_node; i < to_node; i++) {
-//     track_node * src = path->nodes[i];
-//     data.segments[segments_idx].track_node = path->nodes[i]->id;
-//     switch (src->type) {
-//     case NODE_BRANCH:
-//       if (src->edge[DIR_CURVED].dest == path->nodes[i+1]) {
-//          data.segments[segments_idx].dir = DIR_CURVED;
+// void reserve_initial_segments(int train, int speed, path_t *path, reservoir_segments_t *releasing_segments) {
+//   Logf(EXECUTOR_LOGGING, "Getting starting reservation with stopdist %3dmm", StoppingDistance(train, speed));
+//   for (int i = 1; i < path->len; i++) {
+//     track_node * curr_node = path->nodes[i];
+//     for (int j = i - 1; j >= 0; j--) {
+//       if (j < 1) {
+//         // TODO: make reservation
+//         Logf(EXECUTOR_LOGGING, "Resv at beginning on %4s: %4s.", path->nodes[j]->name, curr_node->name);
+//         break;
 //       }
-//       else {
-//         data.segments[segments_idx].dir = DIR_STRAIGHT;
-//       }
-//       break;
-//     default:
-//       data.segments[segments_idx].dir = DIR_AHEAD;
-//       break;
 //     }
-//
-//     // keep track of owned segments, storing them in a persistent segment struct
-//     releasing_segments->segments[segments_idx + releasing_segments->len].track_node = data.segments[segments_idx].track_node;
-//     releasing_segments->segments[segments_idx + releasing_segments->len].dir = data.segments[segments_idx].dir;
-//     segments_idx++;
 //   }
-//
-//   Logf(EXECUTOR_LOGGING, "%d: reserving track from %s to %s", train, path->nodes[from_node]->name, path->nodes[to_node]->name);
-//
-//   int result = RequestSegment(&data);
-//   if (result == 1) {
-//     Logf(EXECUTOR_LOGGING, "%d: Route executor has ended due to segment collision", train);
-//     Logf(EXECUTOR_LOGGING, "%d: releasing %d segments", train, releasing_segments->len);
-//     ReleaseSegment(releasing_segments);
-//
-//     // TODO: propogate message upwards about route failure
-//     // in additional signal a stop to occur on the end of the reserved segment
-//     DestroySelf();
-//   }
-//   // Only after now do we "own" the segments, so reflect that in releasing_segments
-//   releasing_segments->len += data.len;
 // }
-
-void reserve_initial_segments(int train, path_t *path, reservoir_segments_t *releasing_segments) {
-  int stopdist = 450;
-  Logf(EXECUTOR_LOGGING, "Getting starting reservation with stopdist %3dmm", stopdist);
-  for (int i = 1; i < path->len; i++) {
-    track_node * curr_node = path->nodes[i];
-    for (int j = i - 1; j >= 0; j--) {
-      if (j < 1) {
-        // TODO: make reservation
-        Logf(EXECUTOR_LOGGING, "Resv at beginning on %4s: %4s.", path->nodes[j]->name, curr_node->name);
-        break;
-      }
-    }
-  }
-}
 
 /**
  * Gets the sensor before a node (with a stopdist offset).
@@ -219,6 +194,7 @@ int get_segments_to_reserve(int train, int speed, reservoir_segments_t *data, pa
 }
 
 int reserve_track_from_sensor(int train, int speed, path_t *path, cbuffer_t *owned_segments, int sensor_idx, int next_node) {
+  if (next_node >= path->len) return next_node;
   int stopdist = StoppingDistance(train, speed);
   int initial_next_node = next_node;
   Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, path->nodes[sensor_idx]->name);
@@ -258,6 +234,9 @@ void route_executor_task() {
   int tid = MyTid();
   int sender;
   int status;
+  int stop_delay_detector_id = -1;
+
+  bool stopping_for_navigation = false;
 
   route_executor_init_t init;
   path_t path;
@@ -266,23 +245,32 @@ void route_executor_task() {
   ReceiveS(&sender, path);
   ReplyN(sender);
 
+  // This was put in here because at one point an invalid path was getting
+  // passed down, so this is a safegaurd
+  KASSERT(path.len <= 80, "Got a corrupted path. len=%d", path.len);
+
   // This is a list of segment dest_nodes (not actual segments)
-  void * owned_segments_buffer[30];
+  void * owned_segments_buffer[30] __attribute__((aligned(4)));
   cbuffer_t owned_segments;
   cbuffer_init(&owned_segments, owned_segments_buffer, 30);
 
-  Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s", init.train, init.train, path.src->name, path.dest->name);
+  if (init.operation == ROUTE_EXECUTOR_NAVIGATE) {
+    Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s. Navigating.", init.train, init.train, path.src->name, path.dest->name);
+  } else if (init.operation == ROUTE_EXECUTOR_STOPFROM) {
+    Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s. Stopfrom", init.train, init.train, path.src->name, path.dest->name);
+  } else {
+    KASSERT(false, "Got uknown operation type=%d", init.operation);
+  }
+
   int dist_sum = 0;
   for (int i = 0; i < path.len; i++) {
     dist_sum += path.node_dist[i];
-    debugger();
     Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", init.train, path.nodes[i]->name, dist_sum);
   }
 
   char request_buffer[256] __attribute__ ((aligned (4)));
   packet_t * packet = (packet_t *) request_buffer;
   detector_message_t * detector_msg = (detector_message_t *) request_buffer;
-  sensor_data_t * sensor_data = (sensor_data_t *) request_buffer;
 
   // These are the sensor indices in the path node list
   int last_sensor_no = 0;
@@ -292,7 +280,16 @@ void route_executor_task() {
   int last_unreserved_node = 1;
   int next_unreserved_node = reserve_track_from_sensor(init.train, init.speed, &path, &owned_segments, last_sensor_no, last_unreserved_node);
 
-  int stop_delay_detector_id = -1;
+  // Flip switches for any branches on the recently reserved segments
+  set_switches(&path, 0, next_unreserved_node);
+
+  // If we need to navigate and there are no more sensors within stopdist
+  // then we calculate a delay based off of this sensor
+  if (init.operation == ROUTE_EXECUTOR_NAVIGATE && next_unreserved_node == path.len && !stopping_for_navigation) {
+    stopping_for_navigation = true;
+    stop_delay_detector_id = do_navigation_stop(&path, last_sensor_no, init.train, init.speed);
+  }
+
 
   while (true) {
     status = ReceiveS(&sender, request_buffer);
@@ -306,9 +303,10 @@ void route_executor_task() {
         last_sensor_no = next_sensor_no;
         // FIgure out next sensor and set up detector for it
         next_sensor_no = get_next_sensor(&path, last_sensor_no);
-        if (init.operation == ROUTE_EXECUTOR_STOPFROM && sensor_data->sensor_no == path.dest->id) {
+        if (init.operation == ROUTE_EXECUTOR_STOPFROM && detector_msg->details == path.dest->id) {
           Logf(EXECUTOR_LOGGING, "%d: Route Executor is doing stopfrom stopping for %4s. Bye \\o", init.train, path.dest->name);
           TellTrainController(init.train, TRAIN_CONTROLLER_SET_SPEED, 0);
+          Destroy(tid);
         } else if (next_sensor_no == -1) {
           Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", init.train);
           // FIXME: do proper cleanup line alerting Executor of location, stopping, etc.
@@ -324,26 +322,13 @@ void route_executor_task() {
         next_unreserved_node = reserve_track_from_sensor(init.train, init.speed, &path, &owned_segments, last_sensor_no, next_unreserved_node);
 
         // Flip switches for any branches on the recently reserved segments
-        for (int i = last_unreserved_node; i < next_unreserved_node - 1; i++) {
-          // FIXME: this will break if the path->dest is a branch, as we assume at
-          // least one node after a branch exists
-          track_node *src = path.nodes[i];
-          if (src->type == NODE_BRANCH) {
-            if (src->edge[DIR_CURVED].dest == path.nodes[i+1]) {
-              SetSwitch(src->num, SWITCH_CURVED);
-            }
-            else {
-              SetSwitch(src->num, SWITCH_STRAIGHT);
-            }
-          }
-        }
+        set_switches(&path, last_unreserved_node, next_unreserved_node);
 
         // If we need to navigate and there are no more sensors within stopdist
         // then we calculate a delay based off of this sensor
-        if (init.operation == ROUTE_EXECUTOR_NAVIGATE && next_unreserved_node == path.len) {
-          int distance_before_stopping = path.node_dist[path.len - 1] - path.node_dist[last_sensor_no] - StoppingDistance(init.train, init.speed);
-          int wait_ticks = distance_before_stopping * 100 / Velocity(init.train, init.speed);
-          stop_delay_detector_id = StartDelayDetector("route stopper", tid, wait_ticks);
+        if (init.operation == ROUTE_EXECUTOR_NAVIGATE && next_unreserved_node == path.len && !stopping_for_navigation) {
+          stopping_for_navigation = true;
+          stop_delay_detector_id = do_navigation_stop(&path, last_sensor_no, init.train, init.speed);
         }
 
         break;

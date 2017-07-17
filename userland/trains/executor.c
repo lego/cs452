@@ -52,7 +52,7 @@ void pathing_worker(int parent_tid, void * data) {
     result.operation = ROUTE_EXECUTOR_NAVIGATE;
     break;
   case COMMAND_STOP_FROM:
-    result.operation = ROUTE_EXECUTOR_NAVIGATE;
+    result.operation = ROUTE_EXECUTOR_STOPFROM;
     break;
   default:
     KASSERT(false, "Unexpected command type received by pathing worker. Got command=%d", cmd->base.type);

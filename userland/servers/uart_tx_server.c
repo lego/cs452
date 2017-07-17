@@ -334,6 +334,11 @@ int Logs(int type, const char *str) {
   return 0;
   #endif
 
+  if (type != IDLE_LOGGING && type != UPTIME_LOGGING) {
+    RecordLog(str);
+    RecordLog("\n\r");
+  }
+
   log_task("Logp str=%d", active_task->tid, packet.type);
   if (logging_warehouse_tid == -1) {
     KASSERT(false, "Logging relay not initialized");

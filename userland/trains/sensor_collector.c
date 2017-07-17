@@ -82,6 +82,7 @@ int nextSensor(int node) {
 
 void sensor_attributer() {
   sensor_attributer_tid = MyTid();
+  RegisterAs(NS_SENSOR_ATTRIBUTER);
 
   int active_train = -1;
 

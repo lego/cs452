@@ -54,6 +54,8 @@ void train_controller() {
   train_navigate_t * navigate_msg = (train_navigate_t *) request_buffer;
 
   path_t navigation_data;
+  // This is here as a signifier for not properly initializing this.
+  navigation_data.len = 0xDEADBEEF;
 
   int train;
   ReceiveS(&requester, train);
@@ -93,6 +95,7 @@ void train_controller() {
         }
         break;
       case TRAIN_NAVIGATE_COMMAND:
+        navigation_data = navigate_msg->path; // Persist the path
         SetTrainSpeed(train, navigate_msg->speed);
         // FIXME: priority
         CreateRouteExecutor(10, train, navigate_msg->speed, ROUTE_EXECUTOR_NAVIGATE, &navigation_data);
@@ -124,7 +127,7 @@ static void ensure_train_controller(int train) {
 }
 
 void AlertTrainController(int train, int sensor_no, int timestamp) {
-  Logf(EXECUTOR_LOGGING, "alerting train=%d sensor=%d timestamp=%d", train, sensor_no, timestamp);
+  Logf(EXECUTOR_LOGGING, "alerting train=%d sensor %4s timestamp=%d", train, track[sensor_no].name, timestamp);
   ensure_train_controller(train);
   sensor_data_t data;
   data.packet.type = SENSOR_DATA;

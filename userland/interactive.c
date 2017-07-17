@@ -42,7 +42,7 @@ void PrintTicks(int ticks) {
   jformatf(buf, 32, "%02d:%02d %02d0", minutes, seconds, ticks % 100);
   Putstr(COM2, buf);
 
-  Logs(100, buf);
+  Logs(UPTIME_LOGGING, buf);
 }
 
 #define PATH_LOG_X 60
@@ -243,9 +243,26 @@ void PrintSensorTrigger(int sensor_num, int sensor_time) {
   Putstr(COM2, RECOVER_CURSOR);
 }
 
-void TriggerSensor(int sensor_num, int sensor_time) {
-  track[sensor_num].actual_sensor_trip = sensor_time;
-  PrintSensorTrigger(sensor_num, sensor_time);
+/**
+ * This is for manually triggering sensors
+ */
+void TriggerSensor(int sensor_no, int sensor_time) {
+  int sensor_detector_multiplexer_tid = WhoIsEnsured(NS_SENSOR_DETECTOR_MULTIPLEXER);
+  int sensor_attributer_tid = WhoIsEnsured(NS_SENSOR_ATTRIBUTER);
+
+  track[sensor_no].actual_sensor_trip = sensor_time;
+
+  sensor_data_t req;
+  req.packet.type = SENSOR_DATA;
+  req.timestamp = Time();
+  req.sensor_no = sensor_no;
+  // Send to attributer
+  SendSN(sensor_attributer_tid, req);
+  // Send to detector multiplexer
+  SendSN(sensor_detector_multiplexer_tid, req);
+
+  // Display to UI
+  // PrintSensorTrigger(sensor_no, sensor_time);
 }
 
 // void sensor_timeout() {
@@ -350,7 +367,7 @@ void DrawIdlePercent() {
   char buf[12];
   jformatf(buf, 12, "%02d.%01d%%", (idle_percent / 10) % 100, idle_percent % 10);
   Putstr(COM2, buf);
-  Logs(101, buf);
+  Logs(IDLE_LOGGING, buf);
 }
 
 void RenderSwitchChange(int sw, int state) {
@@ -836,6 +853,7 @@ void interactive() {
             Putf(COM2, "Train must have a current location to navigate.");
             break;
           }
+          Putf(COM2, "Navigating train %2d from %4s ~> %4s.", cmd_data->train, track[WhereAmI(cmd_data->train)].name, track[cmd_data->dest_node].name);
           // active_train = cmd_data->train;
           // FIXME: navigate no longer has a speed, so this is hardcoded
           // active_speed = cmd_data->speed;
@@ -856,6 +874,7 @@ void interactive() {
             Putf(COM2, "Train must already have hit a sensor to path.");
             break;
           }
+          Putf(COM2, "Moving train %2d from %4s ~> %4s to stop on %4s.", cmd_data->train, track[cmd_data->src_node].name, track[cmd_data->dest_node].name, track[cmd_data->dest_node].name);
           // // get the path to the stopping from node
           // GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
           // // display the path

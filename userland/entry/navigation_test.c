@@ -61,5 +61,10 @@ void navigation_test_task() {
   // Should fail
   ProvideSensorTrigger(Name2Node("D10"));
 
+
+
+  GetPath(&train50_path, Name2Node("C9"), Name2Node("C13"));
+  PrintPath(&train50_path);
+
   ExitKernel();
 }

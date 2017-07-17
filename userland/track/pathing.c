@@ -97,7 +97,7 @@ void GetPath(path_t *p, int src, int dest) {
 
   dijkstra(src, dest, pathing_idx);
   p->len = get_path(src, dest, nodes, TRACK_MAX, pathing_idx);
-
+  KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
 
   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
   p->src = &track[src];

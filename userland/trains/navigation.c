@@ -183,7 +183,11 @@ int CalculateTime(int distance, int velocity) {
 int Velocity(int train, int speed) {
   KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when getting velocity. Got %d", train);
   KASSERT(speed >= 0 && speed <= 14, "Invalid speed when getting velocity. Got %d", speed);
-  return velocity[train][speed];
+  if (velocity[train][speed] == -1) {
+    return speed * 63 - 281;
+  } else {
+    return velocity[train][speed];
+  }
 }
 
 void record_velocity_sample(int train, int speed, int sample) {
