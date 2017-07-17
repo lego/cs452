@@ -55,7 +55,7 @@ void switch_controller() {
     ReceiveS(&requester, request);
     if (request.type == SWITCH_GET) {
       int index = switch_to_index(request.index);
-      KASSERT(index != -1, "Asked for invalid switch %d", request.index);
+      KASSERT(index != -1, "Asked for invalid switch %d by %d", request.index, requester);
       int state = switchState[index];
       if (switchState[index] == -1) {
         state = SWITCH_STRAIGHT;

@@ -2,10 +2,13 @@
 #include <heap.h>
 #include <jstring.h>
 #include <track/pathing.h>
+#include <trains/switch_controller.h>
 
 bool pathing_initialized = false;
 
 track_node track[TRACK_MAX];
+
+void initSensorDistances();
 
 void InitPathing() {
   int i;
@@ -20,19 +23,115 @@ void InitPathing() {
   #else
   #error Bad TRACK value provided to Makefile. Expected "A", "B", or "TEST"
   #endif
+
+  initSensorDistances();
 }
 
-int findSensorOrBranch(int start) {
-  int current = start;
-  do {
-    if (track[current].edge[DIR_AHEAD].dest != 0) {
-      current = track[current].edge[DIR_AHEAD].dest->id;
-    } else {
-      current = -1;
-    }
-  } while(current >= 0 && track[current].type != NODE_SENSOR && track[current].type != NODE_BRANCH);
+#define NUM_SENSORS 80
+int prevSensor[NUM_SENSORS][2];
+int sensorDistances[NUM_SENSORS][2];
 
-  return current;
+int adjSensorDist(int last, int current) {
+  if (last != -1 && current != -1) {
+    for (int i = 0; i < 2; i++) {
+      if (prevSensor[current][i] == last) {
+        return sensorDistances[current][i];
+      }
+    }
+  }
+  return -1;
+}
+
+void initSensorDistances() {
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    prevSensor[i][0] = -1;
+    prevSensor[i][1] = -1;
+    sensorDistances[i][0] = -1;
+    sensorDistances[i][1] = -1;
+  }
+
+  for (int i = 0; i < 80; i++) {
+    int next1 = -1;
+    int next2 = -1;
+
+    int next = findSensorOrBranch(i).node;
+    if (track[next].type == NODE_BRANCH) {
+      next1 = track[next].edge[DIR_STRAIGHT].dest->id;
+      next2 = track[next].edge[DIR_CURVED].dest->id;
+      if (track[next1].type != NODE_SENSOR) {
+        next1 = findSensorOrBranch(next1).node;
+      }
+      if (track[next2].type != NODE_SENSOR) {
+        next2 = findSensorOrBranch(next2).node;
+      }
+    } else {
+      next1 = next;
+    }
+
+    if (next1 >= 0 && next1 < NUM_SENSORS) {
+      for (int j = 0; j < 2; j++) {
+        if (prevSensor[next1][j] == -1) {
+          prevSensor[next1][j] = i;
+          break;
+        }
+      }
+    }
+    if (next2 >= 0 && next2 < NUM_SENSORS) {
+      for (int j = 0; j < 2; j++) {
+        if (prevSensor[next2][j] == -1) {
+          prevSensor[next2][j] = i;
+          break;
+        }
+      }
+    }
+  }
+
+  path_t p;
+  for (int i = 0; i < 80; i++) {
+    for (int j = 0; j < 2; j++) {
+      if (prevSensor[i][j] != -1) {
+        GetPath(&p, prevSensor[i][j], i);
+        sensorDistances[i][j] = p.dist;
+      }
+    }
+  }
+}
+
+node_dist_t findSensorOrBranch(int start) {
+  node_dist_t nd;
+  nd.node = start;
+  nd.dist = 0;
+  do {
+    if (track[nd.node].edge[DIR_AHEAD].dest != 0) {
+      nd.dist += track[nd.node].edge[DIR_AHEAD].dist;
+      nd.node = track[nd.node].edge[DIR_AHEAD].dest->id;
+    } else {
+      nd.node = -1;
+      nd.dist = 0;
+    }
+  } while(nd.node >= 0 && track[nd.node].type != NODE_SENSOR && track[nd.node].type != NODE_BRANCH);
+
+  return nd;
+}
+
+node_dist_t nextSensor(int node) {
+  node_dist_t nd;
+  nd = findSensorOrBranch(node);
+  while (nd.node >= 0 && track[nd.node].type == NODE_BRANCH) {
+    int state = GetSwitchState(track[nd.node].num);
+    nd.dist += track[nd.node].edge[state].dist;
+    nd.node = track[nd.node].edge[state].dest->id;
+    if (track[nd.node].type != NODE_SENSOR) {
+      node_dist_t other_nd = findSensorOrBranch(nd.node);
+      nd.dist += other_nd.dist;
+      nd.node = other_nd.node;
+    }
+  }
+  if (!(nd.node >= 0 && track[nd.node].type == NODE_SENSOR)) {
+    nd.node = -1;
+    nd.dist = 0;
+  }
+  return nd;
 }
 
 void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2) {

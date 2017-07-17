@@ -5,6 +5,8 @@
 #define PACKET_SENSOR_DATA 10
 #define PACKET_SWITCH_DATA 11
 
+#define PACKET_TRAIN_LOCATION_DATA 15
+
 #define PACKET_LOG_INFO 90
 
 typedef struct {

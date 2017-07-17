@@ -191,8 +191,10 @@ void record_velocity_sample(int train, int speed, int sample) {
   KASSERT(speed >= 0 && speed <= 14, "Invalid speed when recording sample. Got %d", speed);
   int startIndex = velocitySampleStart[train][speed];
   KASSERT(startIndex >= 0 && startIndex < VELOCITY_SAMPLES_MAX, "This shouldn't happen.");
-  velocitySamples[train][speed][startIndex] = sample;
-  velocitySampleStart[train][speed] = (startIndex + 1) % VELOCITY_SAMPLES_MAX;
+  if (sample > 0) {
+    velocitySamples[train][speed][startIndex] = sample;
+    velocitySampleStart[train][speed] = (startIndex + 1) % VELOCITY_SAMPLES_MAX;
+  }
 
   int total = 0;
   int n = 0;

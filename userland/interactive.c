@@ -407,19 +407,6 @@ const int bucketSensors[BUCKETS] = {
   16*(5-1)+( 8-1)  // E 8
 };
 
-const int sensorDistances[BUCKETS] = {
-  785,
-  589,
-  440,
-  485,
-  293,
-  404,
-  284,
-  277,
-  774,
-  375
-};
-
 int bucketSamples[BUCKETS*SAMPLES];
 int bucketSize[BUCKETS];
 float bucketAvg[BUCKETS];
@@ -548,21 +535,18 @@ void sensor_saver() {
     int next1 = -1;
     int next2 = -1;
 
-    int next = findSensorOrBranch(i);
+    int next = findSensorOrBranch(i).node;
     if (track[next].type == NODE_BRANCH) {
       next1 = track[next].edge[DIR_STRAIGHT].dest->id;
       next2 = track[next].edge[DIR_CURVED].dest->id;
       if (track[next1].type != NODE_SENSOR) {
-        next1 = findSensorOrBranch(next1);
+        next1 = findSensorOrBranch(next1).node;
       }
       if (track[next2].type != NODE_SENSOR) {
-        next2 = findSensorOrBranch(next2);
+        next2 = findSensorOrBranch(next2).node;
       }
-      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d, started at %d, intermediary %d", next1, i, next);
-      //KASSERT(next2 >= -1 && next2 < NUM_SENSORS, "next2 broken, got %d, started at %d, intermediary %d", next2, i, next);
     } else {
       next1 = next;
-      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d", next1);
     }
 
     if (next1 >= 0 && next1 < NUM_SENSORS) {
@@ -810,33 +794,6 @@ void interactive() {
           lastSensor = -1;
           break;
         case COMMAND_PRINT_SENSOR_SAMPLES: {
-          Putstr(COM2, SAVE_CURSOR);
-          char buf[10];
-          int speedTotal = 0;
-          int n = 0;
-          for (int i = 0; i < BUCKETS; i++) {
-            MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
-            Putstr(COM2, CLEAR_LINE);
-            int total = 0;
-            for (int j = 0; j < bucketSize[i]; j++) {
-              total += bucketSamples[i*SAMPLES+j];
-            }
-            int avg = (sensorDistances[i]*1000)/(total/bucketSize[i]);
-            if (avg > 0) {
-              speedTotal += avg;
-              n++;
-            }
-            Putf(COM2, "%d  -  %d", total/bucketSize[i], (int)(avg*1000));
-
-            //for (int j = 0; j < bucketSize[i]; j++) {
-            //  MoveTerminalCursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
-            //  char buf[10];
-            //  ji2a(bucketSamples[i*SAMPLES+j], buf);
-            //  Putstr(COM2, buf);
-            //}
-          }
-          MoveTerminalCursor(0, COMMAND_LOCATION + 3);
-          Putf(COM2, "%d" RECOVER_CURSOR, speedTotal / n);
           break;
         }
         case COMMAND_PRINT_SENSOR_MULTIPLIERS: {

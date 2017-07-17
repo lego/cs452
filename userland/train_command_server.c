@@ -11,33 +11,29 @@ static int train_command_server_tid = -1;
 
 enum {
   TRAIN_COMMAND,
-  TRAIN_TASK_READY,
   TRAIN_SET_SPEED,
   TRAIN_REVERSE,
   TRAIN_INSTANT_STOP
 };
 
 typedef struct {
-  int type;
   int index;
   int value;
   int command;
 } train_command_request_t;
 
 void train_command_task() {
-  int server_tid = MyParentTid();
-
   char buf[2];
   buf[0] = 0;
   buf[1] = 0;
 
-  train_command_request_t notify;
-  notify.type = TRAIN_TASK_READY;
-
   train_command_request_t request;
 
+  int receiver = -1;
+
   while (1) {
-    SendS(server_tid, notify, request);
+    ReceiveS(&receiver, request);
+    ReplyN(receiver);
     buf[1] = request.index;
     if (request.command == TRAIN_SET_SPEED) {
       buf[0] = request.value; Putcs(COM1, buf, 2);
@@ -58,37 +54,15 @@ void train_command_task() {
 void train_command_server() {
   train_command_server_tid = MyTid();
   RegisterAs(NS_TRAIN_CONTROLLER_SERVER);
-  const int NUM_WORKERS = 4;
-  int workers[NUM_WORKERS];
-  bool workerReady[NUM_WORKERS];
 
   int receiver;
   train_command_request_t request;
 
-  for (int i = 0; i < NUM_WORKERS; i++) {
-    workers[i] = Create(PRIORITY_TRAIN_COMMAND_TASK, train_command_task);
-    workerReady[i] = false;
-  }
-
   while (1) {
     ReceiveS(&receiver, request);
-    if (request.type == TRAIN_TASK_READY) {
-      for (int i = 0; i < NUM_WORKERS; i++) {
-        if (receiver == workers[i]) {
-          workerReady[i] = true;
-          break;
-        }
-      }
-    } else if (request.type == TRAIN_COMMAND) {
-      for (int i = 0; i < NUM_WORKERS; i++) {
-        if (workerReady[i]) {
-          ReplyS(workers[i], request);
-          workerReady[i] = false;
-          break;
-        }
-      }
-      ReplyN(receiver);
-    }
+    ReplyN(receiver);
+    int tid = Create(PRIORITY_TRAIN_COMMAND_TASK, train_command_task);
+    SendSN(tid, request);
   }
 }
 
@@ -101,7 +75,6 @@ int SetTrainSpeed(int train, int speed) {
     return -1;
   }
   train_command_request_t request;
-  request.type = TRAIN_COMMAND;
   request.index = train;
   request.value = speed;
   request.command = TRAIN_SET_SPEED;
@@ -128,7 +101,6 @@ int ReverseTrain(int train, int currentSpeed) {
     return -1;
   }
   train_command_request_t request;
-  request.type = TRAIN_COMMAND;
   request.index = train;
   request.value = currentSpeed;
   request.command = TRAIN_REVERSE;
@@ -145,7 +117,6 @@ int InstantStop(int train) {
     return -1;
   }
   train_command_request_t request;
-  request.type = TRAIN_COMMAND;
   request.index = train;
   request.command = TRAIN_INSTANT_STOP;
   SendSN(train_command_server_tid, request);

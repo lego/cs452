@@ -8,7 +8,6 @@
 #include <servers/uart_rx_server.h>
 #include <servers/uart_tx_server.h>
 #include <trains/sensor_collector.h>
-#include <trains/switch_controller.h>
 #include <trains/train_controller.h>
 #include <trains/navigation.h>
 #include <track/pathing.h>
@@ -60,26 +59,6 @@ void sensor_notifier() {
   }
 }
 
-int nextSensor(int node) {
-  Logs(PACKET_LOG_INFO, track[node].name);
-  node = findSensorOrBranch(node);
-  Logs(PACKET_LOG_INFO, track[node].name);
-  while (node >= 0 && track[node].type == NODE_BRANCH) {
-    int state = GetSwitchState(track[node].num);
-    node = track[node].edge[state].dest->id;
-    Logs(PACKET_LOG_INFO, track[node].name);
-    if (track[node].type != NODE_SENSOR) {
-      node = findSensorOrBranch(node);
-      Logs(PACKET_LOG_INFO, track[node].name);
-    }
-  }
-  Logs(PACKET_LOG_INFO, " ");
-  if (node >= 0 && track[node].type == NODE_SENSOR) {
-    return node;
-  }
-  return -1;
-}
-
 void sensor_attributer() {
   sensor_attributer_tid = MyTid();
 
@@ -114,7 +93,7 @@ void sensor_attributer() {
         trainControllerTids[active_train] = requester;
         break;
       case SENSOR_ATTRIB_TRAIN_REVERSE: {
-          int node = nextSensor(rev_request->lastSensor);
+          int node = nextSensor(rev_request->lastSensor).node;
           int foundTrain = false;
           if (node != -1) {
             for (int j = 0; j < SENSOR_MEMORY; j++) {
@@ -139,7 +118,7 @@ void sensor_attributer() {
               }
             }
           }
-          node = nextSensor(track[rev_request->lastSensor].reverse->id);
+          node = nextSensor(track[rev_request->lastSensor].reverse->id).node;
           if (node != -1) {
             for (int i = 0; i < SENSOR_MEMORY; i++) {
               if (lastTrainAtSensor[node][i] == -1) {
@@ -163,7 +142,7 @@ void sensor_attributer() {
             active_train = -1;
           }
           if (attrib != -1) {
-            int node = nextSensor(sensor);
+            int node = nextSensor(sensor).node;
             if (node != -1) {
               for (int i = 0; i < SENSOR_MEMORY; i++) {
                 if (lastTrainAtSensor[node][i] == -1) {
