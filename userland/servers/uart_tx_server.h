@@ -12,6 +12,12 @@
 
 #define PACKET_LOG_INFO 90
 
+// Log types
+#define UPTIME_LOGGING 100
+#define IDLE_LOGGING 101
+#define EXECUTOR_LOGGING 150
+
+
 typedef struct {
   int len;
   int type;
@@ -43,8 +49,3 @@ int Logs(int type, const char *str);
 int Logf(int type, char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
 void MoveTerminalCursor(unsigned int x, unsigned int y);
 int GetRxQueueLength(int channel);
-
-// Log types
-#define UPTIME_LOGGING 100
-#define IDLE_LOGGING 101
-#define EXECUTOR_LOGGING 150

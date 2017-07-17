@@ -115,10 +115,10 @@ void reservoir_task() {
   }
 }
 
-
 int RequestSegment(reservoir_segments_t *segment) {
   KASSERT(reservoir_tid >= 0, "Reservoir not started");
-  KASSERT(segment->len >= 0 && segment->len < 12, "Segment overflowed. size=%d max=%d", segment->len, 12);
+  KASSERT(segment->owner >= 0 && segment->owner < 80, "Segment owner isn't valid train. Got owner=%d", segment->owner);
+  KASSERT(segment->len >= 0 && segment->len < RESERVING_LIMIT, "Segment overflowed. size=%d max=%d", segment->len, RESERVING_LIMIT);
   // TODO: kassert valid segments and directions
   segment->packet.type = RESERVOIR_REQUEST;
   int result;
@@ -126,13 +126,50 @@ int RequestSegment(reservoir_segments_t *segment) {
   return result;
 }
 
+void edge_segments_to_segments(reservoir_segment_edges_t *segment, reservoir_segments_t *actual_segment) {
+  for (int i = 0; i < segment->len; i++) {
+    actual_segment->segments[i].track_node = segment->edges[i]->src->id;
+    actual_segment->segments[i].dir = (&segment->edges[i]->src->edge[DIR_AHEAD] == segment->edges[i]) ? DIR_AHEAD : DIR_CURVED;
+  }
+
+  actual_segment->len = segment->len;
+  actual_segment->owner = segment->owner;
+}
+
+int RequestSegmentEdges(reservoir_segment_edges_t *segment) {
+  KASSERT(reservoir_tid >= 0, "Reservoir not started");
+  KASSERT(segment->owner >= 0 && segment->owner < 80, "Segment owner isn't valid train. Got owner=%d", segment->owner);
+  KASSERT(segment->len >= 0 && segment->len < RESERVING_LIMIT, "Segment overflowed. size=%d max=%d", segment->len, RESERVING_LIMIT);
+  // TODO: kassert valid segments and directions
+
+  reservoir_segments_t actual_segment;
+  edge_segments_to_segments(segment, &actual_segment);
+
+  actual_segment.packet.type = RESERVOIR_REQUEST;
+  int result;
+  SendS(reservoir_tid, actual_segment, result);
+  return result;
+}
+
 void ReleaseSegment(reservoir_segments_t *segment) {
   KASSERT(reservoir_tid >= 0, "Reservoir not started");
-  KASSERT(segment->len >= 0 && segment->len < 12, "Segment overflowed. size=%d max=%d", segment->len, 12);
+  KASSERT(segment->len >= 0 && segment->len < RESERVING_LIMIT, "Segment overflowed. size=%d max=%d", segment->len, RESERVING_LIMIT);
   KASSERT(segment->owner >= 0 && segment->owner < 80, "Segment owner isn't valid train. Got owner=%d", segment->owner);
   // TODO: kassert valid segments and directions
   segment->packet.type = RESERVOIR_RELEASE;
   Send(reservoir_tid, segment, sizeof(reservoir_segments_t), NULL, 0);
+}
+
+void ReleaseSegmentEdges(reservoir_segment_edges_t *segment) {
+  KASSERT(reservoir_tid >= 0, "Reservoir not started");
+  KASSERT(segment->len >= 0 && segment->len < RESERVING_LIMIT, "Segment overflowed. size=%d max=%d", segment->len, RESERVING_LIMIT);
+  KASSERT(segment->owner >= 0 && segment->owner < 80, "Segment owner isn't valid train. Got owner=%d", segment->owner);
+
+  reservoir_segments_t actual_segment;
+  edge_segments_to_segments(segment, &actual_segment);
+
+  actual_segment.packet.type = RESERVOIR_RELEASE;
+  Send(reservoir_tid, &actual_segment, sizeof(reservoir_segments_t), NULL, 0);
 }
 
 

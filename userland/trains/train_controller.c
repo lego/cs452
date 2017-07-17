@@ -2,14 +2,17 @@
 #include <basic.h>
 #include <util.h>
 #include <bwio.h>
+#include <cbuffer.h>
 #include <kernel.h>
 #include <servers/nameserver.h>
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
 #include <train_command_server.h>
+#include <trains/switch_controller.h>
 #include <trains/sensor_collector.h>
 #include <trains/route_executor.h>
 #include <trains/navigation.h>
+#include <trains/reservoir.h>
 #include <priorities.h>
 
 int train_controllers[TRAINS_MAX];
@@ -62,6 +65,100 @@ void reverse_train_task() {
     Putcs(COM1, buf, 2);
 }
 
+int get_next_edge_dir(track_node *node) {
+  switch (node->type) {
+  case NODE_EXIT:
+    return -1;
+    break;
+  case NODE_BRANCH:
+    return GetSwitchState(node->num) == SWITCH_CURVED ? DIR_CURVED : DIR_STRAIGHT;
+    break;
+  default:
+    return DIR_AHEAD;
+  }
+}
+
+
+track_edge *get_next_edge(track_node *node) {
+  switch (node->type) {
+  case NODE_EXIT:
+    return NULL;
+    break;
+  default:
+    return &node->edge[get_next_edge_dir(node)];
+  }
+}
+
+track_node *get_next_node(track_node *node) {
+  return get_next_edge(node)->dest;
+}
+
+int reserve_next_segments(int train, int speed, cbuffer_t *owned_segments, int sensor_no) {
+  int stopdist = StoppingDistance(train, speed);
+  reservoir_segment_edges_t reserving;
+  reserving.len = 0;
+  reserving.owner = train;
+
+  bool found_another_sensor = false;
+  track_node *curr_node = get_next_node(&track[sensor_no]);
+  int dist_sum = 0;
+  // While all the next nodes are acquired by this sensors trigger, keep getting more
+  while (dist_sum < StoppingDistance(train, speed)) {
+    if (curr_node->type == NODE_EXIT) {
+      break;
+    } else if (!found_another_sensor && curr_node->type == NODE_SENSOR) {
+      found_another_sensor = true;
+      dist_sum += get_next_edge(curr_node)->dist;
+    } else if (!found_another_sensor) {
+    } else {
+      dist_sum += get_next_edge(curr_node)->dist;
+    }
+
+    reserving.edges[reserving.len] = get_next_edge(curr_node);
+    reserving.len++;
+
+    curr_node = get_next_node(curr_node);
+  }
+
+
+  int result = RequestSegmentEdges(&reserving);
+  if (result == 1) {
+    Logf(EXECUTOR_LOGGING, "%d: failed to obtain segments", train);
+  } else {
+    // Keep track of all owned segments
+    // NOTE: we only do this after a successful RequestSegment above
+    for (int i = 0; i < reserving.len; i++) {
+      cbuffer_add(owned_segments, (void *) reserving.edges[i]);
+    }
+    Logf(EXECUTOR_LOGGING, "%d: requesting %d segments. Total now %d", train, reserving.len, cbuffer_size(owned_segments));
+  }
+
+  return 0;
+}
+
+int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
+  reservoir_segment_edges_t releasing;
+  releasing.len = 0;
+  releasing.owner = train;
+
+  track_node *sensor = &track[sensor_no];
+
+  while (cbuffer_size(owned_segments) > 0) {
+    track_edge *edge = (track_edge *) cbuffer_pop(owned_segments, NULL);
+    if (edge->dest == sensor) {
+      cbuffer_unpop(owned_segments, (void *) edge);
+    }
+
+    releasing.edges[releasing.len] = edge;
+    releasing.len++;
+  }
+
+  ReleaseSegmentEdges(&releasing);
+  Logf(EXECUTOR_LOGGING, "%d: released %d segments. Total now %d", train, releasing.len, cbuffer_size(owned_segments));
+
+  return 0;
+}
+
 void train_controller() {
   int requester;
   char request_buffer[1024] __attribute__ ((aligned (4)));
@@ -69,6 +166,11 @@ void train_controller() {
   train_command_msg_t * msg = (train_command_msg_t *) request_buffer;
   sensor_data_t * sensor_data = (sensor_data_t *) request_buffer;
   train_navigate_t * navigate_msg = (train_navigate_t *) request_buffer;
+
+  // This is a list of segment dest_nodes (not actual segments)
+  void * owned_segments_buffer[40] __attribute__((aligned(4)));
+  cbuffer_t owned_segments;
+  cbuffer_init(&owned_segments, owned_segments_buffer, 40);
 
   path_t navigation_data;
   // This is here as a signifier for not properly initializing this.
@@ -83,6 +185,8 @@ void train_controller() {
   int lastSpeed = 0;
   int lastSensor = -1;
   int lastSensorTime = 0;
+  reservoir_segments_t reserving;
+  reserving.owner = train;
 
   while (true) {
     ReceiveS(&requester, request_buffer);
@@ -93,6 +197,15 @@ void train_controller() {
         {
           SetTrainLocation(train, sensor_data->sensor_no);
 
+          /**
+           * Unreserving previous segment
+           * FIXME: lastSensor is set to -1 upon stop / reverse :(
+           */
+          if (lastSensor != -1) release_past_segments(train, &owned_segments, lastSensor);
+
+          /**
+           * Velocity calibration
+           */
           int velocity = 0;
           int dist = adjSensorDist(lastSensor, sensor_data->sensor_no);
           if (dist != -1) {
@@ -127,6 +240,12 @@ void train_controller() {
             jmemcpy(&packet.data[7], &tmp, sizeof(int));
             PutFixedPacket(&packet);
           }
+
+          /**
+           * Reservation for current segment
+           */
+          reserve_next_segments(train, lastSpeed, &owned_segments, lastSensor);
+
         }
         break;
       case TRAIN_CONTROLLER_COMMAND:

@@ -7,10 +7,13 @@
  */
 
 #include <packet.h>
+#include <track/track_node.h>
 #include <track/pathing.h>
 
 #define RESERVOIR_REQUEST_OK 0
 #define RESERVOIR_REQUEST_ERROR 1
+
+#define RESERVING_LIMIT 16
 
 /**
  * segment_t specifies a track segment, i.e. edge, from a node and direction
@@ -31,9 +34,16 @@ typedef struct {
 
   int owner;
   // Reasonable upper limit to request or release at one time
-  segment_t segments[16];
+  segment_t segments[RESERVING_LIMIT];
   int len;
 } reservoir_segments_t;
+
+typedef struct {
+  int owner;
+  // Reasonable upper limit to request or release at one time
+  track_edge *edges[RESERVING_LIMIT];
+  int len;
+} reservoir_segment_edges_t;
 
 void reservoir_task();
 
@@ -47,6 +57,8 @@ void reservoir_task();
  */
 int RequestSegment(reservoir_segments_t * segment);
 
+int RequestSegmentEdges(reservoir_segment_edges_t * segment);
+
 /**
  * Release ownership over segments
  * NOTE: you must already own them to release them, otherwise this
@@ -55,6 +67,8 @@ int RequestSegment(reservoir_segments_t * segment);
  * @param segment to release.
  */
 void ReleaseSegment(reservoir_segments_t * segment);
+
+void ReleaseSegmentEdges(reservoir_segment_edges_t * segment);
 
 /**
  * Requests a path that has no owned segments

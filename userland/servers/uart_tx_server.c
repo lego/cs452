@@ -10,6 +10,8 @@
 #include <jstring.h>
 #include <courier.h>
 #include <warehouse.h>
+// Pretty terrible, using track graph for some local test output
+#include <track/pathing.h>
 
 static int uart1_tx_notifier_tid = -1;
 static int uart2_tx_notifier_tid = -1;
@@ -293,6 +295,24 @@ int Puti(int channel, int i) {
 }
 
 int PutPacket(uart_packet_t *packet) {
+  #if defined(DEBUG_MODE)
+  char *packet_data = ((char *)packet) + sizeof(uart_packet_t);
+  uart_packet_fixed_size_t *p = (uart_packet_fixed_size_t *)packet;
+  if (p->type == PACKET_TRAIN_LOCATION_DATA) {
+    bwprintf(COM2, "TRAIN LOCATION: %d at %4s\n", (int) p->data[4], track[(int) p->data[5]].name);
+  } else if (p->type == PACKET_SENSOR_DATA) {
+    bwprintf(COM2, "SENSOR DATA: %4s. Attributed to %d\n", track[(int) p->data[4]].name, (int) p->data[5]);
+  } else if (p->type == PACKET_RESEVOIR_SET_DATA) {
+    bwprintf(COM2, "RESERVING: %d got %d segments\n", (int) packet_data[4], (packet->len - 5) / 2);
+  } else if (p->type == PACKET_RESEVOIR_UNSET_DATA) {
+    bwprintf(COM2, "UNRESERVE: %d released %d segments\n", (int) packet_data[4], (packet->len - 5) / 2);
+  } else {
+    bwprintf(COM2, "Unhandled packet type=%d\n", p->type);
+  }
+
+
+  return 0;
+  #endif
   log_task("PutPacket len=%d type=%d", active_task->tid, packet->len, packet->type);
   int server_tid = uart2_tx_warehouse_tid;
   if (server_tid == -1) {
