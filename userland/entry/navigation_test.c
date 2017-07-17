@@ -52,8 +52,8 @@ void navigation_test_task() {
   GetPath(&train20_path, Name2Node("C5"), Name2Node("C14"));
   GetPath(&train50_path, Name2Node("C13"), Name2Node("C6"));
 
-  CreateRouteExecutor(10, 20, 10, &train20_path);
-  CreateRouteExecutor(10, 50, 10, &train50_path);
+  CreateRouteExecutor(10, 20, 10, ROUTE_EXECUTOR_NAVIGATE, &train20_path);
+  CreateRouteExecutor(10, 50, 10, ROUTE_EXECUTOR_STOPFROM, &train50_path);
 
   ProvideSensorTrigger(Name2Node("C15"));
   ProvideSensorTrigger(Name2Node("D12"));

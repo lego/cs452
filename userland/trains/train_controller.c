@@ -45,12 +45,6 @@ void reverse_train_task() {
     Putcs(COM1, buf, 2);
 }
 
-static void start_navigation(int train, int speed, path_t * path) {
-  SetTrainSpeed(train, speed);
-  // FIXME: priority
-  CreateRouteExecutor(10, train, speed, path);
-}
-
 void train_controller() {
   int requester;
   char request_buffer[1024] __attribute__ ((aligned (4)));
@@ -99,8 +93,18 @@ void train_controller() {
         }
         break;
       case TRAIN_NAVIGATE_COMMAND:
+        SetTrainSpeed(train, navigate_msg->speed);
+        // FIXME: priority
+        CreateRouteExecutor(10, train, navigate_msg->speed, ROUTE_EXECUTOR_NAVIGATE, &navigation_data);
+        break;
+      case TRAIN_STOPFROM_COMMAND:
         navigation_data = navigate_msg->path; // Persist the path
-        start_navigation(train, navigate_msg->speed, &navigation_data);
+        SetTrainSpeed(train, navigate_msg->speed);
+        // FIXME: priority
+        CreateRouteExecutor(10, train, navigate_msg->speed, ROUTE_EXECUTOR_STOPFROM, &navigation_data);
+        break;
+      default:
+        KASSERT(false, "Train controller received unhandled packet. Got type=%d", packet->type);
         break;
     }
   }
@@ -139,12 +143,21 @@ void TellTrainController(int train, int type, int speed) {
   SendSN(train_controllers[train], msg);
 }
 
-
 void NavigateTrain(int train, int speed, path_t * path) {
   ensure_train_controller(train);
   Logf(EXECUTOR_LOGGING, "navigating train=%d (tid=%d)", train, train_controllers[train]);
   train_navigate_t msg;
   msg.packet.type = TRAIN_NAVIGATE_COMMAND;
+  msg.speed = speed;
+  msg.path = *path;
+  SendSN(train_controllers[train], msg);
+}
+
+void StopTrainAt(int train, int speed, path_t * path) {
+  ensure_train_controller(train);
+  Logf(EXECUTOR_LOGGING, "navigating train=%d (tid=%d)", train, train_controllers[train]);
+  train_navigate_t msg;
+  msg.packet.type = TRAIN_STOPFROM_COMMAND;
   msg.speed = speed;
   msg.path = *path;
   SendSN(train_controllers[train], msg);

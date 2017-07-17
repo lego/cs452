@@ -34,9 +34,6 @@ int active_train;
 int active_speed;
 int velocity_reading_delay_until;
 int most_recent_sensor;
-bool set_to_stop;
-bool set_to_stop_from;
-int stop_on_node;
 
 // TODO: make time a string format type
 void PrintTicks(int ticks) {
@@ -622,24 +619,6 @@ void sensor_saver() {
           int curr_time = Time();
           sensor_reading_timestamps[data->sensor_no] = curr_time;
           TriggerSensor(data->sensor_no, curr_time);
-          if (data->sensor_no == basis_node && set_to_stop) {
-            set_to_stop = false;
-            GetPath(&p, basis_node, stop_on_node);
-            SetPathSwitches(&p);
-            int dist_to_dest = p.dist;
-            int remaining_mm = dist_to_dest - StoppingDistance(active_train, active_speed);
-            int velocity = Velocity(active_train, active_speed);
-            // * 100 in order to get the amount of ticks (10ms) we need to wait
-            int wait_ticks = remaining_mm * 100 / velocity;
-            RecordLogf("waiting %6d ticks to reach %4s\n\r", wait_ticks, p.dest->name);
-            Send(stopper_tid, &active_train, sizeof(int), NULL, 0);
-            Send(stopper_tid, &wait_ticks, sizeof(int), NULL, 0);
-          }
-
-          if (set_to_stop_from && data->sensor_no == stop_on_node) {
-            set_to_stop_from = false;
-            SetTrainSpeed(active_train, 0);
-          }
 
           int velocity = 0;
           if (lastSensor != -1) {
@@ -680,8 +659,6 @@ void interactive() {
   velocity_reading_delay_until = 0;
   path_display_pos = 0;
   samples = 0;
-  set_to_stop = false;
-  set_to_stop_from = false;
   is_pathing = false;
   clear_path_display = false;
   int path_update_counter = 0;
@@ -893,8 +870,6 @@ void interactive() {
           DisplayPath(&p, active_train, active_speed, 0, 0);
           is_pathing = true;
           pathing_start_time = Time();
-          stop_on_node = cmd_data->dest_node;
-          set_to_stop_from = true;
           break;
         case COMMAND_SET_VELOCITY:
           Putf(COM2, "Set velocity train=%d speed=%d to %dmm/s", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);

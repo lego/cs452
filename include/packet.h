@@ -15,6 +15,7 @@ typedef enum {
    */
   TRAIN_CONTROLLER_COMMAND,
   TRAIN_NAVIGATE_COMMAND,
+  TRAIN_STOPFROM_COMMAND,
 
   /**
    * Route executor messages

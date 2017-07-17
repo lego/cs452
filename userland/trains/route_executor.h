@@ -3,6 +3,11 @@
 #include <packet.h>
 #include <track/pathing.h>
 
+typedef enum {
+  ROUTE_EXECUTOR_NAVIGATE,
+  ROUTE_EXECUTOR_STOPFROM,
+} route_operation_t;
+
 typedef struct {
   // type = ROUTE_FAILURE
   packet_t packet;
@@ -29,4 +34,4 @@ typedef struct {
  * @param  path     to run
  * @return          ??
  */
-int CreateRouteExecutor(int priority, int train, int speed, path_t * path);
+int CreateRouteExecutor(int priority, int train, int speed, route_operation_t operation, path_t * path);

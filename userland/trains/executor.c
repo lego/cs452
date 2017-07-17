@@ -27,6 +27,9 @@ typedef struct {
 
   int train;
   int speed;
+
+  route_operation_t operation;
+
   // TODO: maybe make this a heap pointer?
   path_t path;
 } pathing_worker_result_t;
@@ -48,6 +51,17 @@ void pathing_worker(int parent_tid, void * data) {
   result.packet.type = PATHING_WORKER_RESULT;
   result.train = cmd->train;
   result.speed = cmd->speed;
+  switch (cmd->base.type) {
+  case COMMAND_NAVIGATE:
+    result.operation = ROUTE_EXECUTOR_NAVIGATE;
+    break;
+  case COMMAND_STOP_FROM:
+    result.operation = ROUTE_EXECUTOR_NAVIGATE;
+    break;
+  default:
+    KASSERT(false, "Unexpected command type received by pathing worker. Got command=%d", cmd->base.type);
+    break;
+  }
   // Send result to Executor task
   SendSN(parent_tid, result);
 }
@@ -82,22 +96,17 @@ void execute_command(cmd_data_t * cmd_data) {
         Delay(6);
       }
       break;
+    case COMMAND_STOP_FROM:
     case COMMAND_NAVIGATE:
-      Logf(EXECUTOR_LOGGING, "Executor starting pathing worker");
+      Logf(EXECUTOR_LOGGING, "Executor starting pathing worker for stopfrom or navigate");
       // If we have no starting location, don't do anything (interactive logs this)
       if (WhereAmI(cmd_data->train) == -1) break;
       _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
       break;
-
-    case COMMAND_STOP_FROM:
-      // FIXME: globals : active_train, active_speed
-      if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
-        break;
-      }
-      // get the path to the stopping from node
-      GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-      // set the switches for that route
-      SetPathSwitches(&p);
+      Logf(EXECUTOR_LOGGING, "Executor starting pathing worker");
+      // If we have no starting location, don't do anything (interactive logs this)
+      if (WhereAmI(cmd_data->train) == -1) break;
+      _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
       break;
     default:
       KASSERT(false, "Unhandled command send to executor. Got command=%d", cmd_data->base.type);
@@ -145,7 +154,13 @@ void executor_task() {
     case PATHING_WORKER_RESULT:
       Logf(EXECUTOR_LOGGING, "Executor got pathing worker result");
       routing_trains[pathing_result->train] = true;
-      NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
+      if (pathing_result->operation == ROUTE_EXECUTOR_NAVIGATE) {
+        NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
+      } else if (pathing_result->operation == ROUTE_EXECUTOR_STOPFROM) {
+        StopTrainAt(pathing_result->train, pathing_result->speed, &pathing_result->path);
+      } else {
+        KASSERT(false, "Pathing operation not handled. operation=%d", pathing_result->operation);
+      }
       break;
     // TODO: anticipated future cases
     // NAVIGATION_FAILURE => when a train's path is interrupted. This is essentially

@@ -59,3 +59,12 @@ void TellTrainController(int train, int type, int speed);
  * @param path  to travel
  */
 void NavigateTrain(int train, int speed, path_t * path);
+
+
+/**
+ * Tell a train to stop from a location
+ * @param train to navigate
+ * @param speed to travel at (temp for diagnostics)
+ * @param path  to stopping locaiton
+ */
+void StopTrainAt(int train, int speed, path_t * path);

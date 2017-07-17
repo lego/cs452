@@ -3,11 +3,14 @@
 #include <packet.h>
 #include <cbuffer.h>
 #include <detective/sensor_detector.h>
+#include <detective/delay_detector.h>
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
 #include <servers/nameserver.h>
 #include <track/pathing.h>
 #include <trains/reservoir.h>
+#include <trains/sensor_collector.h>
+#include <trains/switch_controller.h>
 #include <trains/route_executor.h>
 #include <trains/navigation.h>
 #include <train_command_server.h>
@@ -16,6 +19,7 @@
 typedef struct {
   int train;
   int speed;
+  route_operation_t operation;
 } route_executor_init_t;
 
 int get_next_sensor(path_t * path, int last_sensor_no) {
@@ -246,6 +250,7 @@ int reserve_track_from_sensor(int train, int speed, path_t *path, cbuffer_t *own
     cbuffer_add(owned_segments, (void *) i);
   }
   Logf(EXECUTOR_LOGGING, "%d: Route executor has gotten %d more segments. Total now %d", train, data.len, cbuffer_size(owned_segments));
+
   return next_node;
 }
 
@@ -277,13 +282,17 @@ void route_executor_task() {
   char request_buffer[256] __attribute__ ((aligned (4)));
   packet_t * packet = (packet_t *) request_buffer;
   detector_message_t * detector_msg = (detector_message_t *) request_buffer;
+  sensor_data_t * sensor_data = (sensor_data_t *) request_buffer;
 
   // These are the sensor indices in the path node list
   int last_sensor_no = 0;
   int next_sensor_no = get_next_sensor(&path, 0);
 
   set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
-  int next_unreserved_node = reserve_track_from_sensor(init.train, init.speed, &path, &owned_segments, last_sensor_no, 1);
+  int last_unreserved_node = 1;
+  int next_unreserved_node = reserve_track_from_sensor(init.train, init.speed, &path, &owned_segments, last_sensor_no, last_unreserved_node);
+
+  int stop_delay_detector_id = -1;
 
   while (true) {
     status = ReceiveS(&sender, request_buffer);
@@ -297,7 +306,10 @@ void route_executor_task() {
         last_sensor_no = next_sensor_no;
         // FIgure out next sensor and set up detector for it
         next_sensor_no = get_next_sensor(&path, last_sensor_no);
-        if (next_sensor_no == -1) {
+        if (init.operation == ROUTE_EXECUTOR_STOPFROM && sensor_data->sensor_no == path.dest->id) {
+          Logf(EXECUTOR_LOGGING, "%d: Route Executor is doing stopfrom stopping for %4s. Bye \\o", init.train, path.dest->name);
+          TellTrainController(init.train, TRAIN_CONTROLLER_SET_SPEED, 0);
+        } else if (next_sensor_no == -1) {
           Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", init.train);
           // FIXME: do proper cleanup line alerting Executor of location, stopping, etc.
           Destroy(tid);
@@ -308,7 +320,39 @@ void route_executor_task() {
         release_track_before_sensor(init.train, &path, &owned_segments, last_sensor_no);
 
         // Reserve more track based on this sensor trigger
+        last_unreserved_node = next_unreserved_node;
         next_unreserved_node = reserve_track_from_sensor(init.train, init.speed, &path, &owned_segments, last_sensor_no, next_unreserved_node);
+
+        // Flip switches for any branches on the recently reserved segments
+        for (int i = last_unreserved_node; i < next_unreserved_node - 1; i++) {
+          // FIXME: this will break if the path->dest is a branch, as we assume at
+          // least one node after a branch exists
+          track_node *src = path.nodes[i];
+          if (src->type == NODE_BRANCH) {
+            if (src->edge[DIR_CURVED].dest == path.nodes[i+1]) {
+              SetSwitch(src->num, SWITCH_CURVED);
+            }
+            else {
+              SetSwitch(src->num, SWITCH_STRAIGHT);
+            }
+          }
+        }
+
+        // If we need to navigate and there are no more sensors within stopdist
+        // then we calculate a delay based off of this sensor
+        if (init.operation == ROUTE_EXECUTOR_NAVIGATE && next_unreserved_node == path.len) {
+          int distance_before_stopping = path.node_dist[path.len - 1] - path.node_dist[last_sensor_no] - StoppingDistance(init.train, init.speed);
+          int wait_ticks = distance_before_stopping * 100 / Velocity(init.train, init.speed);
+          stop_delay_detector_id = StartDelayDetector("route stopper", tid, wait_ticks);
+        }
+
+        break;
+      case DELAY_DETECT:
+        if (stop_delay_detector_id == detector_msg->identifier) {
+          TellTrainController(init.train, TRAIN_CONTROLLER_SET_SPEED, 0);
+        } else {
+          KASSERT(false, "Route executor got unexpected delay detector message. identifier=%d ticks=%d", detector_msg->identifier, detector_msg->details);
+        }
         break;
       default:
         KASSERT(false, "Unexpected packet type=%d", packet->type);
@@ -317,13 +361,14 @@ void route_executor_task() {
   }
 }
 
-int CreateRouteExecutor(int priority, int train, int speed, path_t * path) {
+int CreateRouteExecutor(int priority, int train, int speed, route_operation_t operation, path_t * path) {
   char task_name[40];
   jformatf(task_name, sizeof(task_name), "route executor - train %d, %s ~> %s", train, path->src->name, path->dest->name);
   int route_executor_tid = CreateWithName(priority, route_executor_task, task_name);
   route_executor_init_t init_data;
   init_data.train = train;
   init_data.speed = speed;
+  init_data.operation = operation;
   SendSN(route_executor_tid, init_data);
   Send(route_executor_tid, path, sizeof(path_t), NULL, 0);
   return route_executor_tid;
