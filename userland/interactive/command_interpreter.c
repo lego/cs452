@@ -195,12 +195,17 @@ static void command_set_location(int interactive_tid, int executor_tid, parsed_c
 }
 
 static void command_set_stopping_distance_offset(int interactive_tid, int executor_tid, parsed_command_t *data) {
-  CMD_ASSERT_ARGC(data, 1);
-  CMD_ASSERT_IS_INT(data, 0);
+  CMD_ASSERT_ARGC(data, 3);
+  CMD_ASSERT_IS_TRAIN(data, 0);
+  CMD_ASSERT_IS_SPEED(data, 1);
+  CMD_ASSERT_IS_INT(data, 2);
   cmd_data_t msg;
   msg.base.packet.type = INTERPRETED_COMMAND;
   msg.base.type = COMMAND_STOPPING_DISTANCE_OFFSET;
-  msg.extra_arg = GetInt(data, 0);
+  msg.train = GetInt(data, 0);
+  msg.speed = GetInt(data, 1);
+  msg.extra_arg = GetInt(data, 2);
+
   // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }
@@ -236,21 +241,21 @@ static void command_set_stopping_distanceneg(int interactive_tid, int executor_t
 }
 
 static void command_manual_sense(int interactive_tid, int executor_tid, parsed_command_t *data) {
-  CMD_ASSERT_ARGC(data, 1);
-  CMD_ASSERT_IS_NODE(data, 0);
+  CMD_ASSERT(data->argc < 10, "Got too many arguments.");
+  for (int i = 0; i < data->argc; i++) {
+    CMD_ASSERT_IS_NODE(data, i);
+  }
   cmd_data_t msg;
   msg.base.packet.type = INTERPRETED_COMMAND;
   msg.base.type = COMMAND_MANUAL_SENSE;
-  msg.dest_node = GetInt(data, 0);
 
-  if (track[msg.dest_node].type != NODE_SENSOR) {
-    cmd_error_t cmd; cmd.base.packet.type = INTERPRETED_COMMAND; cmd.base.type = COMMAND_INVALID;
-    jformatf(cmd.error, sizeof(cmd.error), "Expected arg 1 to be a sensor, you provided %s", data->argv[0]);
-    SendSN(interactive_tid, cmd);
-    return;
+  for (int i = 0; i < data->argc; i++) {
+    int node = Name2Node(data->argv[i]);
+    CMD_ASSERT(track[node].type == NODE_SENSOR, "Expected arg %d to be a sensor, you provided %s", i, data->argv[i]);
+    msg.dest_node = node;
+    // NOTE: only sends to UI, it manually pushes to other things
+    SendSN(interactive_tid, msg);
   }
-  // NOTE: only sends to UI
-  SendSN(interactive_tid, msg);
 }
 
 #define DEF_CASE(cmd, cmd_func) case cmd: cmd_func(interactive_tid, executor_tid, data); break;

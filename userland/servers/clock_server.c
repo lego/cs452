@@ -99,6 +99,7 @@ void clock_server() {
 }
 
 int Delay(unsigned int delay ) {
+  KASSERT(delay <= 100000, "Delay got a negative value (likely, it's far too large). Please fix me! delay=%u", delay);
   log_clock_server("Delay delay=%d", active_task->tid, delay);
   if (clock_server_tid == -1) {
     // Don't make data syscall, but still reschedule

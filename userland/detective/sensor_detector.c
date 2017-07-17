@@ -45,6 +45,7 @@ void sensor_detector() {
 }
 
 int StartSensorDetector(const char * name, int send_to, int sensor_no) {
+  KASSERT(sensor_no >= 0 && sensor_no < 80, "StartSensorDetector got a number that wasnt a sensor. sensor_no=%d", sensor_no);
   int tid = CreateWithName(PRIORITY_SENSOR_DETECTOR, sensor_detector, name);
   sensor_detector_init_t init;
   init.send_to = send_to;

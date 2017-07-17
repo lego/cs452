@@ -168,6 +168,13 @@ int GetReverseNode(int node) {
   return track[node].reverse->id;
 }
 
+/**
+ * This is a black magic variable we use to get "mutual exlusivity" over the
+ * track graph for doing routing on. In particular, we have 5 possibly indices
+ * to use for dijkstra, and so we ASSUME (!!!) we will be able to exlusively
+ * increment it and then use that index.
+ */
+volatile int global_pathing_idx = 1;
 
 void GetPath(path_t *p, int src, int dest) {
   KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
@@ -183,11 +190,15 @@ void GetPath(path_t *p, int src, int dest) {
     p->dist = 0;
   }
 
-  dijkstra(src, dest);
-  p->len = get_path(src, dest, nodes, TRACK_MAX);
+  volatile int pathing_idx = global_pathing_idx++;
+  if (global_pathing_idx >= 5) global_pathing_idx = 0;
+  if (pathing_idx >= 5) pathing_idx = pathing_idx % 5;
 
+  dijkstra(src, dest, pathing_idx);
+  p->len = get_path(src, dest, nodes, TRACK_MAX, pathing_idx);
+  KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
 
-  p->dist = nodes[p->len - 1]->dist;
+  p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
   p->src = &track[src];
   p->dest = &track[dest];
 
@@ -215,6 +226,7 @@ void GetPath(path_t *p, int src, int dest) {
   int i;
   for (i = 0; i < p->len; i++) {
     p->nodes[i] = nodes[i];
+    p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
   }
 }
 
@@ -236,12 +248,12 @@ void PrintPath(path_t *p) {
       }
       bwprintf(COM2, "    switch=%d set to %c\n\r", p->nodes[i-1]->num, dir);
     }
-    bwprintf(COM2, "  node %4s  dist=%5dmm\n\r", p->nodes[i]->name, p->nodes[i]->dist);
+    bwprintf(COM2, "  node %4s  dist=%5dmm\n\r", p->nodes[i]->name, p->node_dist[i]);
   }
 }
 
 
-void dijkstra(int src, int dest) {
+void dijkstra(int src, int dest, int p_idx) {
     KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
     #define HEAP_SIZE TRACK_MAX + 1
     heapnode_t heap_nodes[HEAP_SIZE];
@@ -251,19 +263,19 @@ void dijkstra(int src, int dest) {
     int i, j;
     for (i = 0; i < TRACK_MAX; i++) {
         track_node *v = &track[i];
-        v->dist = INT_MAX;
-        v->prev = 0;
-        v->visited = false;
+        v->p_dist[p_idx] = INT_MAX;
+        v->prev[p_idx] = 0;
+        v->visited[p_idx] = false;
     }
     track_node *v = &track[src];
-    v->dist = 0;
-    heap_push(h, v->dist, (void *) src);
+    v->p_dist[p_idx] = 0;
+    heap_push(h, v->p_dist[p_idx], (void *) src);
     while (heap_size(h)) {
         i = (int) heap_pop(h);
         if (i == dest)
             break;
         v = &track[i];
-        v->visited = true;
+        v->visited[p_idx] = true;
         int edges_len = 0;
         track_edge *edges[2];
         switch (v->type) {
@@ -285,33 +297,33 @@ void dijkstra(int src, int dest) {
         for (j = 0; j < edges_len; j++) {
             track_edge *e = edges[j];
             track_node *u = e->dest;
-            if (!u->visited && v->dist + e->dist <= u->dist) {
-                u->prev = i;
-                u->dist = v->dist + e->dist;
-                heap_push(h, u->dist, (void *) u->id);
+            if (!u->visited[p_idx] && v->p_dist[p_idx] + e->dist <= u->p_dist[p_idx]) {
+                u->prev[p_idx] = i;
+                u->p_dist[p_idx] = v->p_dist[p_idx] + e->dist;
+                heap_push(h, u->p_dist[p_idx], (void *) u->id);
             }
         }
     }
 }
 
-int get_path(int src, int dest, track_node **path, int path_buf_size) {
+int get_path(int src, int dest, track_node **path, int path_buf_size, int p_idx) {
   int n;
   int i;
   track_node *v, *u;
   v = &track[dest];
 
-  if (v->dist == INT_MAX) {
+  if (v->p_dist[p_idx] == INT_MAX) {
     return -1;
   }
 
   // Get n, the length of the path
-  for (n = 1, u = v; u->dist; u = &track[u->prev], n++);
-  KASSERT(path_buf_size >= n, "Path buffer wasn't large enough. Would overflowing. src=%s dest=%s dist=%d n=%d", track[src].name, track[dest].name, track[dest].dist, n);
+  for (n = 1, u = v; u->p_dist[p_idx]; u = &track[u->prev[p_idx]], n++);
+  KASSERT(path_buf_size >= n, "Path buffer wasn't large enough. Would overflowing. src=%s dest=%s dist=%d n=%d", track[src].name, track[dest].name, track[dest].p_dist[p_idx], n);
 
   // follow the path backwards
   path[n - 1] = &track[dest];
-  for (i = 0, u = v; u->dist; u = &track[u->prev], i++) {
-    path[n - i - 2] = &track[u->prev];
+  for (i = 0, u = v; u->p_dist[p_idx]; u = &track[u->prev[p_idx]], i++) {
+    path[n - i - 2] = &track[u->prev[p_idx]];
   }
   return n;
 }

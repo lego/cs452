@@ -27,12 +27,10 @@ void sensor_detector_multiplexer_task() {
     switch (packet->type) {
     case SENSOR_DETECTOR_REQUEST:
       cbuffer_add(&sensor_detectors, (void *) sender);
-      RecordLogf("Multiplexer got detector=%d\n\r", sender);
       break;
     case SENSOR_DATA:
       // Forward sensor data to all detectors!
       ReplyN(sender);
-      RecordLogf("Multiplexer got sensor=%s at uptime=%d\n\r", track[data->sensor_no].name, Time());
       while (cbuffer_size(&sensor_detectors) > 0) {
         int detector = (int) cbuffer_pop(&sensor_detectors, NULL); // Oops, ignore the error, surely fine
         Reply(detector, data, sizeof(sensor_data_t)); // pretty illegal send size, don't do this at home kids

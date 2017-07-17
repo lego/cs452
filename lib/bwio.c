@@ -26,7 +26,7 @@ int bwputr( int channel, unsigned int reg ) {
   return bwputc( channel, ' ' );
 }
 
-int bwputstr( int channel, char *str ) {
+int bwputstr( int channel, const char *str ) {
   while( *str ) {
     if( bwputc( channel, *str ) < 0 ) return -1;
     str++;

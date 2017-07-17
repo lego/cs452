@@ -7,7 +7,11 @@
 // Hardcoded maximum used in a number of places
 // WARNING: this is also defined in orex.ld
 // if this in increased, you should also increase that one
+#if !defined(DEBUG_MODE)
 #define MAX_TASKS 2048
+#else
+#define MAX_TASKS 256
+#endif
 #define MAX_TASK_STACKS 100
 
 /*

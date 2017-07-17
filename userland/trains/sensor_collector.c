@@ -61,6 +61,7 @@ void sensor_notifier() {
 
 void sensor_attributer() {
   sensor_attributer_tid = MyTid();
+  RegisterAs(NS_SENSOR_ATTRIBUTER);
 
   int active_train = -1;
 

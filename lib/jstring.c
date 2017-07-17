@@ -318,7 +318,7 @@ void jformat ( char *buf, int buf_size, char *fmt, va_list va ) {
         used_buf++;
       }
     }
-    KASSERT(used_buf < buf_size, "jformatf provided buffer overflowed: fmt=\"%s\" used=%d size=%d", fmt, used_size, buf_size);
+    KASSERT(used_buf < buf_size, "jformatf provided buffer overflowed: %s used=%d size=%d", fmt, used_size, buf_size);
   }
 }
 
