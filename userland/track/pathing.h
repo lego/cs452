@@ -28,6 +28,7 @@ typedef struct Path {
   track_node *src;
   track_node *dest;
   track_node *nodes[PATH_MAX];
+  int node_dist[PATH_MAX];
 } path_t;
 
 // Initializes the track information

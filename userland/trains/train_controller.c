@@ -48,7 +48,7 @@ void reverse_train_task() {
 static void start_navigation(int train, int speed, path_t * path) {
   SetTrainSpeed(train, speed);
   // FIXME: priority
-  CreateRouteExecutor(10, train, path);
+  CreateRouteExecutor(10, train, speed, path);
 }
 
 void train_controller() {

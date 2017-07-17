@@ -15,6 +15,8 @@ typedef enum {
 #define DIR_STRAIGHT 0
 #define DIR_CURVED 1
 
+#define MAX_SIMULTANEOUS_PATHING 5
+
 struct track_node;
 typedef struct track_node track_node;
 typedef struct track_edge track_edge;
@@ -41,9 +43,9 @@ struct track_node {
 
   // Pathing data, reset on each use of pathing.
   // NOTE: this is not mutually exclusive, and will fail if used concurrently
-  int dist;
-  int prev;
-  bool visited;
+  int dist[MAX_SIMULTANEOUS_PATHING];
+  int prev[MAX_SIMULTANEOUS_PATHING];
+  bool visited[MAX_SIMULTANEOUS_PATHING];
 
   // For displaying the actual vs. expected sensor stuff
   int actual_sensor_trip;

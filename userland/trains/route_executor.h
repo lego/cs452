@@ -29,4 +29,4 @@ typedef struct {
  * @param  path     to run
  * @return          ??
  */
-int CreateRouteExecutor(int priority, int train, path_t * path);
+int CreateRouteExecutor(int priority, int train, int speed, path_t * path);

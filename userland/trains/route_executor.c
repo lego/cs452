@@ -15,6 +15,7 @@
 
 typedef struct {
   int train;
+  int speed;
 } route_executor_init_t;
 
 int get_next_sensor(path_t * path, int last_sensor_no) {
@@ -188,16 +189,9 @@ void release_track_before_sensor(int train, path_t *path, cbuffer_t *owned_segme
   ReleaseSegment(&releasing);
 }
 
-int reserve_track_from_sensor(int train, path_t *path, cbuffer_t *owned_segments, int sensor_idx, int next_node) {
-  int stopdist = 450;
-  int initial_next_node = next_node;
-
-  Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, path->nodes[sensor_idx]->name);
-
-  reservoir_segments_t data;
-  data.owner = train;
-  data.len = 0;
-
+int get_segments_to_reserve(int train, int speed, reservoir_segments_t *data, path_t *path, int sensor_idx, int next_node) {
+  int stopdist = StoppingDistance(train, speed);
+  data->len = 0;
   int sensor;
   // While all the next nodes are acquired by this sensors trigger, keep getting more
   while ((sensor = get_sensor_before_node(path, next_node, stopdist)) == sensor_idx) {
@@ -209,12 +203,24 @@ int reserve_track_from_sensor(int train, path_t *path, cbuffer_t *owned_segments
 
     // Generously add to reserve list
     // TODO: set up a list of tuples (dist, segment), where dist is how long to wait before reserving
-    data.segments[data.len] = segment_from_dest_node(path, next_node);
-    data.len++;
+    data->segments[data->len] = segment_from_dest_node(path, next_node);
+    data->len++;
 
     // Move to the next node
     next_node++;
   }
+  return next_node;
+}
+
+int reserve_track_from_sensor(int train, int speed, path_t *path, cbuffer_t *owned_segments, int sensor_idx, int next_node) {
+  int stopdist = StoppingDistance(train, speed);
+  int initial_next_node = next_node;
+  Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, path->nodes[sensor_idx]->name);
+
+  reservoir_segments_t data;
+  data.owner = train;
+
+  next_node = get_segments_to_reserve(train, speed, &data, path, sensor_idx, next_node);
 
   int result = RequestSegment(&data);
   if (result == 1) {
@@ -225,6 +231,7 @@ int reserve_track_from_sensor(int train, path_t *path, cbuffer_t *owned_segments
     // in additional signal a stop to occur on the end of the reserved segment
     int executor_tid = WhoIsEnsured(NS_EXECUTOR);
     route_failure_t failure_msg;
+    failure_msg.packet.type = ROUTE_FAILURE;
     failure_msg.train = train;
     SendSN(executor_tid, failure_msg);
 
@@ -261,6 +268,7 @@ void route_executor_task() {
   int dist_sum = 0;
   for (int i = 0; i < path.len; i++) {
     dist_sum += path.nodes[i]->dist;
+    debugger();
     Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", init.train, path.nodes[i]->name, dist_sum);
   }
 
@@ -273,7 +281,7 @@ void route_executor_task() {
   int next_sensor_no = get_next_sensor(&path, 0);
 
   set_up_next_detector(&path, &init, last_sensor_no, next_sensor_no);
-  int next_unreserved_node = reserve_track_from_sensor(init.train, &path, &owned_segments, last_sensor_no, 1);
+  int next_unreserved_node = reserve_track_from_sensor(init.train, init.speed, &path, &owned_segments, last_sensor_no, 1);
 
   while (true) {
     status = ReceiveS(&sender, request_buffer);
@@ -298,7 +306,7 @@ void route_executor_task() {
         release_track_before_sensor(init.train, &path, &owned_segments, last_sensor_no);
 
         // Reserve more track based on this sensor trigger
-        next_unreserved_node = reserve_track_from_sensor(init.train, &path, &owned_segments, last_sensor_no, next_unreserved_node);
+        next_unreserved_node = reserve_track_from_sensor(init.train, init.speed, &path, &owned_segments, last_sensor_no, next_unreserved_node);
         break;
       default:
         KASSERT(false, "Unexpected packet type=%d", packet->type);
@@ -307,12 +315,13 @@ void route_executor_task() {
   }
 }
 
-int CreateRouteExecutor(int priority, int train, path_t * path) {
+int CreateRouteExecutor(int priority, int train, int speed, path_t * path) {
   char task_name[40];
   jformatf(task_name, sizeof(task_name), "route executor - train %d, %s ~> %s", train, path->src->name, path->dest->name);
   int route_executor_tid = CreateWithName(priority, route_executor_task, task_name);
   route_executor_init_t init_data;
   init_data.train = train;
+  init_data.speed = speed;
   SendSN(route_executor_tid, init_data);
   Send(route_executor_tid, path, sizeof(path_t), NULL, 0);
   return route_executor_tid;

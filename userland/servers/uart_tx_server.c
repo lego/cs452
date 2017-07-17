@@ -327,6 +327,13 @@ int Logf(int type, char *fmt, ...) {
 
 
 int Logs(int type, const char *str) {
+  #if defined(DEBUG_MODE)
+  // Output to STDOUT for local
+  bwputstr(COM2, str);
+  bwputc(COM2, '\n');
+  return 0;
+  #endif
+
   log_task("Logp str=%d", active_task->tid, packet.type);
   if (logging_warehouse_tid == -1) {
     KASSERT(false, "Logging relay not initialized");
@@ -344,7 +351,6 @@ int Logs(int type, const char *str) {
   int size = sizeof(uart_packet_t) + slen;
   KASSERT(size <= 1024, "Message buffer overflow. Re-evaluate buffer sizes");
   Send(logging_warehouse_tid, message_buffer, size, NULL, 0);
-
   return 0;
 }
 
