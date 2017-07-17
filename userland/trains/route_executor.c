@@ -118,9 +118,8 @@ void reserve_initial_segments(int train, path_t *path, reservoir_segments_t *rel
  * @param stopdist offset for reserving
  */
 int get_sensor_before_node(path_t *path, int node_idx, int stopdist) {
-  track_node *curr_node = path->nodes[node_idx];
   for (int j = 0; j < node_idx; j++) {
-    if (curr_node->dist - path->nodes[j]->dist < stopdist) {
+    if (path->node_dist[node_idx] - path->node_dist[j] < stopdist) {
       // We need to find the sensor before this node for knowing when we need
       // to reserve and from what sensor
       for (int k = j - 1; k >= 0; k--) {
@@ -185,6 +184,9 @@ void release_track_before_sensor(int train, path_t *path, cbuffer_t *owned_segme
     Logf(EXECUTOR_LOGGING, "%d: releasing all owned segments (%d)", train, releasing.len);
   } else {
     Logf(EXECUTOR_LOGGING, "%d: releasing %2d segments before sensor %4s", train, releasing.len, path->nodes[sensor_no]->name);
+    for (int i = 0; i < releasing.len; i++) {
+      Logf(EXECUTOR_LOGGING, "%d:    %4s (start)", train, track[releasing.segments[i].track_node].name);
+    }
   }
   ReleaseSegment(&releasing);
 }
@@ -197,7 +199,7 @@ int get_segments_to_reserve(int train, int speed, reservoir_segments_t *data, pa
   while ((sensor = get_sensor_before_node(path, next_node, stopdist)) == sensor_idx) {
     // If we care to do a delay'd reservation acquisition,
     // otherwise generously reserve it now
-    int offset_from_sensor = path->nodes[next_node]->dist - path->nodes[sensor]->dist - stopdist;
+    int offset_from_sensor = path->node_dist[next_node] - path->node_dist[sensor] - stopdist;
 
     Logf(EXECUTOR_LOGGING, "%d: Resv from %4s: %4s. Specifically %4dmm after %s.", train, path->nodes[sensor]->name, path->nodes[next_node]->name, offset_from_sensor, path->nodes[sensor]->name);
 
@@ -267,7 +269,7 @@ void route_executor_task() {
   Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s", init.train, init.train, path.src->name, path.dest->name);
   int dist_sum = 0;
   for (int i = 0; i < path.len; i++) {
-    dist_sum += path.nodes[i]->dist;
+    dist_sum += path.node_dist[i];
     debugger();
     Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", init.train, path.nodes[i]->name, dist_sum);
   }

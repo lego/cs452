@@ -59,8 +59,8 @@ int Name2Node(char *name);
  */
 int GetReverseNode(int node);
 
-void dijkstra(int src, int dest);
+void dijkstra(int src, int dest, int p_idx);
 
-int get_path(int src, int dest, track_node **path, int path_buf_size);
+int get_path(int src, int dest, track_node **path, int path_buf_size, int p_idx);
 
 void GetMultiDestinationPath(path_t *p, int src, int dest1, int dest2);

@@ -43,7 +43,7 @@ struct track_node {
 
   // Pathing data, reset on each use of pathing.
   // NOTE: this is not mutually exclusive, and will fail if used concurrently
-  int dist[MAX_SIMULTANEOUS_PATHING];
+  int p_dist[MAX_SIMULTANEOUS_PATHING];
   int prev[MAX_SIMULTANEOUS_PATHING];
   bool visited[MAX_SIMULTANEOUS_PATHING];
 
