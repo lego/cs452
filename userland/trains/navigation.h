@@ -10,7 +10,7 @@
 
 #define TRAINS_MAX 80
 
-#define VELOCITY_SAMPLES_MAX 5
+#define VELOCITY_SAMPLES_MAX 30
 
 // Unit macros for our fixed point calculations
 #define CENTIMETRES(amt) MILLIMETRES(amt * 10)

@@ -1,5 +1,6 @@
 #include <trains/train_controller.h>
 #include <basic.h>
+#include <util.h>
 #include <bwio.h>
 #include <kernel.h>
 #include <servers/nameserver.h>
@@ -21,27 +22,43 @@ void InitTrainControllers() {
 
 typedef struct {
   int train;
-  int lastSpeed;
-} reverse_train_t;
+  int speed;
+} train_task_t;
+
+void train_speed_task() {
+    train_task_t data;
+    int receiver;
+    ReceiveS(&receiver, data);
+    ReplyN(receiver);
+    char buf[2];
+    buf[1] = data.train;
+    if (data.speed > 0) {
+      buf[0] = 14;
+      Putcs(COM1, buf, 2);
+      Delay(10);
+    }
+    buf[0] = data.speed;
+    Putcs(COM1, buf, 2);
+}
 
 void reverse_train_task() {
-    reverse_train_t rev;
+    train_task_t data;
     int receiver;
-    ReceiveS(&receiver, rev);
+    ReceiveS(&receiver, data);
     ReplyN(receiver);
     char buf[2];
     buf[0] = 0;
-    buf[1] = rev.train;
+    buf[1] = data.train;
     Putcs(COM1, buf, 2);
     Delay(300);
     buf[0] = 15;
     Putcs(COM1, buf, 2);
-    int lastSensor = WhereAmI(rev.train);
+    int lastSensor = WhereAmI(data.train);
     if (lastSensor >= 0) {
-      RegisterTrainReverse(rev.train, lastSensor);
+      RegisterTrainReverse(data.train, lastSensor);
     }
     Delay(10);
-    buf[0] = rev.lastSpeed;
+    buf[0] = data.speed;
     Putcs(COM1, buf, 2);
 }
 
@@ -65,30 +82,71 @@ void train_controller() {
 
   int lastSpeed = 0;
   int lastSensor = -1;
+  int lastSensorTime = 0;
 
   while (true) {
     ReceiveS(&requester, request_buffer);
     ReplyN(requester);
+    int time = Time();
     switch (packet->type) {
       case SENSOR_DATA:
-        SetTrainLocation(train, sensor_data->sensor_no);
-        lastSensor = sensor_data->sensor_no;
-        // TODO: add other offset and calibration functions
-        // (or move them from interactive)
+        {
+          SetTrainLocation(train, sensor_data->sensor_no);
+
+          int velocity = 0;
+          int dist = adjSensorDist(lastSensor, sensor_data->sensor_no);
+          if (dist != -1) {
+            int time_diff = sensor_data->timestamp - lastSensorTime;
+            velocity = (dist * 100) / time_diff;
+          }
+          if (velocity > 0) {
+            record_velocity_sample(train, lastSpeed, velocity);
+          }
+          //Logf(PACKET_LOG_INFO, "Train %d velocity sample at %s: %d, avg: %d",
+          //    train, track[sensor_data->sensor_no].name,
+          //    velocity, Velocity(train, lastSpeed));
+
+          lastSensor = sensor_data->sensor_no;
+          lastSensorTime = sensor_data->timestamp;
+          // TODO: add other offset and calibration functions
+          // (or move them from interactive)
+          {
+            node_dist_t nd = nextSensor(sensor_data->sensor_no);
+            uart_packet_fixed_size_t packet;
+            packet.type = PACKET_TRAIN_LOCATION_DATA;
+            packet.len = 11;
+            jmemcpy(&packet.data[0], &time, sizeof(int));
+            packet.data[4] = train;
+            packet.data[5] = sensor_data->sensor_no;
+            packet.data[6] = nd.node;
+            int nextDist = nd.dist;
+            int tmp = 0;
+            if (nextDist > 0) {
+              tmp = (10000*Velocity(train, lastSpeed)) / nextDist;
+            }
+            jmemcpy(&packet.data[7], &tmp, sizeof(int));
+            PutFixedPacket(&packet);
+          }
+        }
         break;
       case TRAIN_CONTROLLER_COMMAND:
         switch (msg->type) {
         case TRAIN_CONTROLLER_SET_SPEED:
           Logf(EXECUTOR_LOGGING, "TC executing speed cmd");
           lastSpeed = msg->speed;
-          SetTrainSpeed(train, msg->speed);
+          lastSensor = -1;
+          int tid = Create(PRIORITY_TRAIN_COMMAND_TASK, train_speed_task);
+          train_task_t sp;
+          sp.train = train;
+          sp.speed = msg->speed;
+          SendSN(tid, sp);
           break;
         case TRAIN_CONTROLLER_REVERSE: {
             Logf(EXECUTOR_LOGGING, "TC executing reverse cmd");
             int tid = Create(PRIORITY_TRAIN_COMMAND_TASK, reverse_train_task);
-            reverse_train_t rev;
+            train_task_t rev;
             rev.train = train;
-            rev.lastSpeed = lastSpeed;
+            rev.speed = lastSpeed;
             SendSN(tid, rev);
           }
           break;

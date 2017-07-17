@@ -419,19 +419,6 @@ const int bucketSensors[BUCKETS] = {
   16*(5-1)+( 8-1)  // E 8
 };
 
-const int sensorDistances[BUCKETS] = {
-  785,
-  589,
-  440,
-  485,
-  293,
-  404,
-  284,
-  277,
-  774,
-  375
-};
-
 int bucketSamples[BUCKETS*SAMPLES];
 int bucketSize[BUCKETS];
 float bucketAvg[BUCKETS];
@@ -530,139 +517,6 @@ void stopper() {
     clear_path_display = true;
   }
 }
-//
-// void sensor_saver() {
-//   int stopper_tid = Create(2, stopper);
-//   RegisterAs(NS_SENSOR_SAVER);
-//   char request_buffer[1024] __attribute__ ((aligned (4)));
-//   packet_t *packet = (packet_t *) request_buffer;
-//   int lastSensorTime = -1;
-//   int sender;
-//
-//   int C14 = Name2Node("C14");
-//   int D12 = Name2Node("D12");
-//   int C8 = Name2Node("C8");
-//   int C15 = Name2Node("C15");
-//   int E8 = Name2Node("E8");
-//   int C10 = Name2Node("C10");
-//   int B1 = Name2Node("B1");
-//   int E14 = Name2Node("E14");
-//
-//   int prevSensor[NUM_SENSORS][2];
-//   int sensorDistances[NUM_SENSORS][2];
-//
-//   for (int i = 0; i < 80; i++) {
-//     prevSensor[i][0] = -1;
-//     prevSensor[i][1] = -1;
-//   }
-//
-//   for (int i = 0; i < 80; i++) {
-//     int next1 = -1;
-//     int next2 = -1;
-//
-//     int next = findSensorOrBranch(i);
-//     if (track[next].type == NODE_BRANCH) {
-//       next1 = track[next].edge[DIR_STRAIGHT].dest->id;
-//       next2 = track[next].edge[DIR_CURVED].dest->id;
-//       if (track[next1].type != NODE_SENSOR) {
-//         next1 = findSensorOrBranch(next1);
-//       }
-//       if (track[next2].type != NODE_SENSOR) {
-//         next2 = findSensorOrBranch(next2);
-//       }
-//       //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d, started at %d, intermediary %d", next1, i, next);
-//       //KASSERT(next2 >= -1 && next2 < NUM_SENSORS, "next2 broken, got %d, started at %d, intermediary %d", next2, i, next);
-//     } else {
-//       next1 = next;
-//       //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d", next1);
-//     }
-//
-//     if (next1 >= 0 && next1 < NUM_SENSORS) {
-//       for (int j = 0; j < 2; j++) {
-//         if (prevSensor[next1][j] == -1) {
-//           prevSensor[next1][j] = i;
-//         }
-//       }
-//     }
-//     if (next2 >= 0 && next2 < NUM_SENSORS) {
-//       for (int j = 0; j < 2; j++) {
-//         if (prevSensor[next2][j] == -1) {
-//           prevSensor[next2][j] = i;
-//         }
-//       }
-//     }
-//   }
-//
-//   path_t p;
-//   for (int i = 0; i < 80; i++) {
-//     for (int j = 0; j < 2; j++) {
-//       if (prevSensor[i][j] != -1) {
-//         GetPath(&p, prevSensor[i][j], i);
-//         sensorDistances[i][j] = p.dist;
-//       }
-//     }
-//   }
-//
-//   GetPath(&p, Name2Node("E8"), Name2Node("C14"));
-//   int E8_C14_dist = p.dist;
-//
-//   GetPath(&p, Name2Node("C15"), Name2Node("D12"));
-//   int C15_D12_dist = p.dist;
-//
-//   GetPath(&p, Name2Node("E14"), Name2Node("E8"));
-//   int E14_E8_dist = p.dist;
-//
-//   GetPath(&p, Name2Node("B1"), Name2Node("E14"));
-//   int B1_E14_dist = p.dist;
-//
-//   GetPath(&p, Name2Node("E14"), Name2Node("E9"));
-//   int E14_E9_dist = p.dist;
-//
-//   GetPath(&p, Name2Node("E14"), Name2Node("C14"));
-//   int E14_C14_dist = p.dist;
-//
-//   GetPath(&p, Name2Node("C14"), Name2Node("C10"));
-//   int C14_C10_dist = p.dist;
-//
-//   DECLARE_BASIS_NODE(basis_node);
-//
-//   while (true) {
-//     ReceiveS(&sender, request_buffer);
-//     switch (packet->type) {
-//     case SENSOR_DATA: {
-//           sensor_data_t * data = (sensor_data_t *) request_buffer;
-//           int curr_time = Time();
-//           sensor_reading_timestamps[data->sensor_no] = curr_time;
-//           TriggerSensor(data->sensor_no, curr_time);
-//
-//           int velocity = 0;
-//           if (lastSensor != -1) {
-//             for (int i = 0; i < 2; i++) {
-//               if (prevSensor[data->sensor_no][i] == lastSensor) {
-//                 int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
-//                 velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
-//                 // RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
-//               }
-//             }
-//           }
-//           if (velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
-//             record_velocity_sample(active_train, active_speed, velocity);
-//           }
-//
-//           // int time = Time();
-//           // int diffTime = time - lastSensorTime;
-//           // if (lastSensor > 0) {
-//           //   registerSample(data->sensor_no, lastSensor, diffTime, time);
-//           // }
-//           lastSensor = data->sensor_no;
-//           lastSensorTime = curr_time;
-//         break;
-//     } default:
-//       KASSERT(false, "Received unknown request type.");
-//     }
-//     ReplyN(sender);
-//   }
-// }
 
 void interactive() {
   path_t p;
@@ -798,33 +652,6 @@ void interactive() {
           lastSensor = -1;
           break;
         case COMMAND_PRINT_SENSOR_SAMPLES: {
-          Putstr(COM2, SAVE_CURSOR);
-          char buf[10];
-          int speedTotal = 0;
-          int n = 0;
-          for (int i = 0; i < BUCKETS; i++) {
-            MoveTerminalCursor(0, COMMAND_LOCATION + 5 + i);
-            Putstr(COM2, CLEAR_LINE);
-            int total = 0;
-            for (int j = 0; j < bucketSize[i]; j++) {
-              total += bucketSamples[i*SAMPLES+j];
-            }
-            int avg = (sensorDistances[i]*1000)/(total/bucketSize[i]);
-            if (avg > 0) {
-              speedTotal += avg;
-              n++;
-            }
-            Putf(COM2, "%d  -  %d", total/bucketSize[i], (int)(avg*1000));
-
-            //for (int j = 0; j < bucketSize[i]; j++) {
-            //  MoveTerminalCursor((j+1) * 6, COMMAND_LOCATION + 3 + i);
-            //  char buf[10];
-            //  ji2a(bucketSamples[i*SAMPLES+j], buf);
-            //  Putstr(COM2, buf);
-            //}
-          }
-          MoveTerminalCursor(0, COMMAND_LOCATION + 3);
-          Putf(COM2, "%d" RECOVER_CURSOR, speedTotal / n);
           break;
         }
         case COMMAND_PRINT_SENSOR_MULTIPLIERS: {

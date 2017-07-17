@@ -12,8 +12,6 @@
 
 #define PATH_MAX 80
 
-#define VELOCITY_SAMPLES_MAX 5
-
 // used in interactive and trains/executor for the old stopping and navigation
 // TODO: remove all usage
 #define BASIS_NODE "A4"
@@ -31,11 +29,22 @@ typedef struct Path {
   int node_dist[PATH_MAX];
 } path_t;
 
+typedef struct {
+  int node;
+  int dist;
+} node_dist_t;
+
 // Initializes the track information
 void InitPathing();
 
+// Gets the distance between adjacent sensors. Precomputed for speed.
+int adjSensorDist(int last, int current);
+
 // Finds the next sensor or branch, returns -1 on error or exit node
-int findSensorOrBranch(int start);
+node_dist_t findSensorOrBranch(int start);
+
+// Same idea as findSensorOrBranch, but uses current switch state to bypass branches
+node_dist_t nextSensor(int start);
 
 void SetPathSwitches(path_t *path);
 

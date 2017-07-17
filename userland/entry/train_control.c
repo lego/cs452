@@ -19,9 +19,6 @@
 #include <priorities.h>
 #include <trains/train_controller.h>
 
-// from interactive
-void sensor_saver();
-
 void train_control_entry_task() {
   InitPathing();
   InitNavigation();
