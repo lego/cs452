@@ -30,8 +30,6 @@ int pathing_start_time;
 bool clear_path_display;
 
 // used for pathing -- the train properties and whether to stop, and where to
-int active_train;
-int active_speed;
 int velocity_reading_delay_until;
 int most_recent_sensor;
 
@@ -515,147 +513,145 @@ void stopper() {
     clear_path_display = true;
   }
 }
-
-void sensor_saver() {
-  int stopper_tid = Create(2, stopper);
-  RegisterAs(NS_SENSOR_SAVER);
-  char request_buffer[1024] __attribute__ ((aligned (4)));
-  packet_t *packet = (packet_t *) request_buffer;
-  int lastSensorTime = -1;
-  int sender;
-
-  int C14 = Name2Node("C14");
-  int D12 = Name2Node("D12");
-  int C8 = Name2Node("C8");
-  int C15 = Name2Node("C15");
-  int E8 = Name2Node("E8");
-  int C10 = Name2Node("C10");
-  int B1 = Name2Node("B1");
-  int E14 = Name2Node("E14");
-
-  int prevSensor[NUM_SENSORS][2];
-  int sensorDistances[NUM_SENSORS][2];
-
-  for (int i = 0; i < 80; i++) {
-    prevSensor[i][0] = -1;
-    prevSensor[i][1] = -1;
-  }
-
-  for (int i = 0; i < 80; i++) {
-    int next1 = -1;
-    int next2 = -1;
-
-    int next = findSensorOrBranch(i);
-    if (track[next].type == NODE_BRANCH) {
-      next1 = track[next].edge[DIR_STRAIGHT].dest->id;
-      next2 = track[next].edge[DIR_CURVED].dest->id;
-      if (track[next1].type != NODE_SENSOR) {
-        next1 = findSensorOrBranch(next1);
-      }
-      if (track[next2].type != NODE_SENSOR) {
-        next2 = findSensorOrBranch(next2);
-      }
-      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d, started at %d, intermediary %d", next1, i, next);
-      //KASSERT(next2 >= -1 && next2 < NUM_SENSORS, "next2 broken, got %d, started at %d, intermediary %d", next2, i, next);
-    } else {
-      next1 = next;
-      //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d", next1);
-    }
-
-    if (next1 >= 0 && next1 < NUM_SENSORS) {
-      for (int j = 0; j < 2; j++) {
-        if (prevSensor[next1][j] == -1) {
-          prevSensor[next1][j] = i;
-        }
-      }
-    }
-    if (next2 >= 0 && next2 < NUM_SENSORS) {
-      for (int j = 0; j < 2; j++) {
-        if (prevSensor[next2][j] == -1) {
-          prevSensor[next2][j] = i;
-        }
-      }
-    }
-  }
-
-  path_t p;
-  for (int i = 0; i < 80; i++) {
-    for (int j = 0; j < 2; j++) {
-      if (prevSensor[i][j] != -1) {
-        GetPath(&p, prevSensor[i][j], i);
-        sensorDistances[i][j] = p.dist;
-      }
-    }
-  }
-
-  GetPath(&p, Name2Node("E8"), Name2Node("C14"));
-  int E8_C14_dist = p.dist;
-
-  GetPath(&p, Name2Node("C15"), Name2Node("D12"));
-  int C15_D12_dist = p.dist;
-
-  GetPath(&p, Name2Node("E14"), Name2Node("E8"));
-  int E14_E8_dist = p.dist;
-
-  GetPath(&p, Name2Node("B1"), Name2Node("E14"));
-  int B1_E14_dist = p.dist;
-
-  GetPath(&p, Name2Node("E14"), Name2Node("E9"));
-  int E14_E9_dist = p.dist;
-
-  GetPath(&p, Name2Node("E14"), Name2Node("C14"));
-  int E14_C14_dist = p.dist;
-
-  GetPath(&p, Name2Node("C14"), Name2Node("C10"));
-  int C14_C10_dist = p.dist;
-
-  DECLARE_BASIS_NODE(basis_node);
-
-  while (true) {
-    ReceiveS(&sender, request_buffer);
-    switch (packet->type) {
-    case SENSOR_DATA: {
-          sensor_data_t * data = (sensor_data_t *) request_buffer;
-          int curr_time = Time();
-          sensor_reading_timestamps[data->sensor_no] = curr_time;
-          TriggerSensor(data->sensor_no, curr_time);
-
-          int velocity = 0;
-          if (lastSensor != -1) {
-            for (int i = 0; i < 2; i++) {
-              if (prevSensor[data->sensor_no][i] == lastSensor) {
-                int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
-                velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
-                // RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
-              }
-            }
-          }
-          if (velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
-            record_velocity_sample(active_train, active_speed, velocity);
-          }
-
-          // int time = Time();
-          // int diffTime = time - lastSensorTime;
-          // if (lastSensor > 0) {
-          //   registerSample(data->sensor_no, lastSensor, diffTime, time);
-          // }
-          lastSensor = data->sensor_no;
-          lastSensorTime = curr_time;
-        break;
-    } default:
-      KASSERT(false, "Received unknown request type.");
-    }
-    ReplyN(sender);
-  }
-}
+//
+// void sensor_saver() {
+//   int stopper_tid = Create(2, stopper);
+//   RegisterAs(NS_SENSOR_SAVER);
+//   char request_buffer[1024] __attribute__ ((aligned (4)));
+//   packet_t *packet = (packet_t *) request_buffer;
+//   int lastSensorTime = -1;
+//   int sender;
+//
+//   int C14 = Name2Node("C14");
+//   int D12 = Name2Node("D12");
+//   int C8 = Name2Node("C8");
+//   int C15 = Name2Node("C15");
+//   int E8 = Name2Node("E8");
+//   int C10 = Name2Node("C10");
+//   int B1 = Name2Node("B1");
+//   int E14 = Name2Node("E14");
+//
+//   int prevSensor[NUM_SENSORS][2];
+//   int sensorDistances[NUM_SENSORS][2];
+//
+//   for (int i = 0; i < 80; i++) {
+//     prevSensor[i][0] = -1;
+//     prevSensor[i][1] = -1;
+//   }
+//
+//   for (int i = 0; i < 80; i++) {
+//     int next1 = -1;
+//     int next2 = -1;
+//
+//     int next = findSensorOrBranch(i);
+//     if (track[next].type == NODE_BRANCH) {
+//       next1 = track[next].edge[DIR_STRAIGHT].dest->id;
+//       next2 = track[next].edge[DIR_CURVED].dest->id;
+//       if (track[next1].type != NODE_SENSOR) {
+//         next1 = findSensorOrBranch(next1);
+//       }
+//       if (track[next2].type != NODE_SENSOR) {
+//         next2 = findSensorOrBranch(next2);
+//       }
+//       //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d, started at %d, intermediary %d", next1, i, next);
+//       //KASSERT(next2 >= -1 && next2 < NUM_SENSORS, "next2 broken, got %d, started at %d, intermediary %d", next2, i, next);
+//     } else {
+//       next1 = next;
+//       //KASSERT(next1 >= -1 && next1 < NUM_SENSORS, "next1 broken, got %d", next1);
+//     }
+//
+//     if (next1 >= 0 && next1 < NUM_SENSORS) {
+//       for (int j = 0; j < 2; j++) {
+//         if (prevSensor[next1][j] == -1) {
+//           prevSensor[next1][j] = i;
+//         }
+//       }
+//     }
+//     if (next2 >= 0 && next2 < NUM_SENSORS) {
+//       for (int j = 0; j < 2; j++) {
+//         if (prevSensor[next2][j] == -1) {
+//           prevSensor[next2][j] = i;
+//         }
+//       }
+//     }
+//   }
+//
+//   path_t p;
+//   for (int i = 0; i < 80; i++) {
+//     for (int j = 0; j < 2; j++) {
+//       if (prevSensor[i][j] != -1) {
+//         GetPath(&p, prevSensor[i][j], i);
+//         sensorDistances[i][j] = p.dist;
+//       }
+//     }
+//   }
+//
+//   GetPath(&p, Name2Node("E8"), Name2Node("C14"));
+//   int E8_C14_dist = p.dist;
+//
+//   GetPath(&p, Name2Node("C15"), Name2Node("D12"));
+//   int C15_D12_dist = p.dist;
+//
+//   GetPath(&p, Name2Node("E14"), Name2Node("E8"));
+//   int E14_E8_dist = p.dist;
+//
+//   GetPath(&p, Name2Node("B1"), Name2Node("E14"));
+//   int B1_E14_dist = p.dist;
+//
+//   GetPath(&p, Name2Node("E14"), Name2Node("E9"));
+//   int E14_E9_dist = p.dist;
+//
+//   GetPath(&p, Name2Node("E14"), Name2Node("C14"));
+//   int E14_C14_dist = p.dist;
+//
+//   GetPath(&p, Name2Node("C14"), Name2Node("C10"));
+//   int C14_C10_dist = p.dist;
+//
+//   DECLARE_BASIS_NODE(basis_node);
+//
+//   while (true) {
+//     ReceiveS(&sender, request_buffer);
+//     switch (packet->type) {
+//     case SENSOR_DATA: {
+//           sensor_data_t * data = (sensor_data_t *) request_buffer;
+//           int curr_time = Time();
+//           sensor_reading_timestamps[data->sensor_no] = curr_time;
+//           TriggerSensor(data->sensor_no, curr_time);
+//
+//           int velocity = 0;
+//           if (lastSensor != -1) {
+//             for (int i = 0; i < 2; i++) {
+//               if (prevSensor[data->sensor_no][i] == lastSensor) {
+//                 int time_diff = sensor_reading_timestamps[data->sensor_no] - sensor_reading_timestamps[lastSensor];
+//                 velocity = (sensorDistances[data->sensor_no][i] * 100) / time_diff;
+//                 // RecordLogf("Readings for %2d ~> %2d : time_diff=%5d velocity=%3dmm/s (curve)\n\r", prevSensor[data->sensor_no][i], data->sensor_no, time_diff*10, velocity);
+//               }
+//             }
+//           }
+//           if (velocity > 0 && (curr_time - velocity_reading_delay_until) > 400) {
+//             record_velocity_sample(active_train, active_speed, velocity);
+//           }
+//
+//           // int time = Time();
+//           // int diffTime = time - lastSensorTime;
+//           // if (lastSensor > 0) {
+//           //   registerSample(data->sensor_no, lastSensor, diffTime, time);
+//           // }
+//           lastSensor = data->sensor_no;
+//           lastSensorTime = curr_time;
+//         break;
+//     } default:
+//       KASSERT(false, "Received unknown request type.");
+//     }
+//     ReplyN(sender);
+//   }
+// }
 
 void interactive() {
   path_t p;
   logged_sensors = 0;
   last_logged_sensors = SENSOR_LOG_LENGTH - 1; // goes around
   current_path = &p;
-  active_train = 0;
-  active_speed = 0;
   velocity_reading_delay_until = 0;
   path_display_pos = 0;
   samples = 0;
@@ -734,12 +730,12 @@ void interactive() {
         DrawTime(cur_time);
         DrawIdlePercent();
 
-        if (is_pathing && path_update_counter >= 3) {
-          path_update_counter = 0;
-          UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
-        } else {
-          path_update_counter++;
-        }
+        // if (is_pathing && path_update_counter >= 3) {
+        //   path_update_counter = 0;
+        //   UpdateDisplayPath(current_path, active_train, active_speed, pathing_start_time, cur_time);
+        // } else {
+        //   path_update_counter++;
+        // }
         Putstr(COM2, RECOVER_CURSOR);
         break;
       case INTERPRETED_COMMAND:
@@ -754,8 +750,6 @@ void interactive() {
           RecordLogf("Set train %d to speed %d\n\r", cmd_data->train, cmd_data->speed);
           samples = 0;
           lastTrain = cmd_data->train;
-          active_train = cmd_data->train;
-          active_speed = cmd_data->speed;
           velocity_reading_delay_until = Time();
           break;
         case COMMAND_TRAIN_REVERSE:
@@ -842,9 +836,9 @@ void interactive() {
             Putf(COM2, "Train must have a current location to navigate.");
             break;
           }
-          active_train = cmd_data->train;
+          // active_train = cmd_data->train;
           // FIXME: navigate no longer has a speed, so this is hardcoded
-          active_speed = cmd_data->speed;
+          // active_speed = cmd_data->speed;
           // velocity_reading_delay_until = Time();
 
           // get the full path including BASIS_NODE and display it
@@ -858,33 +852,31 @@ void interactive() {
           // set_to_stop = true;
           break;
         case COMMAND_STOP_FROM:
-          if (cmd_data->train != active_train || active_speed <= 0 || WhereAmI(cmd_data->train) == -1) {
-            Putf(COM2, "Train must already be in motion and hit a sensor to path.");
+          if (WhereAmI(cmd_data->train) == -1) {
+            Putf(COM2, "Train must already have hit a sensor to path.");
             break;
           }
-          active_train = cmd_data->train;
-          active_speed = cmd_data->speed;
-          // get the path to the stopping from node
-          GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
-          // display the path
-          DisplayPath(&p, active_train, active_speed, 0, 0);
-          is_pathing = true;
-          pathing_start_time = Time();
+          // // get the path to the stopping from node
+          // GetPath(&p, WhereAmI(cmd_data->train), BASIS_NODE_NAME);
+          // // display the path
+          // DisplayPath(&p, active_train, active_speed, 0, 0);
+          // is_pathing = true;
+          // pathing_start_time = Time();
           break;
         case COMMAND_SET_VELOCITY:
           Putf(COM2, "Set velocity train=%d speed=%d to %dmm/s", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
           set_velocity(cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
           break;
         case COMMAND_PRINT_VELOCITY:
-          Putf(COM2, "velocity=%dmm/s", Velocity(active_train, active_speed));
+          // Putf(COM2, "velocity=%dmm/s", Velocity(active_train, active_speed));
           break;
         case COMMAND_SET_LOCATION:
           Putf(COM2, "Setting train=%d stopped location to node=%s", cmd_data->train, track[cmd_data->src_node].name);
           SetTrainLocation(cmd_data->train, cmd_data->src_node);
           break;
         case COMMAND_STOPPING_DISTANCE_OFFSET:
-          Putf(COM2, "Offsetting stopping distance train=%d speed=%d to %dmm", active_train, active_speed, cmd_data->extra_arg);
-          offset_stopping_distance(active_train, active_speed, cmd_data->extra_arg);
+          Putf(COM2, "Offsetting stopping distance train=%d speed=%d to %dmm", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
+          offset_stopping_distance(cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
           break;
         case COMMAND_SET_STOPPING_DISTANCEN:
           // Both this and the negative stopping distance are normalized

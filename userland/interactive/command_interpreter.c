@@ -195,12 +195,17 @@ static void command_set_location(int interactive_tid, int executor_tid, parsed_c
 }
 
 static void command_set_stopping_distance_offset(int interactive_tid, int executor_tid, parsed_command_t *data) {
-  CMD_ASSERT_ARGC(data, 1);
-  CMD_ASSERT_IS_INT(data, 0);
+  CMD_ASSERT_ARGC(data, 3);
+  CMD_ASSERT_IS_TRAIN(data, 0);
+  CMD_ASSERT_IS_SPEED(data, 1);
+  CMD_ASSERT_IS_INT(data, 2);
   cmd_data_t msg;
   msg.base.packet.type = INTERPRETED_COMMAND;
   msg.base.type = COMMAND_STOPPING_DISTANCE_OFFSET;
-  msg.extra_arg = GetInt(data, 0);
+  msg.train = GetInt(data, 0);
+  msg.speed = GetInt(data, 1);
+  msg.extra_arg = GetInt(data, 2);
+  
   // NOTE: only sends to UI
   SendSN(interactive_tid, msg);
 }

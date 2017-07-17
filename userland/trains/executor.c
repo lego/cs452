@@ -17,10 +17,6 @@
 // FIXME: priority
 #define SOME_PRIORITY 5
 
-// FIXME: globals : active_train, active_speed, from interactive.c
-extern int active_train;
-extern int active_speed;
-
 typedef struct {
   // type = PATHING_WORKER_RESULT
   packet_t packet;
@@ -99,11 +95,6 @@ void execute_command(cmd_data_t * cmd_data) {
     case COMMAND_STOP_FROM:
     case COMMAND_NAVIGATE:
       Logf(EXECUTOR_LOGGING, "Executor starting pathing worker for stopfrom or navigate");
-      // If we have no starting location, don't do anything (interactive logs this)
-      if (WhereAmI(cmd_data->train) == -1) break;
-      _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
-      break;
-      Logf(EXECUTOR_LOGGING, "Executor starting pathing worker");
       // If we have no starting location, don't do anything (interactive logs this)
       if (WhereAmI(cmd_data->train) == -1) break;
       _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
