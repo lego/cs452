@@ -19,13 +19,30 @@ void InitTrainControllers() {
   }
 }
 
-static void execute_basic_command(int train, train_command_msg_t * msg) {
-  switch (msg->type) {
-  case TRAIN_CONTROLLER_SET_SPEED:
-    Logf(EXECUTOR_LOGGING, "TC executing speed cmd");
-    SetTrainSpeed(train, msg->speed);
-    break;
-  }
+typedef struct {
+  int train;
+  int lastSpeed;
+} reverse_train_t;
+
+void reverse_train_task() {
+    reverse_train_t rev;
+    int receiver;
+    ReceiveS(&receiver, rev);
+    ReplyN(receiver);
+    char buf[2];
+    buf[0] = 0;
+    buf[1] = rev.train;
+    Putcs(COM1, buf, 2);
+    Delay(300);
+    buf[0] = 15;
+    Putcs(COM1, buf, 2);
+    int lastSensor = WhereAmI(rev.train);
+    if (lastSensor >= 0) {
+      RegisterTrainReverse(rev.train, lastSensor);
+    }
+    Delay(10);
+    buf[0] = rev.lastSpeed;
+    Putcs(COM1, buf, 2);
 }
 
 static void start_navigation(int train, path_t * path) {
@@ -49,17 +66,36 @@ void train_controller() {
 
   RegisterTrain(train);
 
+  int lastSpeed = 0;
+  int lastSensor = -1;
+
   while (true) {
     ReceiveS(&requester, request_buffer);
     ReplyN(requester);
     switch (packet->type) {
       case SENSOR_DATA:
         SetTrainLocation(train, sensor_data->sensor_no);
+        lastSensor = sensor_data->sensor_no;
         // TODO: add other offset and calibration functions
         // (or move them from interactive)
         break;
       case TRAIN_CONTROLLER_COMMAND:
-        execute_basic_command(train, msg);
+        switch (msg->type) {
+        case TRAIN_CONTROLLER_SET_SPEED:
+          Logf(EXECUTOR_LOGGING, "TC executing speed cmd");
+          lastSpeed = msg->speed;
+          SetTrainSpeed(train, msg->speed);
+          break;
+        case TRAIN_CONTROLLER_REVERSE: {
+            Logf(EXECUTOR_LOGGING, "TC executing reverse cmd");
+            int tid = Create(PRIORITY_TRAIN_COMMAND_TASK, reverse_train_task);
+            reverse_train_t rev;
+            rev.train = train;
+            rev.lastSpeed = lastSpeed;
+            SendSN(tid, rev);
+          }
+          break;
+        }
         break;
       case TRAIN_NAVIGATE_COMMAND:
         navigation_data = navigate_msg->path; // Persist the path

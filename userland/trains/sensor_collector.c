@@ -26,6 +26,14 @@ typedef struct {
   int train;
 } sensor_attributer_req_t;
 
+typedef struct {
+  // type = SENSOR_ATTRIB_TRAIN_REVERSE
+  packet_t packet;
+
+  int train;
+  int lastSensor;
+} sensor_attributer_reverse_t;
+
 void sensor_notifier() {
   int requester;
 
@@ -93,6 +101,7 @@ void sensor_attributer() {
   char buffer[128] __attribute__((aligned (4)));
   packet_t *packet = (packet_t *)buffer;
   sensor_attributer_req_t *request = (sensor_attributer_req_t *)buffer;
+  sensor_attributer_reverse_t *rev_request = (sensor_attributer_reverse_t *)buffer;
   sensor_data_t *data = (sensor_data_t *)buffer;
 
   while (true) {
@@ -103,6 +112,43 @@ void sensor_attributer() {
         KASSERT(active_train == -1, "More than one unknown train active at the same time. Cannot do sensor attribution.");
         active_train = request->train;
         trainControllerTids[active_train] = requester;
+        break;
+      case SENSOR_ATTRIB_TRAIN_REVERSE: {
+          int node = nextSensor(rev_request->lastSensor);
+          int foundTrain = false;
+          if (node != -1) {
+            for (int j = 0; j < SENSOR_MEMORY; j++) {
+              if (lastTrainAtSensor[node][j] == rev_request->train) {
+                lastTrainAtSensor[node][j] = -1;
+                jmemmove(&lastTrainAtSensor[node][j], &lastTrainAtSensor[node][j+1], (SENSOR_MEMORY-1-j)*sizeof(int));
+                foundTrain = true;
+                break;
+              }
+            }
+          }
+          if (!foundTrain) {
+            // Didn't find it there, fall back to looking everywhere
+            for (int i = 0; i < NUM_SENSORS && !foundTrain; i++) {
+              for (int j = 0; j < SENSOR_MEMORY && !foundTrain; j++) {
+                if (lastTrainAtSensor[i][j] == rev_request->train) {
+                  lastTrainAtSensor[i][j] = -1;
+                  jmemmove(&lastTrainAtSensor[i][j], &lastTrainAtSensor[i][j+1], (SENSOR_MEMORY-1-j)*sizeof(int));
+                  foundTrain = true;
+                  break;
+                }
+              }
+            }
+          }
+          node = nextSensor(track[rev_request->lastSensor].reverse->id);
+          if (node != -1) {
+            for (int i = 0; i < SENSOR_MEMORY; i++) {
+              if (lastTrainAtSensor[node][i] == -1) {
+                lastTrainAtSensor[node][i] = rev_request->train;
+                break;
+              }
+            }
+          }
+        }
         break;
       case SENSOR_DATA: {
           int attrib = -1;
@@ -157,38 +203,44 @@ void sensor_collector_task() {
     log_task("sensor_reader sleeping", tid);
     ClearRx(COM1);
     Putc(COM1, 0x85);
-    int queueLength = 0;
-    const int maxTries = 100;
-    int i;
-    for (i = 0; i < maxTries && queueLength < 10; i++) {
-      Delay(1);
-      queueLength = GetRxQueueLength(COM1);
+    { // Wait until we have enough bytes in the input buffer
+      int queueLength = 0;
+      const int maxTries = 100;
+      int i;
+      for (i = 0; i < maxTries && queueLength < 10; i++) {
+        Delay(1);
+        queueLength = GetRxQueueLength(COM1);
+      }
+      // We tried to read but failed to get the correct number of bytes, ABORT
+      if (i == maxTries) {
+        continue;
+      }
     }
-    // We tried to read but failed to get the correct number of bytes, ABORT
-    if (i == maxTries) {
-      continue;
+    { // Actually read the bytes from the input buffer
+      log_task("sensor_reader reading", tid);
+      for (int i = 0; i < 5; i++) {
+        char high = Getc(COM1);
+        char low = Getc(COM1);
+        sensors[i] = (high << 8) | low;
+      }
     }
-    log_task("sensor_reader reading", tid);
-    for (int i = 0; i < 5; i++) {
-      char high = Getc(COM1);
-      char low = Getc(COM1);
-      sensors[i] = (high << 8) | low;
-    }
-    log_task("sensor_reader read", tid);
-    req.timestamp = Time();
-    for (int i = 0; i < 5; i++) {
-      if (sensors[i] != oldSensors[i]) {
-        for (int j = 0; j < 16; j++) {
-          if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
-            // Send to attributer
-            req.sensor_no = i*16+(15-j);
-            SendSN(sensor_attributer_tid, req);
-            // Send to detector multiplexer
-            SendSN(sensor_detector_multiplexer_tid, req);
+    { // Check if any sensors changed, and send the update to the attributer
+      log_task("sensor_reader read", tid);
+      req.timestamp = Time();
+      for (int i = 0; i < 5; i++) {
+        if (sensors[i] != oldSensors[i]) {
+          for (int j = 0; j < 16; j++) {
+            if ((sensors[i] & (1 << j)) & ~(oldSensors[i] & (1 << j))) {
+              // Send to attributer
+              req.sensor_no = i*16+(15-j);
+              SendSN(sensor_attributer_tid, req);
+              // Send to detector multiplexer
+              SendSN(sensor_detector_multiplexer_tid, req);
+            }
           }
         }
+        oldSensors[i] = sensors[i];
       }
-      oldSensors[i] = sensors[i];
     }
   }
 }
@@ -204,6 +256,22 @@ int RegisterTrain(int train) {
   sensor_attributer_req_t request;
   request.packet.type = SENSOR_ATTRIB_ASSIGN_TRAIN;
   request.train = train;
+  SendSN(sensor_attributer_tid, request);
+  return 0;
+}
+
+int RegisterTrainReverse(int train, int lastSensor) {
+  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when registering with sensor attributer. Got %d", train);
+  if (sensor_attributer_tid == -1) {
+    // Don't make data syscall, but still reschedule
+    Pass();
+    KASSERT(false, "Sensor Attributer server not initialized");
+    return -1;
+  }
+  sensor_attributer_reverse_t request;
+  request.packet.type = SENSOR_ATTRIB_TRAIN_REVERSE;
+  request.train = train;
+  request.lastSensor = lastSensor;
   SendSN(sensor_attributer_tid, request);
   return 0;
 }

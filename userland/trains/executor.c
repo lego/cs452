@@ -65,7 +65,7 @@ void execute_command(cmd_data_t * cmd_data) {
       TellTrainController(cmd_data->train, TRAIN_CONTROLLER_SET_SPEED, cmd_data->speed);
       break;
     case COMMAND_TRAIN_REVERSE:
-      ReverseTrain(cmd_data->train, 14);
+      TellTrainController(cmd_data->train, TRAIN_CONTROLLER_REVERSE, 0);
       break;
     case COMMAND_SWITCH_TOGGLE:
       SetSwitch(cmd_data->switch_no, cmd_data->switch_dir);

@@ -5,6 +5,7 @@
 
 typedef enum {
   TRAIN_CONTROLLER_SET_SPEED,
+  TRAIN_CONTROLLER_REVERSE,
 } train_command_t;
 
 typedef struct {
