@@ -7,6 +7,9 @@
 
 #define PACKET_TRAIN_LOCATION_DATA 15
 
+#define PACKET_RESEVOIR_SET_DATA 25
+#define PACKET_RESEVOIR_UNSET_DATA 26
+
 #define PACKET_LOG_INFO 90
 
 typedef struct {

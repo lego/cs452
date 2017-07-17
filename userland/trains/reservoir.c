@@ -1,8 +1,10 @@
 #include <basic.h>
 #include <kernel.h>
+#include <util.h>
 #include <trains/reservoir.h>
 #include <track/pathing.h>
 #include <servers/uart_tx_server.h>
+#include <servers/clock_server.h>
 
 int reservoir_tid = -1;
 
@@ -35,10 +37,27 @@ void set_segment_owner(segment_t * segment, int owner) {
   track[segment->track_node].edge[segment->dir].owner = owner;
 }
 
+void put_resevoir_packet(int type, reservoir_segments_t * request, int owner) {
+  int time = Time();
+  char message_buffer[32] __attribute__ ((aligned (4)));;
+  uart_packet_t * packet = (uart_packet_t *) message_buffer;
+  char * packet_data = message_buffer + sizeof(uart_packet_t);
+  packet->type = type;
+  packet->len = 5 + request->len*2;
+  jmemcpy(&packet_data[0], &time, sizeof(int));
+  packet_data[4] = owner;
+  for (int i = 0; i < request->len; i++) {
+    packet_data[5+2*i] = (char)request->segments[i].track_node;
+    packet_data[5+2*i+1] = (char)track[request->segments[i].track_node].edge[request->segments[i].dir].dest->id;
+  }
+  PutPacket(packet);
+}
+
 void set_segment_ownership(reservoir_segments_t * request, int owner) {
   for (int i = 0; i < request->len; i++) {
     set_segment_owner(&request->segments[i], owner);
   }
+  put_resevoir_packet(PACKET_RESEVOIR_SET_DATA, request, owner);
 }
 
 void release_segments(reservoir_segments_t * request, int owner) {
@@ -51,6 +70,7 @@ void release_segments(reservoir_segments_t * request, int owner) {
       get_segment_owner(&request->segments[i]));
     set_segment_owner(&request->segments[i], -1);
   }
+  put_resevoir_packet(PACKET_RESEVOIR_UNSET_DATA, request, owner);
 }
 
 static void process_pathing_request(path_t * path, pathing_request_t * request, int sender) {
