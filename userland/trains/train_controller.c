@@ -204,7 +204,10 @@ void train_speed_task() {
     char buf[2];
     buf[1] = data.train;
     if (data.speed > 0) {
-      buf[0] = 14;
+      buf[0] = data.speed + 2;
+      if (buf[0] > 14) {
+        buf[0] = 14;
+      }
       Putcs(COM1, buf, 2);
       Delay(10);
     }
@@ -377,6 +380,144 @@ int get_next_sensor(path_t * path, int last_sensor_no) {
   return -1;
 }
 
+void calibrate_set_speed() {
+  train_task_t data;
+  int receiver;
+  ReceiveS(&receiver, data);
+  ReplyN(receiver);
+  TellTrainController(data.train, TRAIN_CONTROLLER_SET_SPEED, data.speed);
+}
+
+bool gluInvertMatrix(const float m[16], float invOut[16]) {
+  float inv[16], det;
+  int i;
+
+  inv[0] = m[5]  * m[10] * m[15] -
+  m[5]  * m[11] * m[14] -
+  m[9]  * m[6]  * m[15] +
+  m[9]  * m[7]  * m[14] +
+  m[13] * m[6]  * m[11] -
+  m[13] * m[7]  * m[10];
+
+  inv[4] = -m[4]  * m[10] * m[15] +
+  m[4]  * m[11] * m[14] +
+  m[8]  * m[6]  * m[15] -
+  m[8]  * m[7]  * m[14] -
+  m[12] * m[6]  * m[11] +
+  m[12] * m[7]  * m[10];
+
+  inv[8] = m[4]  * m[9] * m[15] -
+  m[4]  * m[11] * m[13] -
+  m[8]  * m[5] * m[15] +
+  m[8]  * m[7] * m[13] +
+  m[12] * m[5] * m[11] -
+  m[12] * m[7] * m[9];
+
+  inv[12] = -m[4]  * m[9] * m[14] +
+  m[4]  * m[10] * m[13] +
+  m[8]  * m[5] * m[14] -
+  m[8]  * m[6] * m[13] -
+  m[12] * m[5] * m[10] +
+  m[12] * m[6] * m[9];
+
+  inv[1] = -m[1]  * m[10] * m[15] +
+  m[1]  * m[11] * m[14] +
+  m[9]  * m[2] * m[15] -
+  m[9]  * m[3] * m[14] -
+  m[13] * m[2] * m[11] +
+  m[13] * m[3] * m[10];
+
+  inv[5] = m[0]  * m[10] * m[15] -
+  m[0]  * m[11] * m[14] -
+  m[8]  * m[2] * m[15] +
+  m[8]  * m[3] * m[14] +
+  m[12] * m[2] * m[11] -
+  m[12] * m[3] * m[10];
+
+  inv[9] = -m[0]  * m[9] * m[15] +
+  m[0]  * m[11] * m[13] +
+  m[8]  * m[1] * m[15] -
+  m[8]  * m[3] * m[13] -
+  m[12] * m[1] * m[11] +
+  m[12] * m[3] * m[9];
+
+  inv[13] = m[0]  * m[9] * m[14] -
+  m[0]  * m[10] * m[13] -
+  m[8]  * m[1] * m[14] +
+  m[8]  * m[2] * m[13] +
+  m[12] * m[1] * m[10] -
+  m[12] * m[2] * m[9];
+
+  inv[2] = m[1]  * m[6] * m[15] -
+  m[1]  * m[7] * m[14] -
+  m[5]  * m[2] * m[15] +
+  m[5]  * m[3] * m[14] +
+  m[13] * m[2] * m[7] -
+  m[13] * m[3] * m[6];
+
+  inv[6] = -m[0]  * m[6] * m[15] +
+  m[0]  * m[7] * m[14] +
+  m[4]  * m[2] * m[15] -
+  m[4]  * m[3] * m[14] -
+  m[12] * m[2] * m[7] +
+  m[12] * m[3] * m[6];
+
+  inv[10] = m[0]  * m[5] * m[15] -
+  m[0]  * m[7] * m[13] -
+  m[4]  * m[1] * m[15] +
+  m[4]  * m[3] * m[13] +
+  m[12] * m[1] * m[7] -
+  m[12] * m[3] * m[5];
+
+  inv[14] = -m[0]  * m[5] * m[14] +
+  m[0]  * m[6] * m[13] +
+  m[4]  * m[1] * m[14] -
+  m[4]  * m[2] * m[13] -
+  m[12] * m[1] * m[6] +
+  m[12] * m[2] * m[5];
+
+  inv[3] = -m[1] * m[6] * m[11] +
+  m[1] * m[7] * m[10] +
+  m[5] * m[2] * m[11] -
+  m[5] * m[3] * m[10] -
+  m[9] * m[2] * m[7] +
+  m[9] * m[3] * m[6];
+
+  inv[7] = m[0] * m[6] * m[11] -
+  m[0] * m[7] * m[10] -
+  m[4] * m[2] * m[11] +
+  m[4] * m[3] * m[10] +
+  m[8] * m[2] * m[7] -
+  m[8] * m[3] * m[6];
+
+  inv[11] = -m[0] * m[5] * m[11] +
+  m[0] * m[7] * m[9] +
+  m[4] * m[1] * m[11] -
+  m[4] * m[3] * m[9] -
+  m[8] * m[1] * m[7] +
+  m[8] * m[3] * m[5];
+
+  inv[15] = m[0] * m[5] * m[10] -
+  m[0] * m[6] * m[9] -
+  m[4] * m[1] * m[10] +
+  m[4] * m[2] * m[9] +
+  m[8] * m[1] * m[6] -
+  m[8] * m[2] * m[5];
+
+  det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+  if (det == 0)
+    return false;
+
+  det = 1.0 / det;
+
+  for (i = 0; i < 16; i++)
+    invOut[i] = inv[i] * det;
+
+  return true;
+}
+
+
 void train_controller() {
   int requester;
   pathing_operation_t pathing_operation = -1;
@@ -428,6 +569,16 @@ void train_controller() {
 
   Logf(PACKET_LOG_INFO, "Starting train controller (tid=%d)", MyTid());
 
+  bool calibrating = false;
+  const int numLastVelocities = 3;
+  int lastVels[numLastVelocities];
+  int lastVelsStart = 0;
+  int nSamples = 0;
+  int calibratedSpeeds[4] = { -1, -1, -1, -1 };
+  int calibrationSpeeds[4] = { 5, 7, 11, 13 };
+  int calibrationSpeedN = 0;
+  int calibrationLockTime = 0;
+
   while (true) {
     ReceiveS(&requester, request_buffer);
     ReplyN(requester);
@@ -450,17 +601,83 @@ void train_controller() {
           // Set out location in the global space
           SetTrainLocation(train, sensor_data->sensor_no);
 
-          /**
-           * Velocity calibration
-           */
-          int velocity = 0;
-          int dist = adjSensorDist(lastSensor, sensor_data->sensor_no);
-          if (dist != -1) {
-            int time_diff = sensor_data->timestamp - lastSensorTime;
-            velocity = (dist * 100) / time_diff;
-          }
-          if (velocity > 0) {
-            record_velocity_sample(train, lastSpeed, velocity);
+          if (calibrating) {
+            int velocity = 0;
+            int dist = adjSensorDist(lastSensor, sensor_data->sensor_no);
+            if (dist != -1) {
+              int time_diff = sensor_data->timestamp - lastSensorTime;
+              velocity = (dist * 100) / time_diff;
+            }
+            if (Time() > calibrationLockTime && velocity > 0) {
+              record_velocity_sample(train, lastSpeed, velocity);
+              int avgV = Velocity(train, lastSpeed);
+              nSamples++;
+              if (nSamples > 5) {
+                bool same = true;
+                for (int i = 0; i < numLastVelocities; i++) {
+                  if (ABS(lastVels[i] - avgV) > calibrationSpeedN) {
+                    same = false;
+                    break;
+                  }
+                }
+                lastVels[lastVelsStart] = avgV;
+                lastVelsStart = (lastVelsStart + 1) % numLastVelocities;
+                if (same) {
+                  Logf(PACKET_LOG_INFO, "Calibrated train %d velocity for speed %d: %d",
+                      train, lastSpeed, avgV);
+                  {
+                    calibratedSpeeds[calibrationSpeedN] = avgV;
+                    int nextSpeed = 0;
+                    if (calibrationSpeedN < 3) {
+                      calibrationSpeedN += 1;
+                      nextSpeed = calibrationSpeeds[calibrationSpeedN];
+                    } else {
+                      Logf(PACKET_LOG_INFO, "Calibration Done!");
+                      for (int i = 0; i < 4; i++) {
+                        Logf(PACKET_LOG_INFO, "Calibration[%d] = %d!", calibrationSpeeds[i], calibratedSpeeds[i]);
+                      }
+                      float coeffMat[16];
+                      float invMat[16];
+                      float coeffs[4];
+                      for (int i = 0; i < 4; i++) {
+                        float s = (float)calibrationSpeeds[i];
+                        coeffMat[i*4+0] = s*s*s;
+                        coeffMat[i*4+1] = s*s;
+                        coeffMat[i*4+2] = s;
+                        coeffMat[i*4+3] = 1;
+                      }
+                      gluInvertMatrix(coeffMat, invMat);
+                      for (int i = 0; i < 4; i++) {
+                        float total = 0.0f;
+                        for (int j = 0; j < 4; j++) {
+                          total += invMat[i*4+j] * (float)calibratedSpeeds[j];
+                        }
+                        coeffs[i] = total;
+                      }
+                      for (int i = 0; i < 10; i++) {
+                        int x = i + 5;
+                        int est = (int)(coeffs[0]*x*x*x + coeffs[1]*x*x + coeffs[2]*x + coeffs[3]);
+                        Logf(PACKET_LOG_INFO, "Est[%d] = %d!", x, est);
+                        set_velocity(train, x, est);
+                      }
+                      calibrating = false;
+                    }
+                    int tid = Create(PRIORITY_TRAIN_COMMAND_TASK, calibrate_set_speed);
+                    train_task_t sp;
+                    sp.train = train;
+                    sp.speed = nextSpeed;
+                    SendSN(tid, sp);
+                    nSamples = 0;
+                    calibrationLockTime = Time() + 400;
+                    lastSensor = -1;
+                  }
+                }
+              }
+            }
+            Logf(PACKET_LOG_INFO, "Train %d velocity sample at %s: %d, avg: %d",
+                train, track[sensor_data->sensor_no].name,
+                velocity, Velocity(train, lastSpeed));
+
           }
           //Logf(PACKET_LOG_INFO, "Train %d velocity sample at %s: %d, avg: %d",
           //    train, track[sensor_data->sensor_no].name,
@@ -581,6 +798,17 @@ void train_controller() {
           lastSpeed = msg->speed;
           lastSensor = -1;
           DoCommand(train_speed_task, train, msg->speed);
+        case TRAIN_CONTROLLER_CALIBRATE: {
+            Logf(EXECUTOR_LOGGING, "TC executing calibrate cmd");
+            for (int i = 0; i < numLastVelocities; i++) {
+              lastVels[i] = 0;
+            }
+            nSamples = 0;
+            calibrationSpeedN = 0;
+            DoCommand(train_speed_task, train, calibrationSpeeds[calibrationSpeedN]);
+            calibrationLockTime = Time() + 400;
+            calibrating = true;
+          }
           break;
         case TRAIN_CONTROLLER_REVERSE: {
             Logf(EXECUTOR_LOGGING, "TC executing reverse cmd");

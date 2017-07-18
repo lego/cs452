@@ -92,6 +92,16 @@ static void command_train_speed(int interactive_tid, int executor_tid, parsed_co
   SendToBoth(msg);
 }
 
+static void command_train_calibrate(int interactive_tid, int executor_tid, parsed_command_t *data) {
+  CMD_ASSERT_ARGC(data, 1);
+  CMD_ASSERT_IS_TRAIN(data, 0);
+  cmd_data_t msg;
+  msg.base.packet.type = INTERPRETED_COMMAND;
+  msg.base.type = COMMAND_TRAIN_CALIBRATE;
+  msg.train = GetInt(data, 0);
+  SendToBoth(msg);
+}
+
 static void command_train_reverse(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 1);
   CMD_ASSERT_IS_TRAIN(data, 0);
@@ -301,6 +311,7 @@ void command_interpreter_task() {
       }
       break;
 
+    DEF_CASE(COMMAND_TRAIN_CALIBRATE, command_train_calibrate);
     DEF_CASE(COMMAND_TRAIN_SPEED, command_train_speed);
     DEF_CASE(COMMAND_TRAIN_REVERSE, command_train_reverse);
     DEF_CASE(COMMAND_SWITCH_TOGGLE, command_toggle_switch);
