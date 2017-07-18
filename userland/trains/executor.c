@@ -46,10 +46,13 @@ void pathing_worker(int parent_tid, void * data) {
   Logf(EXECUTOR_LOGGING, "Pathing working started for %4s ~> %4s", track[src_node].name, track[dst].name);
 
   int status = RequestPath(&result.path, cmd->train, src_node, dst);
+  if (result.path.len == 0) {
+    Logf(EXECUTOR_LOGGING, "No path found for %4s ~> %4s", track[src_node].name, track[dst].name);
+  }
   // FIXME: handle status == -1, i.e. not direct path
   result.packet.type = PATHING_WORKER_RESULT;
   if (cmd->base.type == COMMAND_NAVIGATE_RANDOMLY) {
-    while (result.path.dist < 600) {
+    while (result.path.dist < 1100) {
       dst = Time() % 80;
       int status = RequestPath(&result.path, cmd->train, src_node, dst);
     }
