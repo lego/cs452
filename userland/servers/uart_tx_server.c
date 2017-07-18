@@ -310,7 +310,6 @@ int PutPacket(uart_packet_t *packet) {
     bwprintf(COM2, "Unhandled packet type=%d\n", p->type);
   }
 
-
   return 0;
   #endif
   log_task("PutPacket len=%d type=%d", active_task->tid, packet->len, packet->type);

@@ -98,8 +98,6 @@ void send_receive_test() {
   char buf[100];
   char *hello = "HELLO";
 
-  debugger();
-
   int my_tid = MyTid();
   log_task("Task started", my_tid);
   new_task_id = Create(2, &k2_child_task);

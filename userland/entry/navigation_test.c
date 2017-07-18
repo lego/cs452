@@ -11,27 +11,31 @@
 #include <trains/sensor_collector.h>
 #include <trains/train_controller.h>
 #include <trains/switch_controller.h>
+#include <trains/executor.h>
+#include <track/pathing.h>
+#include <trains/navigation.h>
+#include <interactive/commands.h>
 #include <kernel.h>
 #include <terminal.h>
 
 int ticker = 1;
 
-void mock_executor() {
-  RegisterAs(NS_EXECUTOR);
-  char buffer[1024] __attribute__((aligned(4)));
-  packet_t *packet = (packet_t *) buffer;
-  route_failure_t *failure = (route_failure_t *) buffer;
-  int sender;
-  while (true) {
-    ReceiveS(&sender, buffer);
-    ReplyN(sender);
-    switch (packet->type) {
-      case ROUTE_FAILURE:
-        bwprintf(COM2, RED_BG "mock_executor" RESET_ATTRIBUTES ": got route failure from %d trying to get to %s\n", failure->train, track[failure->dest_id].name);
-        break;
-    }
-  }
-}
+// void mock_executor() {
+//   RegisterAs(NS_EXECUTOR);
+//   char buffer[1024] __attribute__((aligned(4)));
+//   packet_t *packet = (packet_t *) buffer;
+//   route_failure_t *failure = (route_failure_t *) buffer;
+//   int sender;
+//   while (true) {
+//     ReceiveS(&sender, buffer);
+//     ReplyN(sender);
+//     switch (packet->type) {
+//       case ROUTE_FAILURE:
+//         bwprintf(COM2, RED_BG "mock_executor" RESET_ATTRIBUTES ": got route failure from %d trying to get to %s\n", failure->train, track[failure->dest_id].name);
+//         break;
+//     }
+//   }
+// }
 
 void ProvideSensorTrigger(int sensor_no) {
   int tid = WhoIs(NS_SENSOR_ATTRIBUTER);
@@ -52,7 +56,8 @@ void navigation_test_task() {
   Create(4, uart_tx);
   Create(4, sensor_attributer);
   Create(5, reservoir_task);
-  Create(6, mock_executor);
+  // Create(6, mock_executor);
+  int executor_tid = Create(6, executor_task);
   Create(7, switch_controller);
 
 
@@ -87,28 +92,37 @@ void navigation_test_task() {
     SetSwitch(switchNumber, initialSwitchStates[i]);
   }
 
-  path_t train20_path;
+  TellTrainController(70, TRAIN_CONTROLLER_SET_SPEED, 10);
+
+  // Train 20 sensors
+  ProvideSensorTrigger(Name2Node("B1"));
+
+  cmd_data_t data;
+  data.base.packet.type = INTERPRETED_COMMAND;
+  data.base.type = COMMAND_NAVIGATE_RANDOMLY;
+  data.train = 70;
+  data.speed = 10;
+
+  SendSN(executor_tid, data);
+
+  // path_t train20_path;
   // GetPath(&train20_path, Name2Node("D14"), Name2Node("C9"));
   // PrintPath(&train20_path);
 
 
-  GetPath(&train20_path, Name2Node("D9"), Name2Node("C6"));
-  // GetPath(&train50_path, Name2Node("C13"), Name2Node("C6"));
-  PrintPath(&train20_path);
+  // GetPath(&train20_path, Name2Node("D9"), Name2Node("C6"));
+  // // GetPath(&train50_path, Name2Node("C13"), Name2Node("C6"));
+  // PrintPath(&train20_path);
 
-  TellTrainController(20, TRAIN_CONTROLLER_SET_SPEED, 10);
-
-  // Train 20 sensors
-  ProvideSensorTrigger(Name2Node("D9"));
-
-  NavigateTrain(20, 10, &train20_path);
-
-  // Start train 50 (after 20 was attributed)
-  // NavigateTrain(50, 10, &train50_path);
-
-  // Fails for train 20, keep moving it
-  ProvideSensorTrigger(Name2Node("E12"));
   //
+  // NavigateTrain(20, 10, &train20_path);
+  //
+  // // Start train 50 (after 20 was attributed)
+  // // NavigateTrain(50, 10, &train50_path);
+  //
+  // // Fails for train 20, keep moving it
+  // ProvideSensorTrigger(Name2Node("E12"));
+  // //
   // GetPathWithResv(&train50_path, Name2Node("C13"), Name2Node("C16"), 50);
 
   // Train 50 sensors

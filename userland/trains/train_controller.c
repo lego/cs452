@@ -49,11 +49,12 @@ int path_idx(path_t *path, int node_id) {
 }
 
 int do_navigation_stop(path_t *path, int source_node, int train, int speed) {
-  int distance_before_stopping = path->node_dist[path->len - 1] - path->node_dist[path_idx(path, source_node)] - StoppingDistance(train, speed);
+  int distance_before_stopping = path->dist - path->node_dist[path_idx(path, source_node)] - StoppingDistance(train, speed);
   int wait_ticks = distance_before_stopping * 100 / Velocity(train, speed);
-  Logf(EXECUTOR_LOGGING, "NavStop: dist from %4s to %4s is %dmm. Minus stopdist is %dmm. Velocity is %d. Wait ticks is %d", path->nodes[path_idx(path, source_node)]->name, path->nodes[path->len - 1]->name, path->node_dist[path->len - 1] - path->node_dist[path_idx(path, source_node)], distance_before_stopping, Velocity(train, speed), wait_ticks);
+  Logf(EXECUTOR_LOGGING, "NavStop: dist from %4s to %4s is %dmm. Minus stopdist is %dmm. Velocity is %d. Wait ticks is %d", path->nodes[path_idx(path, source_node)]->name, path->dest->name, path->dist - path->node_dist[path_idx(path, source_node)], distance_before_stopping, Velocity(train, speed), wait_ticks);
   return StartDelayDetector("route stopper", MyTid(), wait_ticks);
 }
+
 track_edge *get_next_edge_with_path(path_t *path, track_node *node) {
   int dir = node->edge[DIR_STRAIGHT].dest == path->nodes[path_idx(path, node->id) + 1] ? DIR_STRAIGHT : DIR_CURVED;
   switch (node->type) {
@@ -834,7 +835,14 @@ void train_controller() {
 
               // If we need to navigate and there are no more sensors within stopdist
               // then we calculate a delay based off of this sensor
-              if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.dest->id && !sent_navigation_stop_delay) {
+              int node_to_sense_on = 0;
+              for (int i = path.len; i >= 0; i++) {
+                if (path.nodes[i]->type == NODE_SENSOR && path.dist - path.node_dist[i] > StoppingDistance(train, lastSpeed)) {
+                  node_to_sense_on = i;
+                  break;
+                }
+              }
+              if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.nodes[node_to_sense_on]->id && !sent_navigation_stop_delay) {
                 sent_navigation_stop_delay = true;
                 stop_delay_detector_id = do_navigation_stop(&path, sensor_data->sensor_no, train, lastSpeed);
               }
@@ -879,7 +887,6 @@ void train_controller() {
       case TRAIN_NAVIGATE_COMMAND:
       case TRAIN_STOPFROM_COMMAND:
         path = navigate_msg->path; // Persist the path
-        debugger();
         if (path.src->reverse->id == WhereAmI(train)) {
           SetTrainLocation(train, path.src->id);
           DoCommand(reverse_train_task, train, 0);

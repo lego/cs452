@@ -13,6 +13,10 @@
 #include <interactive/commands.h>
 #include <trains/train_controller.h>
 
+// deterministic "random"
+int random_counter = 11;
+int random_multiplier = 111;
+
 // FIXME: priority
 #define SOME_PRIORITY 5
 
@@ -41,9 +45,11 @@ void pathing_worker(int parent_tid, void * data) {
 
   int dst = cmd->dest_node;
   if (cmd->base.type == COMMAND_NAVIGATE_RANDOMLY) {
-    dst = Time() % 80;
+    dst = (random_counter++ * random_multiplier) % 80;
+    Logf(EXECUTOR_LOGGING, "Pathing working started for %4s ~> random", track[src_node].name);
+  } else {
+    Logf(EXECUTOR_LOGGING, "Pathing working started for %4s ~> %4s", track[src_node].name, track[dst].name);
   }
-  Logf(EXECUTOR_LOGGING, "Pathing working started for %4s ~> %4s", track[src_node].name, track[dst].name);
 
   int status = RequestPath(&result.path, cmd->train, src_node, dst);
   if (result.path.len == 0) {
@@ -53,7 +59,7 @@ void pathing_worker(int parent_tid, void * data) {
   result.packet.type = PATHING_WORKER_RESULT;
   if (cmd->base.type == COMMAND_NAVIGATE_RANDOMLY) {
     while (result.path.dist < 1100) {
-      dst = Time() % 80;
+      dst = (random_counter++ * random_multiplier) % 80;
       int status = RequestPath(&result.path, cmd->train, src_node, dst);
     }
   }
