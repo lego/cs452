@@ -5,6 +5,7 @@
 #include <cbuffer.h>
 #include <kernel.h>
 #include <servers/nameserver.h>
+#include <detective/delay_detector.h>
 #include <servers/clock_server.h>
 #include <servers/uart_tx_server.h>
 #include <train_command_server.h>
@@ -124,6 +125,7 @@ int reserve_next_segments(int train, int speed, cbuffer_t *owned_segments, int s
   int result = RequestSegmentEdges(&reserving);
   if (result == 1) {
     Logf(EXECUTOR_LOGGING, "%d: failed to obtain segments", train);
+    return -1;
   } else {
     // Keep track of all owned segments
     // NOTE: we only do this after a successful RequestSegment above
@@ -131,9 +133,8 @@ int reserve_next_segments(int train, int speed, cbuffer_t *owned_segments, int s
       cbuffer_add(owned_segments, (void *) reserving.edges[i]);
     }
     Logf(EXECUTOR_LOGGING, "%d: requesting %d segments. Total now %d", train, reserving.len, cbuffer_size(owned_segments));
+    return 0;
   }
-
-  return 0;
 }
 
 int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
@@ -147,6 +148,7 @@ int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
     track_edge *edge = (track_edge *) cbuffer_pop(owned_segments, NULL);
     if (edge->dest == sensor) {
       cbuffer_unpop(owned_segments, (void *) edge);
+      break;
     }
 
     releasing.edges[releasing.len] = edge;
@@ -159,6 +161,14 @@ int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
   return 0;
 }
 
+void set_speed_with_task(int train, int speed) {
+  int tid = CreateRecyclable(PRIORITY_TRAIN_COMMAND_TASK, train_speed_task);
+  train_task_t sp;
+  sp.train = train;
+  sp.speed = speed;
+  SendSN(tid, sp);
+}
+
 void train_controller() {
   int requester;
   char request_buffer[1024] __attribute__ ((aligned (4)));
@@ -166,6 +176,7 @@ void train_controller() {
   train_command_msg_t * msg = (train_command_msg_t *) request_buffer;
   sensor_data_t * sensor_data = (sensor_data_t *) request_buffer;
   train_navigate_t * navigate_msg = (train_navigate_t *) request_buffer;
+  detector_message_t * detector_msg = (detector_message_t *) request_buffer;
 
   // This is a list of segment dest_nodes (not actual segments)
   void * owned_segments_buffer[40] __attribute__((aligned(4)));
@@ -182,17 +193,31 @@ void train_controller() {
 
   RegisterTrain(train);
 
+  int lastNonzeroSpeed = 0;
   int lastSpeed = 0;
   int lastSensor = -1;
   int lastSensorTime = 0;
   reservoir_segments_t reserving;
   reserving.owner = train;
 
+  int collision_restart_id = -1;
+
   while (true) {
     ReceiveS(&requester, request_buffer);
     ReplyN(requester);
     int time = Time();
     switch (packet->type) {
+      case DELAY_DETECT:
+        KASSERT(detector_msg->identifier == collision_restart_id, "Unexpected delay detector");
+        {
+          collision_restart_id = -1;
+          int tid = Create(PRIORITY_TRAIN_COMMAND_TASK, train_speed_task);
+          train_task_t sp;
+          sp.train = train;
+          sp.speed = lastNonzeroSpeed;
+          SendSN(tid, sp);
+        }
+        break;
       case SENSOR_DATA:
         {
           SetTrainLocation(train, sensor_data->sensor_no);
@@ -244,8 +269,17 @@ void train_controller() {
           /**
            * Reservation for current segment
            */
-          reserve_next_segments(train, lastSpeed, &owned_segments, lastSensor);
-
+          int result = reserve_next_segments(train, lastSpeed, &owned_segments, lastSensor);
+          if (result == -1 && collision_restart_id == -1) {
+            lastNonzeroSpeed = lastSpeed;
+            lastSpeed = 0;
+            int tid = Create(PRIORITY_TRAIN_COMMAND_TASK, train_speed_task);
+            train_task_t sp;
+            sp.train = train;
+            sp.speed = 0;
+            SendSN(tid, sp);
+            collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
+          }
         }
         break;
       case TRAIN_CONTROLLER_COMMAND:
