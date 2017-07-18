@@ -623,6 +623,9 @@ void interactive() {
           lastTrain = cmd_data->train;
           velocity_reading_delay_until = Time();
           break;
+        case COMMAND_TRAIN_CALIBRATE:
+          Putf(COM2, "Calibrating train %d", cmd_data->train);
+          break;
         case COMMAND_TRAIN_REVERSE:
           Putf(COM2, "Train %d reverse", cmd_data->train);
           break;
