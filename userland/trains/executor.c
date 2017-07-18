@@ -39,15 +39,25 @@ void pathing_worker(int parent_tid, void * data) {
   pathing_worker_result_t result;
   int src_node = WhereAmI(cmd->train);
 
+  int dst = cmd->dest_node;
+  if (cmd->base.type == COMMAND_NAVIGATE_RANDOMLY) {
+    dst = Time() % 80;
+  }
+  Logf(EXECUTOR_LOGGING, "Pathing working started for %4s ~> %4s", track[src_node].name, track[dst].name);
 
-  Logf(EXECUTOR_LOGGING, "Pathing working started for %4s ~> %4s", track[src_node].name, track[cmd->dest_node].name);
-
-  int status = RequestPath(&result.path, cmd->train, src_node, cmd->dest_node);
+  int status = RequestPath(&result.path, cmd->train, src_node, dst);
   // FIXME: handle status == -1, i.e. not direct path
   result.packet.type = PATHING_WORKER_RESULT;
+  if (cmd->base.type == COMMAND_NAVIGATE_RANDOMLY) {
+    while (result.path.dist < 600) {
+      dst = Time() % 80;
+      int status = RequestPath(&result.path, cmd->train, src_node, dst);
+    }
+  }
   result.train = cmd->train;
   result.speed = cmd->speed;
   switch (cmd->base.type) {
+  case COMMAND_NAVIGATE_RANDOMLY:
   case COMMAND_NAVIGATE:
     result.operation = OPERATION_NAVIGATE;
     break;
@@ -97,6 +107,12 @@ void execute_command(cmd_data_t * cmd_data) {
       }
       break;
     case COMMAND_STOP_FROM:
+    case COMMAND_NAVIGATE_RANDOMLY:
+      Logf(EXECUTOR_LOGGING, "Executor starting random pathing worker for stopfrom or navigate");
+      // If we have no starting location, don't do anything (interactive logs this)
+      if (WhereAmI(cmd_data->train) == -1) break;
+      _CreateWorker(SOME_PRIORITY, pathing_worker, cmd_data, sizeof(cmd_data_t));
+      break;
     case COMMAND_NAVIGATE:
       Logf(EXECUTOR_LOGGING, "Executor starting pathing worker for stopfrom or navigate");
       // If we have no starting location, don't do anything (interactive logs this)

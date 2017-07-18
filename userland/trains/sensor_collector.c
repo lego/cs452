@@ -142,6 +142,27 @@ void sensor_attributer() {
             attrib = active_train;
             active_train = -1;
           }
+          if (attrib == -1) {
+            int node = nextSensor(track[sensor].reverse->id).node;
+            int branch = findSensorOrBranch(track[node].reverse->id).node;
+            if (branch != -1 && track[branch].type == NODE_BRANCH) {
+              node = track[branch].edge[DIR_STRAIGHT].dest->id;
+              if (track[node].type != NODE_SENSOR) {
+                node = nextSensor(node).node;
+              }
+              if (node == -1 || lastTrainAtSensor[node][0] == -1) {
+                node = track[branch].edge[DIR_CURVED].dest->id;
+                if (track[node].type != NODE_SENSOR) {
+                  node = nextSensor(node).node;
+                }
+              }
+              if (node != -1 && lastTrainAtSensor[node][0] != -1) {
+                attrib = lastTrainAtSensor[node][0];
+                jmemmove(&lastTrainAtSensor[node][0], &lastTrainAtSensor[node][1], (SENSOR_MEMORY-1)*sizeof(int));
+                lastTrainAtSensor[node][SENSOR_MEMORY-1] = -1;
+              }
+            }
+          }
           if (attrib != -1) {
             int node = nextSensor(sensor).node;
             if (node != -1) {

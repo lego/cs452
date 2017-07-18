@@ -149,6 +149,19 @@ static void command_navigate(int interactive_tid, int executor_tid, parsed_comma
   SendToBoth(msg);
 }
 
+static void command_navigate_randomly(int interactive_tid, int executor_tid, parsed_command_t *data) {
+  CMD_ASSERT_ARGC(data, 2);
+  CMD_ASSERT_IS_TRAIN(data, 0);
+  CMD_ASSERT_IS_SPEED(data, 1);
+  cmd_data_t msg;
+  msg.base.packet.type = INTERPRETED_COMMAND;
+  msg.base.type = COMMAND_NAVIGATE_RANDOMLY;
+  msg.train = GetInt(data, 0);
+  msg.speed = GetInt(data, 1);
+  SendToBoth(msg);
+}
+
+
 static void command_stop_from(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT_ARGC(data, 3);
   CMD_ASSERT_IS_TRAIN(data, 0);
@@ -322,6 +335,7 @@ void command_interpreter_task() {
     DEF_CASE(COMMAND_SET_STOPPING_DISTANCE, command_set_stopping_distance);
     DEF_CASE(COMMAND_SET_STOPPING_DISTANCEN, command_set_stopping_distanceneg);
     DEF_CASE(COMMAND_NAVIGATE, command_navigate);
+    DEF_CASE(COMMAND_NAVIGATE_RANDOMLY, command_navigate_randomly);
     DEF_CASE(COMMAND_PATH, command_path);
     DEF_CASE(COMMAND_STOP_FROM, command_stop_from);
     DEF_CASE(COMMAND_MANUAL_SENSE, command_manual_sense);

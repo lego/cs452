@@ -657,6 +657,7 @@ void train_controller() {
       case DELAY_DETECT:
         if (detector_msg->identifier == collision_restart_id) {
           collision_restart_id = -1;
+          lastSpeed = lastNonzeroSpeed;
           DoCommand(train_speed_task, train, lastNonzeroSpeed);
         } else if (detector_msg->identifier == stop_delay_detector_id) {
           pathing = false;
