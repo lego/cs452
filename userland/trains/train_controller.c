@@ -335,13 +335,12 @@ int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
 
   while (cbuffer_size(owned_segments) > 0) {
     track_edge *edge = (track_edge *) cbuffer_pop(owned_segments, NULL);
-    if (edge->dest == sensor) {
-      cbuffer_unpop(owned_segments, (void *) edge);
-      break;
-    }
-
     releasing.edges[releasing.len] = edge;
     releasing.len++;
+
+    if (edge->dest == sensor) {
+      break;
+    }
   }
 
   Logf(EXECUTOR_LOGGING, "%d: released %d segments. Total now %d", train, releasing.len, cbuffer_size(owned_segments));
@@ -356,15 +355,14 @@ int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
 void set_switches(path_t *path, int start_node, int end_node) {
   int start_node_idx = path_idx(path, start_node);
   int end_node_idx = path_idx(path, end_node);
-  for (int i = start_node_idx; i < end_node_idx - 1; i++) {
+  for (int i = start_node_idx; i < end_node_idx; i++) {
     // FIXME: this will break if the path->dest is a branch, as we assume at
     // least one node after a branch exists
     track_node *src = path->nodes[i];
     if (src->type == NODE_BRANCH) {
       if (src->edge[DIR_CURVED].dest == path->nodes[i+1]) {
         SetSwitch(src->num, SWITCH_CURVED);
-      }
-      else {
+      } else {
         SetSwitch(src->num, SWITCH_STRAIGHT);
       }
     }
@@ -762,7 +760,6 @@ void train_controller() {
             // Reserve more track based on this sensor trigger
             last_unreserved_node = next_unreserved_node;
             int status = reserve_track_from_sensor(train, lastSpeed, &path, &owned_segments, sensor_data->sensor_no, next_unreserved_node, &next_unreserved_node);
-
             if (status == -1) {
               // Alert the Executor that we failed so it can find us another path
               route_failure_t failure;
@@ -780,7 +777,7 @@ void train_controller() {
 
               // If we need to navigate and there are no more sensors within stopdist
               // then we calculate a delay based off of this sensor
-              if (pathing_operation == OPERATION_NAVIGATE && next_unreserved_node == path.len && !sent_navigation_stop_delay) {
+              if (pathing_operation == OPERATION_NAVIGATE && next_unreserved_node == path.dest->id && !sent_navigation_stop_delay) {
                 sent_navigation_stop_delay = true;
                 stop_delay_detector_id = do_navigation_stop(&path, sensor_data->sensor_no, train, lastSpeed);
               }
@@ -798,6 +795,7 @@ void train_controller() {
           lastSpeed = msg->speed;
           lastSensor = -1;
           DoCommand(train_speed_task, train, msg->speed);
+          break;
         case TRAIN_CONTROLLER_CALIBRATE: {
             Logf(EXECUTOR_LOGGING, "TC executing calibrate cmd");
             for (int i = 0; i < numLastVelocities; i++) {
