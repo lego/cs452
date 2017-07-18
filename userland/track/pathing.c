@@ -3,6 +3,7 @@
 #include <jstring.h>
 #include <track/pathing.h>
 #include <trains/switch_controller.h>
+#include <trains/reservoir.h>
 
 bool pathing_initialized = false;
 
@@ -176,7 +177,7 @@ int GetReverseNode(int node) {
  */
 volatile int global_pathing_idx = 1;
 
-void GetPath(path_t *p, int src, int dest) {
+void GetPathWithResv(path_t *p, int src, int dest, int resv_owner) {
   KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
   track_node *nodes[TRACK_MAX];
 
@@ -194,40 +195,59 @@ void GetPath(path_t *p, int src, int dest) {
   if (global_pathing_idx >= 5) global_pathing_idx = 0;
   if (pathing_idx >= 5) pathing_idx = pathing_idx % 5;
 
-  dijkstra(src, dest, pathing_idx);
+  dijkstra(src, dest, pathing_idx, resv_owner);
   p->len = get_path(src, dest, nodes, TRACK_MAX, pathing_idx);
   KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
 
   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
   p->src = &track[src];
   p->dest = &track[dest];
-
-  // // check for more optimal normal src, reverse dest
-  // dijkstra(src, reverse_dest);
-  // if (track[reverse_dest].dist < p->dist) {
-  //   p->len = get_path(src, reverse_dest, nodes, TRACK_MAX);
-  //   p->dist = nodes[p->len - 1]->dist;
-  // }
-  //
-  // // check for more optimal reverse src, normal dest
-  // dijkstra(reverse_src, dest);
-  // if (track[dest].dist < p->dist) {
-  //   p->len = get_path(reverse_src, dest, nodes, TRACK_MAX);
-  //   p->dist = nodes[p->len - 1]->dist;
-  // }
-  //
-  // // check for more optimal reverse src, reverse dest
-  // dijkstra(reverse_src, reverse_dest);
-  // if (track[reverse_dest].dist < p->dist) {
-  //   p->len = get_path(reverse_src, reverse_dest, nodes, TRACK_MAX);
-  //   p->dist = nodes[p->len - 1]->dist;
-  // }
-
-  int i;
-  for (i = 0; i < p->len; i++) {
+  for (int i = 0; i < p->len; i++) {
     p->nodes[i] = nodes[i];
     p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
   }
+
+  // // // // check for more optimal normal src, reverse dest
+  // dijkstra(src, reverse_dest, pathing_idx, resv_owner);
+  // if (track[reverse_dest].p_dist[pathing_idx] < p->dist) {
+  //   p->len = get_path(src, reverse_dest, nodes, TRACK_MAX, pathing_idx);
+  //   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
+  //   p->src = &track[src];
+  //   p->dest = &track[reverse_dest];
+  //   for (int i = 0; i < p->len; i++) {
+  //     p->nodes[i] = nodes[i];
+  //     p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
+  //   }
+  // }
+  // KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
+  //
+  // // // check for more optimal reverse src, normal dest
+  // dijkstra(reverse_src, dest, pathing_idx, resv_owner);
+  // if (track[dest].p_dist[pathing_idx] < p->dist) {
+  //   p->len = get_path(reverse_src, dest, nodes, TRACK_MAX, pathing_idx);
+  //   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
+  //   p->src = &track[reverse_src];
+  //   p->dest = &track[dest];
+  //   for (int i = 0; i < p->len; i++) {
+  //     p->nodes[i] = nodes[i];
+  //     p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
+  //   }
+  // }
+  // KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
+  //
+  // // // check for more optimal reverse src, reverse dest
+  // dijkstra(reverse_src, reverse_dest, pathing_idx, resv_owner);
+  // if (track[reverse_dest].p_dist[pathing_idx] < p->dist) {
+  //   p->len = get_path(reverse_src, reverse_dest, nodes, TRACK_MAX, pathing_idx);
+  //   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
+  //   p->src = &track[reverse_src];
+  //   p->dest = &track[reverse_dest];
+  //   for (int i = 0; i < p->len; i++) {
+  //     p->nodes[i] = nodes[i];
+  //     p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
+  //   }
+  // }
+  // KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
 }
 
 void PrintPath(path_t *p) {
@@ -253,7 +273,7 @@ void PrintPath(path_t *p) {
 }
 
 
-void dijkstra(int src, int dest, int p_idx) {
+void dijkstra(int src, int dest, int p_idx, int owner) {
     KASSERT(src >= 0 && dest >= 0, "Bad src or dest: got src=%d dest=%d", src, dest);
     #define HEAP_SIZE TRACK_MAX + 1
     heapnode_t heap_nodes[HEAP_SIZE];
@@ -284,10 +304,19 @@ void dijkstra(int src, int dest, int p_idx) {
           case NODE_ENTER:
           case NODE_SENSOR:
           case NODE_MERGE:
+            // if (v->edge[DIR_AHEAD].owner == -1 || v->edge[DIR_AHEAD].owner == owner) {
+            //   edges[edges_len++] = &v->edge[DIR_AHEAD];
+            // }
             edges[edges_len++] = &v->edge[DIR_AHEAD];
             break;
           case NODE_BRANCH:
+            // if (v->edge[DIR_STRAIGHT].owner == -1 || v->edge[DIR_STRAIGHT].owner == owner) {
+            //   edges[edges_len++] = &v->edge[DIR_STRAIGHT];
+            // }
             edges[edges_len++] = &v->edge[DIR_STRAIGHT];
+            // if (v->edge[DIR_CURVED].owner == -1 || v->edge[DIR_CURVED].owner == owner) {
+            //   edges[edges_len++] = &v->edge[DIR_CURVED];
+            // }
             edges[edges_len++] = &v->edge[DIR_CURVED];
             break;
           default:

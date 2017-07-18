@@ -25,6 +25,7 @@ int switch_to_index(int sw) {
 }
 
 void switch_controller() {
+  switch_controller_tid = MyTid();
   RegisterAs(NS_SWITCH_CONTROLLER);
 
   int requester;

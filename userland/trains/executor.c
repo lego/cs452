@@ -37,10 +37,11 @@ typedef struct {
 void pathing_worker(int parent_tid, void * data) {
   cmd_data_t * cmd = (cmd_data_t *) data;
   pathing_worker_result_t result;
-  Logf(EXECUTOR_LOGGING, "Pathing working started");
-
-  // get the path to BASIS_NODE, our destination point
   int src_node = WhereAmI(cmd->train);
+
+
+  Logf(EXECUTOR_LOGGING, "Pathing working started for %4s ~> %4s", track[src_node].name, track[cmd->dest_node].name);
+
   int status = RequestPath(&result.path, cmd->train, src_node, cmd->dest_node);
   // FIXME: handle status == -1, i.e. not direct path
   result.packet.type = PATHING_WORKER_RESULT;

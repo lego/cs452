@@ -51,7 +51,9 @@ void SetPathSwitches(path_t *path);
 int StoppingDistance(int train, int speed);
 
 // Generates a path from A to B
-void GetPath(path_t *p, int src, int dest);
+#define GetPath(p, src, dest) GetPathWithResv(p, src, dest, -1)
+
+void GetPathWithResv(path_t *p, int src, int dest, int resv_owner);
 
 void PrintPath(path_t *p);
 
@@ -68,7 +70,7 @@ int Name2Node(char *name);
  */
 int GetReverseNode(int node);
 
-void dijkstra(int src, int dest, int p_idx);
+void dijkstra(int src, int dest, int p_idx, int owner);
 
 int get_path(int src, int dest, track_node **path, int path_buf_size, int p_idx);
 

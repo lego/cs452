@@ -4,6 +4,7 @@
 #include <track/pathing.h>
 #include <trains/navigation.h>
 #include <servers/nameserver.h>
+#include <servers/uart_tx_server.h>
 #include <servers/clock_server.h>
 #include <detective/sensor_detector_multiplexer.h>
 #include <trains/reservoir.h>
@@ -32,23 +33,6 @@ void mock_executor() {
   }
 }
 
-void mock_switch_controller() {
-  RegisterAs(NS_SWITCH_CONTROLLER);
-  int sender;
-  char buffer[1024] __attribute__((aligned(4)));
-  switch_control_request_t * request = (switch_control_request_t *)buffer;
-  while (true) {
-    ReceiveS(&sender, buffer);
-    if (request->type == SWITCH_GET) {
-      int state = SWITCH_STRAIGHT;
-      ReplyS(sender, state);
-    } else if (request->type == SWITCH_SET) {
-      bwprintf(COM2, "mock_switch_controller: would have set switch %d to %s\n", request->index, request->value == SWITCH_CURVED ? "curved" : "straight");
-      ReplyN(sender);
-    }
-  }
-}
-
 void ProvideSensorTrigger(int sensor_no) {
   int tid = WhoIs(NS_SENSOR_ATTRIBUTER);
   sensor_data_t data;
@@ -65,34 +49,84 @@ void navigation_test_task() {
 
   Create(PRIORITY_NAMESERVER, nameserver);
   Create(PRIORITY_IDLE_TASK, idle_task);
+  Create(4, uart_tx);
   Create(4, sensor_attributer);
   Create(5, reservoir_task);
   Create(6, mock_executor);
-  Create(7, mock_switch_controller);
+  Create(7, switch_controller);
+
+
+  int initialSwitchStates[NUM_SWITCHES];
+  initialSwitchStates[ 0] = SWITCH_CURVED;
+  initialSwitchStates[ 1] = SWITCH_CURVED;
+  initialSwitchStates[ 2] = SWITCH_STRAIGHT;
+  initialSwitchStates[ 3] = SWITCH_CURVED;
+  initialSwitchStates[ 4] = SWITCH_CURVED;
+  initialSwitchStates[ 5] = SWITCH_STRAIGHT;
+  initialSwitchStates[ 6] = SWITCH_STRAIGHT;
+  initialSwitchStates[ 7] = SWITCH_STRAIGHT;
+  initialSwitchStates[ 8] = SWITCH_STRAIGHT;
+  initialSwitchStates[ 9] = SWITCH_STRAIGHT;
+  initialSwitchStates[10] = SWITCH_CURVED;
+  initialSwitchStates[11] = SWITCH_STRAIGHT;
+  initialSwitchStates[12] = SWITCH_STRAIGHT;
+  initialSwitchStates[13] = SWITCH_CURVED;
+  initialSwitchStates[14] = SWITCH_CURVED;
+  initialSwitchStates[15] = SWITCH_STRAIGHT;
+  initialSwitchStates[16] = SWITCH_STRAIGHT;
+  initialSwitchStates[17] = SWITCH_CURVED;
+  initialSwitchStates[18] = SWITCH_STRAIGHT;
+  initialSwitchStates[19] = SWITCH_CURVED;
+  initialSwitchStates[20] = SWITCH_STRAIGHT;
+  initialSwitchStates[21] = SWITCH_CURVED;
+  for (int i = 0; i < NUM_SWITCHES; i++) {
+    int switchNumber = i+1;
+    if (switchNumber >= 19) {
+      switchNumber += 134; // 19 -> 153, etc
+    }
+    SetSwitch(switchNumber, initialSwitchStates[i]);
+  }
 
   path_t train20_path;
   path_t train50_path;
-  GetPath(&train20_path, Name2Node("C5"), Name2Node("C14"));
-  GetPath(&train50_path, Name2Node("C13"), Name2Node("C6"));
+  GetPath(&train20_path, Name2Node("D14"), Name2Node("C9"));
   PrintPath(&train20_path);
 
-  NavigateTrain(20, 10, &train20_path);
 
-  // Train 20 sensors
-  ProvideSensorTrigger(Name2Node("C15"));
-
-  // Start train 50 (after 20 was attributed)
-  NavigateTrain(50, 10, &train50_path);
-
-  // Fails for train 20, keep moving it
-  ProvideSensorTrigger(Name2Node("D12"));
-  ProvideSensorTrigger(Name2Node("E11"));
-  ProvideSensorTrigger(Name2Node("D10"));
+  // GetPath(&train20_path, Name2Node("C5"), Name2Node("C14"));
+  // // GetPath(&train50_path, Name2Node("C13"), Name2Node("C6"));
+  // PrintPath(&train20_path);
+  //
+  // NavigateTrain(20, 10, &train20_path);
+  //
+  // // Train 20 sensors
+  // ProvideSensorTrigger(Name2Node("C15"));
+  //
+  // // Start train 50 (after 20 was attributed)
+  // // NavigateTrain(50, 10, &train50_path);
+  //
+  // // Fails for train 20, keep moving it
+  // ProvideSensorTrigger(Name2Node("D12"));
+  //
+  // GetPathWithResv(&train50_path, Name2Node("C13"), Name2Node("C16"), 50);
 
   // Train 50 sensors
-  ProvideSensorTrigger(Name2Node("E7"));
-  ProvideSensorTrigger(Name2Node("D7"));
-  ProvideSensorTrigger(Name2Node("MR9"));
+  // ProvideSensorTrigger(Name2Node("E7"));
+  // ProvideSensorTrigger(Name2Node("D7"));
+  // ProvideSensorTrigger(Name2Node("MR9"));
+
+  // path_t p;
+  // GetPath(&p, Name2Node("C6"), Name2Node("E5"));
+  // PrintPath(&p);
+  // TellTrainController(71, TRAIN_CONTROLLER_SET_SPEED, 10);
+  //
+  // ProvideSensorTrigger(Name2Node("C6"));
+  // ProvideSensorTrigger(Name2Node("B15"));
+  // ProvideSensorTrigger(Name2Node("A3"));
+  // ProvideSensorTrigger(Name2Node("C11"));
+  // ProvideSensorTrigger(Name2Node("B5"));
+  // ProvideSensorTrigger(Name2Node("D3"));
+  // ProvideSensorTrigger(Name2Node("E5"));
 
   ExitKernel();
 }

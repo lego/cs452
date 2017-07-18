@@ -189,7 +189,9 @@ int reserve_track_from_sensor(int train, int speed, path_t *path, cbuffer_t *own
     cbuffer_add(owned_segments, (void *) data.edges[i]);
   }
   Logf(EXECUTOR_LOGGING, "%d: Route executor has gotten %d more segments. Total now %d", train, data.len, cbuffer_size(owned_segments));
-
+  for (int i = 0; i < data.len; i++) {
+    Logf(EXECUTOR_LOGGING, "%d:    acquired edge (dest=%4s)", train, data.edges[i]->dest->name);
+  }
   return 0;
 }
 
@@ -267,33 +269,41 @@ track_node *get_next_node(track_node *node) {
   return get_next_edge(node)->dest;
 }
 
-int reserve_next_segments(int train, int speed, cbuffer_t *owned_segments, int sensor_no) {
+int reserve_next_segments(int train, int speed, cbuffer_t *owned_segments, int sensor_no, int last_unreserved_node, int *next_unreserved_node) {
   int stopdist = StoppingDistance(train, speed);
   reservoir_segment_edges_t reserving;
   reserving.len = 0;
   reserving.owner = train;
 
+  Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, track[sensor_no].name);
+
   bool found_another_sensor = false;
-  track_node *curr_node = get_next_node(&track[sensor_no]);
+  track_node *curr_node = &track[sensor_no];
+  int from_sensor_no = sensor_no;
   int dist_sum = 0;
+  bool start_reserving = false;
   // While all the next nodes are acquired by this sensors trigger, keep getting more
-  while (dist_sum < StoppingDistance(train, speed)) {
+  while (dist_sum - track[from_sensor_no].edge[DIR_AHEAD].dist < StoppingDistance(train, speed)) {
     if (curr_node->type == NODE_EXIT) {
       break;
     } else if (!found_another_sensor && curr_node->type == NODE_SENSOR) {
       found_another_sensor = true;
+      from_sensor_no = curr_node->id;
       dist_sum += get_next_edge(curr_node)->dist;
     } else if (!found_another_sensor) {
     } else {
       dist_sum += get_next_edge(curr_node)->dist;
     }
-
-    reserving.edges[reserving.len] = get_next_edge(curr_node);
-    reserving.len++;
+    if (last_unreserved_node == curr_node->id) start_reserving = true;
+    if (start_reserving) {
+      reserving.edges[reserving.len] = get_next_edge(curr_node);
+      reserving.len++;
+    }
 
     curr_node = get_next_node(curr_node);
   }
 
+  *next_unreserved_node = curr_node->id;
 
   int result = RequestSegmentEdges(&reserving);
   if (result == 1) {
@@ -306,6 +316,9 @@ int reserve_next_segments(int train, int speed, cbuffer_t *owned_segments, int s
       cbuffer_add(owned_segments, (void *) reserving.edges[i]);
     }
     Logf(EXECUTOR_LOGGING, "%d: requesting %d segments. Total now %d", train, reserving.len, cbuffer_size(owned_segments));
+    for (int i = 0; i < reserving.len; i++) {
+      Logf(EXECUTOR_LOGGING, "%d:    acquired edge (dest=%4s)", train, reserving.edges[i]->dest->name);
+    }
     return 0;
   }
 }
@@ -328,8 +341,11 @@ int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
     releasing.len++;
   }
 
-  ReleaseSegmentEdges(&releasing);
   Logf(EXECUTOR_LOGGING, "%d: released %d segments. Total now %d", train, releasing.len, cbuffer_size(owned_segments));
+  for (int i = 0; i < releasing.len; i++) {
+    Logf(EXECUTOR_LOGGING, "%d:    released edge (dest=%4s)", train, releasing.edges[i]->dest->name);
+  }
+  ReleaseSegmentEdges(&releasing);
 
   return 0;
 }
@@ -363,7 +379,7 @@ int get_next_sensor(path_t * path, int last_sensor_no) {
 
 void train_controller() {
   int requester;
-  pathing_operation_t pathing_operation;
+  pathing_operation_t pathing_operation = -1;
   char request_buffer[1024] __attribute__ ((aligned (4)));
   packet_t * packet = (packet_t *) request_buffer;
   train_command_msg_t * msg = (train_command_msg_t *) request_buffer;
@@ -394,6 +410,11 @@ void train_controller() {
   int collision_restart_id = -1;
 
   /**
+   * Reserving from regular motion
+   */
+   int next_unreserved_node_regular = -1;
+
+  /**
    * Values for path navigation
    */
   path_t path;
@@ -403,6 +424,7 @@ void train_controller() {
   int last_unreserved_node = 0;
   int next_unreserved_node = 1;
   int stop_delay_detector_id = -1;
+
 
   Logf(PACKET_LOG_INFO, "Starting train controller (tid=%d)", MyTid());
 
@@ -420,7 +442,7 @@ void train_controller() {
           lastSpeed = 0;
           DoCommand(train_speed_task, train, 0);
         } else {
-          KASSERT(false, "Unexpected delay detector! identifier=%d ticks=%d", detector_msg->identifier, detector_msg->details);
+          KASSERT(false, "Unexpected delay detector! identifier=%d ticks=%d. stop_delay_detector_id=%d collision_restart_id=%d", detector_msg->identifier, detector_msg->details, stop_delay_detector_id, collision_restart_id);
         }
         break;
       case SENSOR_DATA:
@@ -482,7 +504,8 @@ void train_controller() {
             /**
              * Reservation for current segment
              */
-            int result = reserve_next_segments(train, lastSpeed, &owned_segments, sensor_data->sensor_no);
+            if (next_unreserved_node_regular == -1) next_unreserved_node_regular = sensor_data->sensor_no;
+            int result = reserve_next_segments(train, lastSpeed, &owned_segments, sensor_data->sensor_no, next_unreserved_node_regular, &next_unreserved_node_regular);
             if (result == -1 && collision_restart_id == -1) {
               lastNonzeroSpeed = lastSpeed;
               lastSpeed = 0;
@@ -572,6 +595,13 @@ void train_controller() {
       case TRAIN_NAVIGATE_COMMAND:
       case TRAIN_STOPFROM_COMMAND:
         path = navigate_msg->path; // Persist the path
+
+        if (path.src->reverse->id == WhereAmI(train)) {
+          SetTrainLocation(train, path.src->id);
+          DoCommand(reverse_train_task, train, 0);
+        }
+        KASSERT(path.src->id == WhereAmI(train), "Path began from a different place then train. train=%d   WhereAmI %4s  and path_src %4s", train, track[WhereAmI(train)].name, path.src->name);
+
         sent_navigation_stop_delay = false;
         pathing = true;
         stop_delay_detector_id = -1;
@@ -612,7 +642,7 @@ void train_controller() {
           // then we calculate a delay based off of this sensor
           if (pathing_operation == OPERATION_NAVIGATE && next_unreserved_node == path.dest->id) {
             sent_navigation_stop_delay = true;
-            sent_navigation_stop_delay = do_navigation_stop(&path, path.src->id, train, lastSpeed);
+            stop_delay_detector_id = do_navigation_stop(&path, path.src->id, train, lastSpeed);
           } else {
             DoCommand(train_speed_task, train, navigate_msg->speed);
           }
@@ -641,7 +671,7 @@ static void ensure_train_controller(int train) {
 
 void AlertTrainController(int train, int sensor_no, int timestamp) {
   ensure_train_controller(train);
-  // Logf(EXECUTOR_LOGGING, "alerting train=%d sensor %4s timestamp=%d tid=%d", train, track[sensor_no].name, timestamp, train_controllers[train]);
+  Logf(EXECUTOR_LOGGING, "alerting train=%d sensor %4s timestamp=%d tid=%d", train, track[sensor_no].name, timestamp, train_controllers[train]);
   sensor_data_t data;
   data.packet.type = SENSOR_DATA;
   data.sensor_no = sensor_no;
@@ -650,7 +680,6 @@ void AlertTrainController(int train, int sensor_no, int timestamp) {
 }
 
 void TellTrainController(int train, int type, int speed) {
-  Logf(EXECUTOR_LOGGING, "telling train=%d", train);
   ensure_train_controller(train);
   train_command_msg_t msg;
   msg.packet.type = TRAIN_CONTROLLER_COMMAND;
