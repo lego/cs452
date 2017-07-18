@@ -88,25 +88,26 @@ void navigation_test_task() {
   }
 
   path_t train20_path;
-  path_t train50_path;
-  GetPath(&train20_path, Name2Node("D14"), Name2Node("C9"));
+  // GetPath(&train20_path, Name2Node("D14"), Name2Node("C9"));
+  // PrintPath(&train20_path);
+
+
+  GetPath(&train20_path, Name2Node("D9"), Name2Node("C6"));
+  // GetPath(&train50_path, Name2Node("C13"), Name2Node("C6"));
   PrintPath(&train20_path);
 
+  TellTrainController(20, TRAIN_CONTROLLER_SET_SPEED, 10);
 
-  // GetPath(&train20_path, Name2Node("C5"), Name2Node("C14"));
-  // // GetPath(&train50_path, Name2Node("C13"), Name2Node("C6"));
-  // PrintPath(&train20_path);
-  //
-  // NavigateTrain(20, 10, &train20_path);
-  //
-  // // Train 20 sensors
-  // ProvideSensorTrigger(Name2Node("C15"));
-  //
-  // // Start train 50 (after 20 was attributed)
-  // // NavigateTrain(50, 10, &train50_path);
-  //
-  // // Fails for train 20, keep moving it
-  // ProvideSensorTrigger(Name2Node("D12"));
+  // Train 20 sensors
+  ProvideSensorTrigger(Name2Node("D9"));
+
+  NavigateTrain(20, 10, &train20_path);
+
+  // Start train 50 (after 20 was attributed)
+  // NavigateTrain(50, 10, &train50_path);
+
+  // Fails for train 20, keep moving it
+  ProvideSensorTrigger(Name2Node("E12"));
   //
   // GetPathWithResv(&train50_path, Name2Node("C13"), Name2Node("C16"), 50);
 

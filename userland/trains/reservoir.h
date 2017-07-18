@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
   // NOTE: for internal message passing, either
   // RESERVOIR_REQUEST or RESERVOIR_RELEASE
+  // RESERVOIR_AND_RELEASE_REQUEST
   packet_t packet;
 
   int owner;
@@ -58,6 +59,8 @@ void reservoir_task();
 int RequestSegment(reservoir_segments_t * segment);
 
 int RequestSegmentEdges(reservoir_segment_edges_t * segment);
+
+int RequestSegmentEdgesAndReleaseRest(reservoir_segment_edges_t * segment);
 
 /**
  * Release ownership over segments

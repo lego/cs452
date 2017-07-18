@@ -54,6 +54,7 @@ typedef enum {
   RESERVOIR_REQUEST,
   RESERVOIR_RELEASE,
   RESERVOIR_PATHING_REQUEST,
+  RESERVOIR_AND_RELEASE_REQUEST,
 } packet_type_t;
 
 typedef struct {

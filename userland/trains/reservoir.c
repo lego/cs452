@@ -53,11 +53,48 @@ void put_resevoir_packet(int type, reservoir_segments_t * request, int owner) {
   PutPacket(packet);
 }
 
+void put_resevoir_packet_one_item(int type, int src_node, int dest_node, int owner) {
+  int time = Time();
+  char message_buffer[32] __attribute__ ((aligned (4)));;
+  uart_packet_t * packet = (uart_packet_t *) message_buffer;
+  char * packet_data = message_buffer + sizeof(uart_packet_t);
+  packet->type = type;
+  packet->len = 5 + 1*2;
+  jmemcpy(&packet_data[0], &time, sizeof(int));
+  packet_data[4] = owner;
+  for (int i = 0; i < 1; i++) {
+    packet_data[5+2*i] = (char)src_node;
+    packet_data[5+2*i+1] = (char)dest_node;
+  }
+  PutPacket(packet);
+}
+
 void set_segment_ownership(reservoir_segments_t * request, int owner) {
   for (int i = 0; i < request->len; i++) {
     set_segment_owner(&request->segments[i], owner);
   }
   put_resevoir_packet(PACKET_RESEVOIR_SET_DATA, request, owner);
+}
+
+void release_all(int owner) {
+  for (int i = 0; i < TRACK_MAX; i++) {
+    if (track[i].type == NODE_BRANCH) {
+      if (track[i].edge[DIR_CURVED].owner == owner) {
+        put_resevoir_packet_one_item(PACKET_RESEVOIR_UNSET_DATA, track[i].edge[DIR_CURVED].src->id, track[i].edge[DIR_CURVED].dest->id, owner);
+        track[i].edge[DIR_CURVED].owner = -1;
+      }
+      if (track[i].edge[DIR_STRAIGHT].owner == owner) {
+        put_resevoir_packet_one_item(PACKET_RESEVOIR_UNSET_DATA, track[i].edge[DIR_STRAIGHT].src->id, track[i].edge[DIR_STRAIGHT].dest->id, owner);
+        track[i].edge[DIR_STRAIGHT].owner = -1;
+      }
+    } else if (track[i].type == NODE_EXIT) {
+    } else {
+      if (track[i].edge[DIR_AHEAD].owner == owner) {
+        put_resevoir_packet_one_item(PACKET_RESEVOIR_UNSET_DATA, track[i].edge[DIR_AHEAD].src->id, track[i].edge[DIR_AHEAD].dest->id, owner);
+        track[i].edge[DIR_AHEAD].owner = -1;
+      }
+    }
+  }
 }
 
 void release_segments(reservoir_segments_t * request, int owner) {
@@ -96,6 +133,16 @@ void reservoir_task() {
     switch (packet->type) {
     case RESERVOIR_REQUEST:
       if (all_segments_available(resv_request, resv_request->owner)) {
+        set_segment_ownership(resv_request, resv_request->owner);
+        ReplyStatus(sender, RESERVOIR_REQUEST_OK);
+      } else {
+        ReplyStatus(sender, RESERVOIR_REQUEST_ERROR);
+      }
+      break;
+
+    case RESERVOIR_AND_RELEASE_REQUEST:
+      if (all_segments_available(resv_request, resv_request->owner)) {
+        release_all(resv_request->owner);
         set_segment_ownership(resv_request, resv_request->owner);
         ReplyStatus(sender, RESERVOIR_REQUEST_OK);
       } else {
@@ -148,6 +195,23 @@ int RequestSegmentEdges(reservoir_segment_edges_t *segment) {
   edge_segments_to_segments(segment, &actual_segment);
 
   actual_segment.packet.type = RESERVOIR_REQUEST;
+  int result;
+  SendS(reservoir_tid, actual_segment, result);
+  return result;
+}
+
+int RequestSegmentEdgesAndReleaseRest(reservoir_segment_edges_t *segment) {
+  KASSERT(reservoir_tid >= 0, "Reservoir not started");
+  KASSERT(segment->owner >= 0 && segment->owner < 80, "Segment owner isn't valid train. Got owner=%d", segment->owner);
+  KASSERT(segment->len >= 0 && segment->len < RESERVING_LIMIT, "Segment overflowed. size=%d max=%d", segment->len, RESERVING_LIMIT);
+  // TODO: kassert valid segments and directions
+
+  if (segment->len == 0) return 0;
+
+  reservoir_segments_t actual_segment;
+  edge_segments_to_segments(segment, &actual_segment);
+
+  actual_segment.packet.type = RESERVOIR_AND_RELEASE_REQUEST;
   int result;
   SendS(reservoir_tid, actual_segment, result);
   return result;
