@@ -167,6 +167,9 @@ int StoppingDistance(int train, int speed) {
   // These stopping distance values are actually the offset from C10 -> E14
   // thus we take dist(C10->E14) and subtract the offset for the stopping
   // distance
+
+  // This is used for reservations, when we have StopDist 0 we still check stopdist for reserving
+  // if (speed == 0) return 0;
   return 1056 - stopping_distance[train][speed];
 }
 

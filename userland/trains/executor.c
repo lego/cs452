@@ -8,7 +8,6 @@
 #include <trains/switch_controller.h>
 #include <trains/reservoir.h>
 #include <trains/navigation.h>
-#include <trains/route_executor.h>
 #include <track/pathing.h>
 #include <train_command_server.h>
 #include <interactive/commands.h>
@@ -24,7 +23,7 @@ typedef struct {
   int train;
   int speed;
 
-  route_operation_t operation;
+  pathing_operation_t operation;
 
   // TODO: maybe make this a heap pointer?
   path_t path;
@@ -49,10 +48,10 @@ void pathing_worker(int parent_tid, void * data) {
   result.speed = cmd->speed;
   switch (cmd->base.type) {
   case COMMAND_NAVIGATE:
-    result.operation = ROUTE_EXECUTOR_NAVIGATE;
+    result.operation = OPERATION_NAVIGATE;
     break;
   case COMMAND_STOP_FROM:
-    result.operation = ROUTE_EXECUTOR_STOPFROM;
+    result.operation = OPERATION_STOPFROM;
     break;
   default:
     KASSERT(false, "Unexpected command type received by pathing worker. Got command=%d", cmd->base.type);
@@ -145,9 +144,9 @@ void executor_task() {
     case PATHING_WORKER_RESULT:
       Logf(EXECUTOR_LOGGING, "Executor got pathing worker result");
       routing_trains[pathing_result->train] = true;
-      if (pathing_result->operation == ROUTE_EXECUTOR_NAVIGATE) {
+      if (pathing_result->operation == OPERATION_NAVIGATE) {
         NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
-      } else if (pathing_result->operation == ROUTE_EXECUTOR_STOPFROM) {
+      } else if (pathing_result->operation == OPERATION_STOPFROM) {
         StopTrainAt(pathing_result->train, pathing_result->speed, &pathing_result->path);
       } else {
         KASSERT(false, "Pathing operation not handled. operation=%d", pathing_result->operation);

@@ -87,7 +87,6 @@ void init_tracktest(track_node *track) {
 
 void init_tracka(track_node *track) {
   memset(track, 0, TRACK_MAX*sizeof(track_node));
-  debugger();
   track[0].name = "A1";
   track[0].id = 0;
   track[0].owner = -1;

@@ -1,6 +1,7 @@
 #include <basic.h>
 #include <util.h>
 #include <trains/switch_controller.h>
+#include <servers/nameserver.h>
 #include <servers/uart_tx_server.h>
 #include <servers/clock_server.h>
 #include <kernel.h>
@@ -8,21 +9,10 @@
 
 static int switch_controller_tid = -1;
 
-typedef struct {
-  int type;
-  int index;
-  int value;
-} switch_control_request_t;
-
 void solenoid_off() {
   Delay(20); // Delay 200 ms
   Putc(COM1, 32);
 }
-
-enum {
-  SWITCH_SET,
-  SWITCH_GET
-};
 
 int switch_to_index(int sw) {
   if (sw >= 1 && sw <= 18) {
@@ -35,7 +25,7 @@ int switch_to_index(int sw) {
 }
 
 void switch_controller() {
-  switch_controller_tid = MyTid();
+  RegisterAs(NS_SWITCH_CONTROLLER);
 
   int requester;
   switch_control_request_t request;
@@ -93,13 +83,14 @@ void switch_controller() {
 }
 
 int SetSwitch(int sw, int state) {
-  log_task("SetSwitch switch=%d state=%d", active_task->tid, sw, state);
+  #if defined(DEBUG_MODE)
+  // For using a Switch Controller fixture
   if (switch_controller_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
-    KASSERT(false, "Switcher Controller not initialized");
-    return -1;
+    switch_controller_tid = WhoIsEnsured(NS_SWITCH_CONTROLLER);
   }
+  #endif
+  log_task("SetSwitch switch=%d state=%d", active_task->tid, sw, state);
+  KASSERT(switch_controller_tid != -1, "Switcher Controller not initialized");
   switch_control_request_t request;
   request.type = SWITCH_SET;
   request.index = sw;
@@ -109,13 +100,14 @@ int SetSwitch(int sw, int state) {
 }
 
 int GetSwitchState(int sw) {
-  log_task("SetSwitch switch=%d state=%d", active_task->tid, sw, state);
+  #if defined(DEBUG_MODE)
+  // For using a Switch Controller fixture
   if (switch_controller_tid == -1) {
-    // Don't make data syscall, but still reschedule
-    Pass();
-    KASSERT(false, "Switcher Controller not initialized");
-    return -1;
+    switch_controller_tid = WhoIsEnsured(NS_SWITCH_CONTROLLER);
   }
+  #endif
+  log_task("SetSwitch switch=%d state=%d", active_task->tid, sw, state);
+  KASSERT(switch_controller_tid != -1, "Switcher Controller not initialized");
   switch_control_request_t request;
   request.type = SWITCH_GET;
   request.index = sw;

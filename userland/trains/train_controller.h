@@ -3,6 +3,14 @@
 #include <packet.h>
 #include <track/pathing.h>
 
+typedef struct {
+  // type = ROUTE_FAILURE
+  packet_t packet;
+
+  int train;
+  int dest_id;
+} route_failure_t;
+
 typedef enum {
   TRAIN_CONTROLLER_SET_SPEED,
   TRAIN_CONTROLLER_REVERSE,
@@ -23,6 +31,11 @@ typedef struct {
   path_t path;
   int speed; // Initially for testing at a consistent speed
 } train_navigate_t;
+
+typedef enum {
+  OPERATION_NAVIGATE,
+  OPERATION_STOPFROM,
+} pathing_operation_t;
 
 /**
  * Initializes internal state of the train controllers
