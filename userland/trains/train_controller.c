@@ -335,13 +335,13 @@ int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
 
   while (cbuffer_size(owned_segments) > 0) {
     track_edge *edge = (track_edge *) cbuffer_pop(owned_segments, NULL);
-    if (edge->dest == sensor) {
-      cbuffer_unpop(owned_segments, (void *) edge);
-      break;
-    }
 
     releasing.edges[releasing.len] = edge;
     releasing.len++;
+
+    if (edge->dest == sensor) {
+      break;
+    }
   }
 
   Logf(EXECUTOR_LOGGING, "%d: released %d segments. Total now %d", train, releasing.len, cbuffer_size(owned_segments));
