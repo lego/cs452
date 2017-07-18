@@ -191,9 +191,11 @@ void GetPathWithResv(path_t *p, int src, int dest, int resv_owner) {
     p->dist = 0;
   }
 
-  volatile int pathing_idx = global_pathing_idx++;
-  if (global_pathing_idx >= 5) global_pathing_idx = 0;
-  if (pathing_idx >= 5) pathing_idx = pathing_idx % 5;
+  int pathing_idx = 0;
+
+  // volatile int pathing_idx = global_pathing_idx++;
+  // if (global_pathing_idx >= 5) global_pathing_idx = 0;
+  // if (pathing_idx >= 5) pathing_idx = pathing_idx % 5;
 
   dijkstra(src, dest, pathing_idx, resv_owner);
   p->len = get_path(src, dest, nodes, TRACK_MAX, pathing_idx);
