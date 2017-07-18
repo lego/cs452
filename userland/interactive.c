@@ -626,6 +626,9 @@ void interactive() {
         case COMMAND_TRAIN_CALIBRATE:
           Putf(COM2, "Calibrating train %d", cmd_data->train);
           break;
+        case COMMAND_NAVIGATE_RANDOMLY:
+          Putf(COM2, "Randomly navigating train %d", cmd_data->train);
+          break;
         case COMMAND_TRAIN_REVERSE:
           Putf(COM2, "Train %d reverse", cmd_data->train);
           break;

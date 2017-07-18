@@ -35,6 +35,7 @@ command_t get_command_type(char *command) {
   // navigates the train to B
   DEF_COMMAND("nav", COMMAND_NAVIGATE)
   // runs the pathing algorithm from A to B
+  DEF_COMMAND("rnav", COMMAND_NAVIGATE_RANDOMLY)
   DEF_COMMAND("path", COMMAND_PATH)
   // manually sets the velocity for a train speed
   DEF_COMMAND("velo", COMMAND_SET_VELOCITY)
