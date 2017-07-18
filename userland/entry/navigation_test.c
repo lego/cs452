@@ -65,11 +65,10 @@ void navigation_test_task() {
 
   Create(PRIORITY_NAMESERVER, nameserver);
   Create(PRIORITY_IDLE_TASK, idle_task);
-  Create(4, sensor_detector_multiplexer_task);
   Create(4, sensor_attributer);
-  Create(4, reservoir_task);
-  Create(4, mock_switch_controller);
-  Create(4, mock_executor);
+  Create(5, reservoir_task);
+  Create(6, mock_executor);
+  Create(7, mock_switch_controller);
 
   path_t train20_path;
   path_t train50_path;
@@ -85,15 +84,15 @@ void navigation_test_task() {
   // Start train 50 (after 20 was attributed)
   NavigateTrain(50, 10, &train50_path);
 
-
+  // Fails for train 20, keep moving it
   ProvideSensorTrigger(Name2Node("D12"));
   ProvideSensorTrigger(Name2Node("E11"));
-
-  // Train 50 sensors
   ProvideSensorTrigger(Name2Node("D10"));
 
-
-
+  // Train 50 sensors
+  ProvideSensorTrigger(Name2Node("E7"));
+  ProvideSensorTrigger(Name2Node("D7"));
+  ProvideSensorTrigger(Name2Node("MR9"));
 
   ExitKernel();
 }

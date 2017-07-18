@@ -66,22 +66,38 @@ int do_navigation_stop(path_t *path, int source_node, int train, int speed) {
  * @param node_idx to desire the segment reservation
  * @param stopdist offset for reserving
  */
+// int get_sensor_before_node(path_t *path, int node_id, int stopdist) {
+//   int node_idx = path_idx(path, node_id);
+//   for (int j = 0; j < node_idx; j++) {
+//     if (path->node_dist[node_idx] - path->node_dist[j] < stopdist) {
+//       // We need to find the sensor before this node for knowing when we need
+//       // to reserve and from what sensor
+//       for (int k = j - 1; k >= 0; k--) {
+//         if (k < 1) {
+//           return path->src->id; // reserve from the beginning, start position
+//         }
+//         if (path->nodes[k]->type == NODE_SENSOR) {
+//           // reserve precisely node[idx] - node[k].dist - stopdist
+//           // away from node k
+//           return path->nodes[k]->id;
+//         }
+//       }
+//     }
+//   }
+//
+//   // If we didnt' catch anything
+//   // it's because there src ~> node[idx] is shorter than stopping dist
+//   return path->src->id; // reserve from the beginning
+// }
+
+
 int get_sensor_before_node(path_t *path, int node_id, int stopdist) {
   int node_idx = path_idx(path, node_id);
-  for (int j = 0; j < node_idx; j++) {
-    if (path->node_dist[node_idx] - path->node_dist[j] < stopdist) {
+  for (int j = node_idx - 1; j >= 0; j--) {
+    if (path->node_dist[node_idx] - path->node_dist[j] > stopdist && path->nodes[j]->type == NODE_SENSOR) {
       // We need to find the sensor before this node for knowing when we need
       // to reserve and from what sensor
-      for (int k = j - 1; k >= 0; k--) {
-        if (k < 1) {
-          return path->src->id; // reserve from the beginning, start position
-        }
-        if (path->nodes[k]->type == NODE_SENSOR) {
-          // reserve precisely node[idx] - node[k].dist - stopdist
-          // away from node k
-          return path->nodes[k]->id;
-        }
-      }
+      return path->nodes[j]->id;
     }
   }
 
@@ -470,7 +486,7 @@ void train_controller() {
             if (result == -1 && collision_restart_id == -1) {
               lastNonzeroSpeed = lastSpeed;
               lastSpeed = 0;
-              DoCommand(reverse_train_task, train, 0);
+              DoCommand(train_speed_task, train, 0);
               Logf(EXECUTOR_LOGGING, "Starting collision procedure from regular train movement. train=%d", train);
               collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
             }
@@ -517,6 +533,7 @@ void train_controller() {
               pathing = false;
               lastSpeed = 0;
               DoCommand(train_speed_task, train, 0);
+
             } else {
               // Flip switches for any branches on the recently reserved segments
               set_switches(&path, last_unreserved_node, next_unreserved_node);
@@ -558,6 +575,7 @@ void train_controller() {
         sent_navigation_stop_delay = false;
         pathing = true;
         stop_delay_detector_id = -1;
+        lastSpeed = navigate_msg->speed;
 
         // This was put in here because at one point an invalid path was getting
         // passed down, so this is a safegaurd
@@ -623,7 +641,7 @@ static void ensure_train_controller(int train) {
 
 void AlertTrainController(int train, int sensor_no, int timestamp) {
   ensure_train_controller(train);
-  Logf(EXECUTOR_LOGGING, "alerting train=%d sensor %4s timestamp=%d tid=%d", train, track[sensor_no].name, timestamp, train_controllers[train]);
+  // Logf(EXECUTOR_LOGGING, "alerting train=%d sensor %4s timestamp=%d tid=%d", train, track[sensor_no].name, timestamp, train_controllers[train]);
   sensor_data_t data;
   data.packet.type = SENSOR_DATA;
   data.sensor_no = sensor_no;

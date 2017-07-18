@@ -142,6 +142,8 @@ int RequestSegmentEdges(reservoir_segment_edges_t *segment) {
   KASSERT(segment->len >= 0 && segment->len < RESERVING_LIMIT, "Segment overflowed. size=%d max=%d", segment->len, RESERVING_LIMIT);
   // TODO: kassert valid segments and directions
 
+  if (segment->len == 0) return 0;
+
   reservoir_segments_t actual_segment;
   edge_segments_to_segments(segment, &actual_segment);
 

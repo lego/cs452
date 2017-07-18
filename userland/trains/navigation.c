@@ -169,7 +169,7 @@ int StoppingDistance(int train, int speed) {
   // distance
 
   // This is used for reservations, when we have StopDist 0 we still check stopdist for reserving
-  // if (speed == 0) return 0;
+  if (speed == 0) return 0;
   return 1056 - stopping_distance[train][speed];
 }
 
