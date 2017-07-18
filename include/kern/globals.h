@@ -9,4 +9,3 @@ extern bool should_exit;
 extern char logs[LOG_SIZE];
 extern volatile int log_length;
 extern unsigned int main_fp;
-extern int next_task_starting;

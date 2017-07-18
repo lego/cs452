@@ -7,4 +7,3 @@ bool should_exit;
 char logs[LOG_SIZE];
 volatile int log_length;
 unsigned int main_fp;
-int next_task_starting = -1;

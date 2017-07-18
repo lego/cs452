@@ -14,7 +14,6 @@ extern int last_started_task;
 #define REDBOOT_ENTRYPOINT 0x218000
 
 extern int main_fp;
-extern int next_task_starting;
 
 /**
  * Dumps memory in hex and ASCII around mem, specifically len amount spread
@@ -206,7 +205,7 @@ void print_stats() {
     bwprintf(COM2, "Last task %d: %s\n\r", last_started_task, ctx->descriptors[last_started_task].name);
     bwprintf(COM2, "  stack_pointer=%08x\n\r", (unsigned int) ctx->descriptors[last_started_task].stack_pointer);
   }
-  if (next_task_starting != -1) {
+  if (next_starting_task != -1) {
     bwprintf(COM2, "Next task %d: %s\n\r", next_starting_task, ctx->descriptors[next_starting_task].name);
     bwprintf(COM2, "  stack_pointer=%08x\n\r", (unsigned int) ctx->descriptors[next_starting_task].stack_pointer);
   }
