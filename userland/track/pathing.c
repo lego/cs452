@@ -304,20 +304,20 @@ void dijkstra(int src, int dest, int p_idx, int owner) {
           case NODE_ENTER:
           case NODE_SENSOR:
           case NODE_MERGE:
-            // if (v->edge[DIR_AHEAD].owner == -1 || v->edge[DIR_AHEAD].owner == owner) {
-            //   edges[edges_len++] = &v->edge[DIR_AHEAD];
-            // }
-            edges[edges_len++] = &v->edge[DIR_AHEAD];
+            if (v->edge[DIR_AHEAD].owner == -1 || v->edge[DIR_AHEAD].owner == owner) {
+              edges[edges_len++] = &v->edge[DIR_AHEAD];
+            }
+            // edges[edges_len++] = &v->edge[DIR_AHEAD];
             break;
           case NODE_BRANCH:
-            // if (v->edge[DIR_STRAIGHT].owner == -1 || v->edge[DIR_STRAIGHT].owner == owner) {
-            //   edges[edges_len++] = &v->edge[DIR_STRAIGHT];
-            // }
-            edges[edges_len++] = &v->edge[DIR_STRAIGHT];
-            // if (v->edge[DIR_CURVED].owner == -1 || v->edge[DIR_CURVED].owner == owner) {
-            //   edges[edges_len++] = &v->edge[DIR_CURVED];
-            // }
-            edges[edges_len++] = &v->edge[DIR_CURVED];
+            if (v->edge[DIR_STRAIGHT].owner == -1 || v->edge[DIR_STRAIGHT].owner == owner) {
+              edges[edges_len++] = &v->edge[DIR_STRAIGHT];
+            }
+            // edges[edges_len++] = &v->edge[DIR_STRAIGHT];
+            if (v->edge[DIR_CURVED].owner == -1 || v->edge[DIR_CURVED].owner == owner) {
+              edges[edges_len++] = &v->edge[DIR_CURVED];
+            }
+            // edges[edges_len++] = &v->edge[DIR_CURVED];
             break;
           default:
             KASSERT(false, "Node type not handled. node_id=%d type=%d. src=%d dest=%d", v->id, v->type, src, dest);
