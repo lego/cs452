@@ -269,6 +269,7 @@ int Putc( int channel, const char c ) {
 
 int Putstr(int channel, const char *str ) {
   KASSERT(channel == COM1 || channel == COM2, "Invalid channel provided: got channel=%d", channel);
+  KASSERT(false, "Invalid channel provided: got channel=%d", channel);
   log_task("Putstr str=%s", active_task->tid, str);
   int server_tid = ((channel == COM1) ? uart1_tx_server_tid : uart2_tx_server_tid);
   if (server_tid == -1) {
