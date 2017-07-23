@@ -105,9 +105,9 @@ void navigation_test_task() {
 
   SendSN(executor_tid, data);
 
-  // path_t train20_path;
-  // GetPath(&train20_path, Name2Node("D14"), Name2Node("C9"));
-  // PrintPath(&train20_path);
+  path_t train20_path;
+  GetPath(&train20_path, Name2Node("B2"), Name2Node("B5"));
+  PrintPath(&train20_path);
 
 
   // GetPath(&train20_path, Name2Node("D9"), Name2Node("C6"));

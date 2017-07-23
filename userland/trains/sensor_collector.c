@@ -65,6 +65,7 @@ void sensor_attributer() {
 
   int active_train = -1;
 
+  // TODO: optimize these by making them cbuffer so we don't need to memcpy
   int lastTrainAtSensor[NUM_SENSORS][SENSOR_MEMORY];
   for (int i = 0; i < NUM_SENSORS; i++) {
     for (int j = 0; j < SENSOR_MEMORY; j++) {
@@ -120,6 +121,7 @@ void sensor_attributer() {
             }
           }
           node = nextSensor(track[rev_request->lastSensor].reverse->id).node;
+          Logf(EXECUTOR_LOGGING, "Expected train after reverse on %4s", track[node].name);
           if (node != -1) {
             for (int i = 0; i < SENSOR_MEMORY; i++) {
               if (lastTrainAtSensor[node][i] == -1) {

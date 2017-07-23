@@ -704,6 +704,7 @@ void train_controller() {
   int last_unreserved_node = 0;
   int next_unreserved_node = 1;
   int stop_delay_detector_id = -1;
+  int reversing_delay_detector_tid = -1;
 
   // @FIXME: Eventually remove this. Only here to randomly navigate over and over.
   bool rnaving = false;
@@ -746,6 +747,9 @@ void train_controller() {
           pathing = false;
           lastSpeed = 0;
           DoCommand(train_speed_task, train, 0);
+        } else if (detector_msg->identifier == reversing_delay_detector_tid) {
+          // Logf(EXECUTOR_LOGGING, "%d: Route executor telling reverse like it is.", train);
+          // RegisterTrainReverse(train, track[WhereAmI(train)].reverse->id);
         } else if (detector_msg->identifier == nav_switch_detector_id) {
           int idx = path_idx(&path, nav_switch_detector_switch);
           if (idx != -1) {
@@ -1014,12 +1018,6 @@ void train_controller() {
       case TRAIN_NAVIGATE_COMMAND:
       case TRAIN_STOPFROM_COMMAND:
         path = navigate_msg->path; // Persist the path
-        if (path.src->reverse->id == WhereAmI(train)) {
-          SetTrainLocation(train, path.src->id);
-          DoCommand(reverse_train_task, train, 0);
-        }
-        KASSERT(path.src->id == WhereAmI(train), "Path began from a different place then train. train=%d   WhereAmI %d  and path_src %s", train, WhereAmI(train), path.src->name);
-
         sent_navigation_stop_delay = false;
         pathing = true;
         stop_delay_detector_id = -1;
@@ -1036,11 +1034,10 @@ void train_controller() {
           Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s. Stopfrom", train, train, path.src->name, path.dest->name);
           pathing_operation = OPERATION_STOPFROM;
         }
+        Logf(EXECUTOR_LOGGING, "%d: path len=%d dist=%d", train, path.len, path.dist);
 
-        int dist_sum = 0;
         for (int i = 0; i < path.len; i++) {
-          dist_sum += path.node_dist[i];
-          Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", train, path.nodes[i]->name, dist_sum);
+          Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", train, path.nodes[i]->name, path.node_dist[i]);
         }
 
         // FIXME: using path.src->id here assumes that the first node is always a sensor.
@@ -1065,8 +1062,17 @@ void train_controller() {
           //   sent_navigation_stop_delay = true;
           //   stop_delay_detector_id = do_navigation_stop(&path, path.src->id, train, lastSpeed);
           // } else {
+
+          // if path is in reverse direction, flip the train location
+          if (path.src->reverse->id == WhereAmI(train)) {
+            // SetTrainLocation(train, path.src->id);
+            Logf(EXECUTOR_LOGGING, "%d: Route executor has reversed path. Starting in the other direction. train=%d route is %s ~> %s. Navigating.", train, train, path.src->name, path.dest->name);
+            reversing_delay_detector_tid = StartDelayDetector("attribution reversing", MyTid(), 310);
+            DoCommand(reverse_train_task, train, navigate_msg->speed);
+          } else {
             DoCommand(train_speed_task, train, navigate_msg->speed);
-          // }
+          }
+          // KASSERT(path.src->id == WhereAmI(train), "Path began from a different place then train. train=%d   WhereAmI %d  and path_src %s", train, WhereAmI(train), path.src->name);
         }
         break;
       default:

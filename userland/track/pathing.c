@@ -212,47 +212,50 @@ void GetPathWithResv(path_t *p, int src, int dest, int resv_owner) {
     }
   }
 
-  // // check for more optimal normal src, reverse dest
-  // dijkstra(src, reverse_dest, pathing_idx, resv_owner);
-  // if (track[reverse_dest].p_dist[pathing_idx] < p->dist) {
-  //   p->len = get_path(src, reverse_dest, nodes, TRACK_MAX, pathing_idx);
-  //   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
-  //   p->src = &track[src];
-  //   p->dest = &track[reverse_dest];
-  //   for (int i = 0; i < p->len; i++) {
-  //     p->nodes[i] = nodes[i];
-  //     p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
-  //   }
-  // }
-  // KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
-  //
-  // // check for more optimal reverse src, normal dest
-  // dijkstra(reverse_src, dest, pathing_idx, resv_owner);
-  // if (track[dest].p_dist[pathing_idx] < p->dist) {
-  //   p->len = get_path(reverse_src, dest, nodes, TRACK_MAX, pathing_idx);
-  //   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
-  //   p->src = &track[reverse_src];
-  //   p->dest = &track[dest];
-  //   for (int i = 0; i < p->len; i++) {
-  //     p->nodes[i] = nodes[i];
-  //     p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
-  //   }
-  // }
-  // KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
-  //
-  // // check for more optimal reverse src, reverse dest
-  // dijkstra(reverse_src, reverse_dest, pathing_idx, resv_owner);
-  // if (track[reverse_dest].p_dist[pathing_idx] < p->dist) {
-  //   p->len = get_path(reverse_src, reverse_dest, nodes, TRACK_MAX, pathing_idx);
-  //   p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
-  //   p->src = &track[reverse_src];
-  //   p->dest = &track[reverse_dest];
-  //   for (int i = 0; i < p->len; i++) {
-  //     p->nodes[i] = nodes[i];
-  //     p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
-  //   }
-  // }
-  // KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
+  // check for more optimal normal src, reverse dest
+  pathing_idx++;
+  dijkstra(src, reverse_dest, pathing_idx, resv_owner);
+  if (track[reverse_dest].p_dist[pathing_idx] < p->dist) {
+    p->len = get_path(src, reverse_dest, nodes, TRACK_MAX, pathing_idx);
+    p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
+    p->src = &track[src];
+    p->dest = &track[reverse_dest];
+    for (int i = 0; i < p->len; i++) {
+      p->nodes[i] = nodes[i];
+      p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
+    }
+  }
+  KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
+
+  // check for more optimal reverse src, normal dest
+  pathing_idx++;
+  dijkstra(reverse_src, dest, pathing_idx, resv_owner);
+  if (track[dest].p_dist[pathing_idx] < p->dist) {
+    p->len = get_path(reverse_src, dest, nodes, TRACK_MAX, pathing_idx);
+    p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
+    p->src = &track[reverse_src];
+    p->dest = &track[dest];
+    for (int i = 0; i < p->len; i++) {
+      p->nodes[i] = nodes[i];
+      p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
+    }
+  }
+  KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
+
+  // check for more optimal reverse src, reverse dest
+  pathing_idx++;
+  dijkstra(reverse_src, reverse_dest, pathing_idx, resv_owner);
+  if (track[reverse_dest].p_dist[pathing_idx] < p->dist) {
+    p->len = get_path(reverse_src, reverse_dest, nodes, TRACK_MAX, pathing_idx);
+    p->dist = nodes[p->len - 1]->p_dist[pathing_idx];
+    p->src = &track[reverse_src];
+    p->dest = &track[reverse_dest];
+    for (int i = 0; i < p->len; i++) {
+      p->nodes[i] = nodes[i];
+      p->node_dist[i] = nodes[i]->p_dist[pathing_idx];
+    }
+  }
+  KASSERT(p->len <= PATH_MAX, "Generated path was too large and overflowed. len=%d for %4s ~> %4s", p->len, track[src].name, track[dest].name);
 }
 
 void PrintPath(path_t *p) {
