@@ -44,21 +44,12 @@ static inline void task_post_activate(task_descriptor_t *task) {
   task->execution_time += (execution_time_end - execution_time_start);
 }
 
-extern char * _BssStart;
-extern char * _BssEnd;
-
-void clear_bss() {
-  char * curr = _BssStart;
-  while(curr < _BssEnd) *curr = 0;
-}
-
 int main() {
   char taskStack[_TaskStackSize * (MAX_TASK_STACKS + 2)];
   TaskStack = taskStack;
   #ifndef DEBUG_MODE
   // saves FP to be able to clean exit to redboot
   asm volatile("mov %0, fp @ save fp" : "=r" (main_fp));
-  clear_bss();
   #endif
 
   should_exit = false;
