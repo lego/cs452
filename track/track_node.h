@@ -17,8 +17,8 @@ typedef enum {
 
 #define MAX_SIMULTANEOUS_PATHING 5
 
-struct track_node;
-typedef struct track_node track_node;
+struct track_node_s;
+typedef struct track_node_s track_node;
 typedef struct track_edge track_edge;
 
 struct track_edge {
@@ -30,7 +30,7 @@ struct track_edge {
   int owner;
 };
 
-struct track_node {
+struct track_node_s {
   const char *name;
   node_type type;
   int id;

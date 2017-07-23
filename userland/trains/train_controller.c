@@ -48,6 +48,10 @@ int path_idx(path_t *path, int node_id) {
   return -1;
 }
 
+int offset_stop_dist(int train, int speed) {
+  return StoppingDistance(train, speed) + 50;
+}
+
 int do_navigation_stop(path_t *path, int source_node, int train, int speed) {
   int distance_before_stopping = path->dist - path->node_dist[path_idx(path, source_node)] - StoppingDistance(train, speed);
   int wait_ticks = distance_before_stopping * 100 / Velocity(train, speed);
@@ -156,7 +160,7 @@ track_edge *segment_from_dest_node(path_t *path, int dest_node_idx) {
  * Get segments to reserve for nodes from next_node for the stopdist criteria
  */
 int get_segments_to_reserve(int train, int speed, reservoir_segment_edges_t *data, path_t *path, int sensor_id, int next_node) {
-  int stopdist = StoppingDistance(train, speed);
+  int stopdist = offset_stop_dist(train, speed);
   data->len = 0;
   int sensor;
   // While all the next nodes are acquired by this sensors trigger, keep getting more
@@ -182,7 +186,7 @@ int get_segments_to_reserve(int train, int speed, reservoir_segment_edges_t *dat
 
 
 int reserve_track_from_sensor(int train, int speed, path_t *path, int sensor_id) {
-  int stopdist = StoppingDistance(train, speed);
+  int stopdist = offset_stop_dist(train, speed);
   Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, track[sensor_id].name);
 
   reservoir_segment_edges_t data;
@@ -191,7 +195,7 @@ int reserve_track_from_sensor(int train, int speed, path_t *path, int sensor_id)
 
   int next_sensor = get_next_sensor(path, sensor_id);
   for (int i = path_idx(path, sensor_id); i < path->len; i++) {
-    if (i > path_idx(path, next_sensor) && path->node_dist[path_idx(path, i)] - path->node_dist[path_idx(path, next_sensor)] > stopdist) break;
+    if (i > path_idx(path, next_sensor) && path->node_dist[i] - path->node_dist[path_idx(path, next_sensor)] > stopdist) break;
     data.edges[data.len++] = get_next_edge_with_path(path, path->nodes[i]);
   }
 
@@ -303,7 +307,7 @@ track_node *get_next_node(path_t *path, track_node *node) {
 }
 
 // int reserve_next_segments(int train, int speed, cbuffer_t *owned_segments, int sensor_no, int last_unreserved_node, int *next_unreserved_node) {
-//   int stopdist = StoppingDistance(train, speed);
+//   int stopdist = offset_stop_dist(train, speed);
 //   reservoir_segment_edges_t reserving;
 //   reserving.len = 0;
 //   reserving.owner = train;
@@ -316,7 +320,7 @@ track_node *get_next_node(path_t *path, track_node *node) {
 //   int dist_sum = 0;
 //   bool start_reserving = false;
 //   // While all the next nodes are acquired by this sensors trigger, keep getting more
-//   while (dist_sum - track[from_sensor_no].edge[DIR_AHEAD].dist < StoppingDistance(train, speed)) {
+//   while (dist_sum - track[from_sensor_no].edge[DIR_AHEAD].dist < offset_stop_dist(train, speed)) {
 //     if (curr_node->type == NODE_EXIT) {
 //       break;
 //     } else if (!found_another_sensor && curr_node->type == NODE_SENSOR) {
@@ -388,7 +392,7 @@ void set_switches(int train, int speed, path_t *path, int start_node) {
   int from_sensor_no = start_node;
   int dist_sum = 0;
   // While all the next nodes are acquired by this sensors trigger, keep getting more
-  while (curr_node != path->dest && dist_sum - get_next_edge(path, curr_node)->dist < StoppingDistance(train, speed)) {
+  while (curr_node != path->dest && dist_sum - get_next_edge(path, curr_node)->dist < offset_stop_dist(train, speed)) {
     if (curr_node->type == NODE_EXIT) {
       break;
     } else if (!found_another_sensor && curr_node->type == NODE_SENSOR) {
@@ -549,17 +553,25 @@ bool gluInvertMatrix(const float m[16], float invOut[16]) {
 }
 
 int reserve_next_segments(path_t *path, int train, int speed, int sensor_no) {
-  int stopdist = StoppingDistance(train, speed);
+  int stopdist = offset_stop_dist(train, speed);
   reservoir_segment_edges_t reserving;
   reserving.len = 0;
   reserving.owner = train;
-  Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor %4s", train, stopdist, track[sensor_no].name);
+  Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor id:%d name:%4s", train, stopdist, sensor_no, track[sensor_no].name);
   bool found_another_sensor = false;
+
+  // Always start from the next sensor after the one we just hit, because we
+  //   need to make sure reservation has enough room to stop until we hit the next sensor.
   track_node *curr_node = &track[sensor_no];
+  // This includes re-reserving the current node
+  reserving.edges[reserving.len] = get_next_edge(path, curr_node);
+  reserving.len++;
+  curr_node = get_next_node(path, curr_node);
+
   int from_sensor_no = sensor_no;
   int dist_sum = 0;
   // While all the next nodes are acquired by this sensors trigger, keep getting more
-  while ((path == NULL || curr_node != path->dest) && dist_sum - get_next_edge(path, curr_node)->dist < StoppingDistance(train, speed)) {
+  while ((path == NULL || curr_node != path->dest) && dist_sum - get_next_edge(path, curr_node)->dist < stopdist) {
     if (curr_node->type == NODE_EXIT) {
       break;
     } else if (!found_another_sensor && curr_node->type == NODE_SENSOR) {
@@ -658,8 +670,17 @@ void train_controller() {
       case DELAY_DETECT:
         if (detector_msg->identifier == collision_restart_id) {
           collision_restart_id = -1;
-          lastSpeed = lastNonzeroSpeed;
-          DoCommand(train_speed_task, train, lastNonzeroSpeed);
+          int result = reserve_next_segments(NULL, train, lastNonzeroSpeed, lastSensor);
+          if (result == -1 && collision_restart_id == -1) {
+            lastSpeed = 0;
+            DoCommand(train_speed_task, train, 0);
+            Logf(EXECUTOR_LOGGING, "Starting collision procedure from regular train movement. train=%d", train);
+            collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
+          } else {
+            Logf(EXECUTOR_LOGGING, "No more collision! Yay!. train=%d", train);
+            lastSpeed = lastNonzeroSpeed;
+            DoCommand(train_speed_task, train, lastNonzeroSpeed);
+          }
         } else if (detector_msg->identifier == stop_delay_detector_id) {
           pathing = false;
           lastSpeed = 0;
@@ -836,7 +857,8 @@ void train_controller() {
               // If we need to navigate and there are no more sensors within stopdist
               // then we calculate a delay based off of this sensor
               int node_to_sense_on = 0;
-              for (int i = path.len; i >= 0; i++) {
+              for (int i = path.len-1; i >= 0; i--) {
+                Logf(EXECUTOR_LOGGING, "Check path[%d]: %s -> dist: %d but need at least %d", i, path.nodes[i]->name, path.dist - path.node_dist[i], StoppingDistance(train, lastSpeed));
                 if (path.nodes[i]->type == NODE_SENSOR && path.dist - path.node_dist[i] > StoppingDistance(train, lastSpeed)) {
                   node_to_sense_on = i;
                   break;
@@ -859,7 +881,6 @@ void train_controller() {
         case TRAIN_CONTROLLER_SET_SPEED:
           Logf(EXECUTOR_LOGGING, "TC executing speed cmd");
           lastSpeed = msg->speed;
-          lastSensor = -1;
           DoCommand(train_speed_task, train, msg->speed);
           break;
         case TRAIN_CONTROLLER_CALIBRATE: {
@@ -918,7 +939,8 @@ void train_controller() {
 
         // FIXME: using path.src->id here assumes that the first node is always a sensor.
         // This works because we only assume our location is set to sensors
-        int result = reserve_track_from_sensor(train, lastSpeed, &path, path.src->id);
+        //int result = reserve_track_from_sensor(train, lastSpeed, &path, path.src->id);
+        int result = reserve_next_segments(&path, train, lastSpeed, lastSensor);
 
         // FIXME: deal with failure result
         if (result == -1) {
