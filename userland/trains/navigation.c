@@ -46,10 +46,15 @@ void InitNavigation() {
   //velocity[69][13] = 600; // ~accurate, averaged 590-610, didn't leave on for awhile
   //velocity[69][14] = 610; // ~accurate, averaged 590-620, didn't leave on for awhile
 
-  stopping_distance[69][10] = 280 + 56 + 30; // reasonably accurate
-  stopping_distance[71][10] = 700; // reasonably accurate
-  stopping_distance[71][12] = 400; // reasonably accurate
-  stopping_distance[71][14] = -140; // reasonably accurate
+  //stopping_distance[69][10] = 280 + 56 + 30; // reasonably accurate
+  //stopping_distance[71][10] = 700; // reasonably accurate
+  //stopping_distance[71][12] = 400; // reasonably accurate
+  //stopping_distance[71][14] = -140; // reasonably accurate
+
+  velocity[70][5] = 230;
+  velocity[70][7] = 343;
+  velocity[70][11] = 548;
+  velocity[70][13] = 631;
 
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;
@@ -169,8 +174,9 @@ int StoppingDistance(int train, int speed) {
   // distance
 
   // This is used for reservations, when we have StopDist 0 we still check stopdist for reserving
-  if (speed == 0) return 0;
-  return 1056 - stopping_distance[train][speed];
+  //if (speed == 0) return 0;
+  //return 1056 - stopping_distance[train][speed];
+  return (15 * Velocity(train, speed)) / 10;
 }
 
 int CalculateDistance(int velocity, int t) {

@@ -35,6 +35,7 @@ typedef struct {
 
 typedef enum {
   OPERATION_NAVIGATE,
+  OPERATION_NAVIGATE_RANDOMLY,
   OPERATION_STOPFROM,
 } pathing_operation_t;
 
@@ -65,6 +66,13 @@ void AlertTrainController(int train, int sensor_no, int timestamp);
  */
 void TellTrainController(int train, int type, int speed);
 
+/**
+ * Tell a train to navigate to a random location, then keep re-navigating
+ * @param train to navigate
+ * @param speed to travel at (temp for diagnostics)
+ * @param path  to travel
+ */
+void NavigateTrainRandomly(int train, int speed, path_t * path);
 
 /**
  * Tell a train to navigate to a location

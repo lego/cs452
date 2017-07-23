@@ -73,12 +73,45 @@ track_edge *get_next_edge_with_path(path_t *path, track_node *node) {
   }
 }
 
+int get_next_of_type_idx(path_t * path, int last, int type) {
+  for (int i = path_idx(path, last) + 1; i < path->len; i++) {
+    if (path->nodes[i]->type == type) {
+      return i;
+    }
+  }
+  return -1;
+}
 
-int get_next_sensor(path_t * path, int last_sensor_no) {
+int get_next_branch_idx(path_t * path, int last) {
+  for (int i = path_idx(path, last) + 1; i < path->len; i++) {
+    if (path->nodes[i]->type == NODE_BRANCH) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+int get_next_branch(path_t * path, int last) {
+  int idx = get_next_branch_idx(path, last);
+  if (idx != -1) {
+    return path->nodes[idx]->id;
+  }
+  return -1;
+}
+
+int get_next_sensor_idx(path_t * path, int last_sensor_no) {
   for (int i = path_idx(path, last_sensor_no) + 1; i < path->len; i++) {
     if (path->nodes[i]->type == NODE_SENSOR) {
-      return path->nodes[i]->id;
+      return i;
     }
+  }
+  return -1;
+}
+
+int get_next_sensor(path_t * path, int last_sensor_no) {
+  int idx = get_next_sensor_idx(path, last_sensor_no);
+  if (idx != -1) {
+    return path->nodes[idx]->id;
   }
   return -1;
 }
@@ -386,33 +419,52 @@ int release_past_segments(int train, cbuffer_t *owned_segments, int sensor_no) {
   return 0;
 }
 
-void set_switches(int train, int speed, path_t *path, int start_node) {
-  bool found_another_sensor = false;
-  track_node *curr_node = &track[start_node];
-  int from_sensor_no = start_node;
-  int dist_sum = 0;
-  // While all the next nodes are acquired by this sensors trigger, keep getting more
-  while (curr_node != path->dest && dist_sum - get_next_edge(path, curr_node)->dist < offset_stop_dist(train, speed)) {
-    if (curr_node->type == NODE_EXIT) {
-      break;
-    } else if (!found_another_sensor && curr_node->type == NODE_SENSOR) {
-      found_another_sensor = true;
-      from_sensor_no = curr_node->id;
-      dist_sum += get_next_edge(path, curr_node)->dist;
-    } else if (!found_another_sensor) {
-    } else {
-      dist_sum += get_next_edge(path, curr_node)->dist;
-    }
-    if (curr_node->type == NODE_BRANCH) {
-      int i = 0; while (path->nodes[i] != curr_node) i++;
-      if (curr_node->edge[DIR_CURVED].dest == path->nodes[i+1]) {
-        SetSwitch(curr_node->num, SWITCH_CURVED);
-      } else {
-        SetSwitch(curr_node->num, SWITCH_STRAIGHT);
-      }
-    }
-    curr_node = get_next_node(path, curr_node);
+typedef struct {
+  int task;
+  int sw;
+} set_switches_result_t;
+
+set_switches_result_t set_switches(int train, int speed, path_t *path, int start_node) {
+  int next_sensor = get_next_sensor_idx(path, start_node);
+  int next_merge = get_next_of_type_idx(path, start_node, NODE_MERGE);
+  int next_branch = get_next_of_type_idx(path, start_node, NODE_BRANCH);
+  int next_switch = next_merge;
+  if (next_switch == -1 || (next_branch != -1 && next_branch < next_switch)) {
+    next_switch = next_branch;
   }
+  int timeCutoff = 50;
+  set_switches_result_t result;
+  result.task = -1;
+  result.sw = -1;
+  // No next switch to set, abort
+  if (next_switch != -1) {
+    int total_dist = 0;
+    track_node *node = &track[start_node];
+    track_node *lastSensor = NULL;
+    int last_sensor_to_switch = 0;
+    int start_idx = path_idx(path, start_node);
+    for (int i = start_idx; i < path->len && i != next_switch; i++) {
+      if (i > start_idx && node->type == NODE_SENSOR && lastSensor == NULL) {
+        lastSensor = node;
+        last_sensor_to_switch = 0;
+      }
+      int dist = get_next_edge(path, path->nodes[i])->dist;
+      total_dist += dist;
+      last_sensor_to_switch += dist;
+    }
+    int lastSensorTime = (100 * last_sensor_to_switch) / Velocity(train, speed);
+    int time = (100 * total_dist) / Velocity(train, speed);
+    if (lastSensor == NULL || lastSensorTime < timeCutoff) {
+      time -= timeCutoff;
+      if (time < 0) {
+        time = 0;
+      }
+      Logf(EXECUTOR_LOGGING, "%d: Switch %s in %3dmm, so setting it in %d", train, path->nodes[next_switch]->name, total_dist, time);
+      result.task = StartDelayDetector("set_switches", MyTid(), time);
+      result.sw = path->nodes[next_switch]->id;
+    }
+  }
+  return result;
 }
 
 void calibrate_set_speed() {
@@ -553,6 +605,10 @@ bool gluInvertMatrix(const float m[16], float invOut[16]) {
 }
 
 int reserve_next_segments(path_t *path, int train, int speed, int sensor_no) {
+  // @FIXME: Somewhere in here we're hitting an infinite loop, and everything stops
+  //   For now just return 0 and don't reserve
+  return 0;
+
   int stopdist = offset_stop_dist(train, speed);
   reservoir_segment_edges_t reserving;
   reserving.len = 0;
@@ -649,6 +705,11 @@ void train_controller() {
   int next_unreserved_node = 1;
   int stop_delay_detector_id = -1;
 
+  // @FIXME: Eventually remove this. Only here to randomly navigate over and over.
+  bool rnaving = false;
+
+  int nav_switch_detector_id = -1;
+  int nav_switch_detector_switch = -1;
 
   Logf(PACKET_LOG_INFO, "Starting train controller (tid=%d)", MyTid());
 
@@ -685,6 +746,28 @@ void train_controller() {
           pathing = false;
           lastSpeed = 0;
           DoCommand(train_speed_task, train, 0);
+        } else if (detector_msg->identifier == nav_switch_detector_id) {
+          int idx = path_idx(&path, nav_switch_detector_switch);
+          if (idx != -1) {
+            track_node *br = path.nodes[idx];
+            int dir = 1;
+            if (br->type == NODE_MERGE) {
+              br = br->reverse;
+              dir = -1;
+            }
+            int state = DIR_CURVED;
+            if (idx+dir < path.len && idx+dir >= 0 && path.nodes[idx+dir]->id == br->edge[DIR_STRAIGHT].dest->id) {
+              state = DIR_STRAIGHT;
+            }
+            Logf(EXECUTOR_LOGGING, "%d: Setting Switch %s to %d", train, br->name, state);
+            SetSwitch(br->num, state);
+            set_switches_result_t result = set_switches(train, lastSpeed, &path, nav_switch_detector_switch);
+            nav_switch_detector_id = result.task;
+            nav_switch_detector_switch = result.sw;
+          } else {
+            nav_switch_detector_id = -1;
+            nav_switch_detector_switch = -1;
+          }
         } else {
           KASSERT(false, "Unexpected delay detector! identifier=%d ticks=%d. stop_delay_detector_id=%d collision_restart_id=%d", detector_msg->identifier, detector_msg->details, stop_delay_detector_id, collision_restart_id);
         }
@@ -850,9 +933,30 @@ void train_controller() {
               lastSpeed = 0;
               DoCommand(train_speed_task, train, 0);
 
+              // @FIXME: currently setting navigating as finished if we stop to avoid a collision, and it's the last segment
+              // @TODO: replace when we have something approximating short stops
+              // Idea: set remaining distance assuming stopping distance is close-ish,
+              //   then slowly go until we need to stop inside the delay-detect handler
+
+              // If we need to navigate and there are no more sensors within stopdist
+              // then we calculate a delay based off of this sensor
+              int node_to_sense_on = 0;
+              for (int i = path.len; i >= 0; i--) {
+                if (path.nodes[i]->type == NODE_SENSOR && path.dist - path.node_dist[i] > StoppingDistance(train, lastSpeed)) {
+                  node_to_sense_on = i;
+                  break;
+                }
+              }
+              if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.nodes[node_to_sense_on]->id && !sent_navigation_stop_delay) {
+                sent_navigation_stop_delay = true;
+              }
             } else {
               // Flip switches for any branches on the recently reserved segments
-              set_switches(train, lastSpeed, &path, sensor_data->sensor_no);
+              if (nav_switch_detector_id == -1) {
+                set_switches_result_t result = set_switches(train, lastSpeed, &path, sensor_data->sensor_no);
+                nav_switch_detector_id = result.task;
+                nav_switch_detector_switch = result.sw;
+              }
 
               // If we need to navigate and there are no more sensors within stopdist
               // then we calculate a delay based off of this sensor
@@ -905,6 +1009,8 @@ void train_controller() {
           break;
         }
         break;
+      case TRAIN_NAVIGATE_RANDOMLY_COMMAND:
+        rnaving = true;
       case TRAIN_NAVIGATE_COMMAND:
       case TRAIN_STOPFROM_COMMAND:
         path = navigate_msg->path; // Persist the path
@@ -923,7 +1029,7 @@ void train_controller() {
         // passed down, so this is a safegaurd
         KASSERT(path.len <= 80, "Got a corrupted path. len=%d", path.len);
 
-        if (packet->type == TRAIN_NAVIGATE_COMMAND) {
+        if (packet->type == TRAIN_NAVIGATE_COMMAND || packet->type == TRAIN_NAVIGATE_RANDOMLY_COMMAND) {
           Logf(EXECUTOR_LOGGING, "%d: Route executor has begun. train=%d route is %s ~> %s. Navigating.", train, train, path.src->name, path.dest->name);
           pathing_operation = OPERATION_NAVIGATE;
         } else if (packet->type == TRAIN_STOPFROM_COMMAND) {
@@ -947,7 +1053,11 @@ void train_controller() {
           // Try pathing from the reverse?
         } else {
           // Flip switches for any branches on the recently reserved segments
-          set_switches(train, lastSpeed, &path, path.src->id);
+          if (nav_switch_detector_id == -1) {
+            set_switches_result_t result = set_switches(train, lastSpeed, &path, path.src->id);
+            nav_switch_detector_id = result.task;
+            nav_switch_detector_switch = result.sw;
+          }
 
           // If we need to navigate and there are no more sensors within stopdist
           // then we calculate a delay based off of this sensor
@@ -998,6 +1108,17 @@ void TellTrainController(int train, int type, int speed) {
   msg.speed = speed;
   SendSN(train_controllers[train], msg);
 }
+
+void NavigateTrainRandomly(int train, int speed, path_t * path) {
+  ensure_train_controller(train);
+  Logf(EXECUTOR_LOGGING, "navigating train=%d (tid=%d)", train, train_controllers[train]);
+  train_navigate_t msg;
+  msg.packet.type = TRAIN_NAVIGATE_RANDOMLY_COMMAND;
+  msg.speed = speed;
+  msg.path = *path;
+  SendSN(train_controllers[train], msg);
+}
+
 
 void NavigateTrain(int train, int speed, path_t * path) {
   ensure_train_controller(train);

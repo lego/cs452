@@ -143,10 +143,13 @@ void sensor_attributer() {
             active_train = -1;
           }
           if (attrib == -1) {
-            int node = nextSensor(track[sensor].reverse->id).node;
-            int branch = findSensorOrBranch(track[node].reverse->id).node;
+            int prevSensor = nextSensor(track[sensor].reverse->id).node;
+            if (prevSensor != -1) {
+              prevSensor = track[prevSensor].reverse->id;
+            }
+            int branch = findSensorOrBranch(prevSensor).node;
             if (branch != -1 && track[branch].type == NODE_BRANCH) {
-              node = track[branch].edge[DIR_STRAIGHT].dest->id;
+              int node = track[branch].edge[DIR_STRAIGHT].dest->id;
               if (track[node].type != NODE_SENSOR) {
                 node = nextSensor(node).node;
               }
@@ -161,6 +164,11 @@ void sensor_attributer() {
                 jmemmove(&lastTrainAtSensor[node][0], &lastTrainAtSensor[node][1], (SENSOR_MEMORY-1)*sizeof(int));
                 lastTrainAtSensor[node][SENSOR_MEMORY-1] = -1;
               }
+            }
+            if (attrib == -1 && prevSensor != -1 && lastTrainAtSensor[prevSensor][0] != -1) {
+              attrib = lastTrainAtSensor[prevSensor][0];
+              jmemmove(&lastTrainAtSensor[prevSensor][0], &lastTrainAtSensor[prevSensor][1], (SENSOR_MEMORY-1)*sizeof(int));
+              lastTrainAtSensor[prevSensor][SENSOR_MEMORY-1] = -1;
             }
           }
           if (attrib != -1) {

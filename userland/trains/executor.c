@@ -67,6 +67,8 @@ void pathing_worker(int parent_tid, void * data) {
   result.speed = cmd->speed;
   switch (cmd->base.type) {
   case COMMAND_NAVIGATE_RANDOMLY:
+    result.operation = OPERATION_NAVIGATE_RANDOMLY;
+    break;
   case COMMAND_NAVIGATE:
     result.operation = OPERATION_NAVIGATE;
     break;
@@ -176,6 +178,8 @@ void executor_task() {
       routing_trains[pathing_result->train] = true;
       if (pathing_result->operation == OPERATION_NAVIGATE) {
         NavigateTrain(pathing_result->train, pathing_result->speed, &pathing_result->path);
+      } else if (pathing_result->operation == OPERATION_NAVIGATE_RANDOMLY) {
+        NavigateTrainRandomly(pathing_result->train, pathing_result->speed, &pathing_result->path);
       } else if (pathing_result->operation == OPERATION_STOPFROM) {
         StopTrainAt(pathing_result->train, pathing_result->speed, &pathing_result->path);
       } else {
