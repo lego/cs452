@@ -56,6 +56,11 @@ void InitNavigation() {
   velocity[70][11] = 548;
   velocity[70][13] = 631;
 
+  velocity[71][5] = 84;
+  velocity[71][7] = 164;
+  velocity[71][11] = 389;
+  velocity[71][13] = 538;
+
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;
   }
@@ -189,10 +194,20 @@ int CalculateTime(int distance, int velocity) {
   return (distance * 1000) / velocity;
 }
 
+int AccelerationTime(int train, int startingSpeed, int endingSpeed) {
+  int vDiff = Velocity(train, endingSpeed) - Velocity(train, startingSpeed);
+  // When I graphed stopping time vs velocity difference this constant worked out to about 1
+  int tDiff = vDiff/1;
+  return tDiff;
+}
+
 int Velocity(int train, int speed) {
   KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when getting velocity. Got %d", train);
   KASSERT(speed >= 0 && speed <= 14, "Invalid speed when getting velocity. Got %d", speed);
-  if (velocity[train][speed] == -1) {
+  if (speed < 5 && velocity[train][5] != -1) {
+    // Assume it goes linear to 0 when < speed 5
+    return speed*velocity[train][5]/5;
+  } else if (velocity[train][speed] == -1) {
     return speed * 63 - 281;
   } else {
     return velocity[train][speed];

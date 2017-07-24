@@ -117,12 +117,17 @@ node_dist_t findSensorOrBranch(int start) {
 
 node_dist_t nextSensor(int node) {
   node_dist_t nd;
+  nd.node = -1;
+  nd.dist = 0;
   nd = findSensorOrBranch(node);
-  while (nd.node >= 0 && track[nd.node].type == NODE_BRANCH) {
-    int state = GetSwitchState(track[nd.node].num);
-    nd.dist += track[nd.node].edge[state].dist;
-    nd.node = track[nd.node].edge[state].dest->id;
-    if (track[nd.node].type != NODE_SENSOR) {
+  while (nd.node >= 0 && track[nd.node].type != NODE_SENSOR) {
+    if (track[nd.node].type == NODE_EXIT) {
+      break;
+    } else if (track[nd.node].type == NODE_BRANCH) {
+      int state = GetSwitchState(track[nd.node].num);
+      nd.dist += track[nd.node].edge[state].dist;
+      nd.node = track[nd.node].edge[state].dest->id;
+    } else {
       node_dist_t other_nd = findSensorOrBranch(nd.node);
       nd.dist += other_nd.dist;
       nd.node = other_nd.node;

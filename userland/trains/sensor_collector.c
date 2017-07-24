@@ -119,7 +119,8 @@ void sensor_attributer() {
               }
             }
           }
-          node = nextSensor(track[rev_request->lastSensor].reverse->id).node;
+          //node = nextSensor(track[rev_request->lastSensor].reverse->id).node;
+          node = track[rev_request->lastSensor].reverse->id;
           if (node != -1) {
             for (int i = 0; i < SENSOR_MEMORY; i++) {
               if (lastTrainAtSensor[node][i] == -1) {
@@ -146,23 +147,23 @@ void sensor_attributer() {
             int prevSensor = nextSensor(track[sensor].reverse->id).node;
             if (prevSensor != -1) {
               prevSensor = track[prevSensor].reverse->id;
-            }
-            int branch = findSensorOrBranch(prevSensor).node;
-            if (branch != -1 && track[branch].type == NODE_BRANCH) {
-              int node = track[branch].edge[DIR_STRAIGHT].dest->id;
-              if (track[node].type != NODE_SENSOR) {
-                node = nextSensor(node).node;
-              }
-              if (node == -1 || lastTrainAtSensor[node][0] == -1) {
-                node = track[branch].edge[DIR_CURVED].dest->id;
+              int branch = findSensorOrBranch(prevSensor).node;
+              if (branch != -1 && track[branch].type == NODE_BRANCH) {
+                int node = track[branch].edge[DIR_STRAIGHT].dest->id;
                 if (track[node].type != NODE_SENSOR) {
                   node = nextSensor(node).node;
                 }
-              }
-              if (node != -1 && lastTrainAtSensor[node][0] != -1) {
-                attrib = lastTrainAtSensor[node][0];
-                jmemmove(&lastTrainAtSensor[node][0], &lastTrainAtSensor[node][1], (SENSOR_MEMORY-1)*sizeof(int));
-                lastTrainAtSensor[node][SENSOR_MEMORY-1] = -1;
+                if (node == -1 || lastTrainAtSensor[node][0] == -1) {
+                  node = track[branch].edge[DIR_CURVED].dest->id;
+                  if (track[node].type != NODE_SENSOR) {
+                    node = nextSensor(node).node;
+                  }
+                }
+                if (node != -1 && lastTrainAtSensor[node][0] != -1) {
+                  attrib = lastTrainAtSensor[node][0];
+                  jmemmove(&lastTrainAtSensor[node][0], &lastTrainAtSensor[node][1], (SENSOR_MEMORY-1)*sizeof(int));
+                  lastTrainAtSensor[node][SENSOR_MEMORY-1] = -1;
+                }
               }
             }
             if (attrib == -1 && prevSensor != -1 && lastTrainAtSensor[prevSensor][0] != -1) {

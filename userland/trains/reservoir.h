@@ -13,7 +13,7 @@
 #define RESERVOIR_REQUEST_OK 0
 #define RESERVOIR_REQUEST_ERROR 1
 
-#define RESERVING_LIMIT 16
+#define RESERVING_LIMIT 32
 
 /**
  * segment_t specifies a track segment, i.e. edge, from a node and direction

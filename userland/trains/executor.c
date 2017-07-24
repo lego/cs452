@@ -57,12 +57,12 @@ void pathing_worker(int parent_tid, void * data) {
   }
   // FIXME: handle status == -1, i.e. not direct path
   result.packet.type = PATHING_WORKER_RESULT;
-  if (cmd->base.type == COMMAND_NAVIGATE_RANDOMLY) {
-    while (result.path.dist < 1100) {
-      dst = (random_counter++ * random_multiplier) % 80;
-      int status = RequestPath(&result.path, cmd->train, src_node, dst);
-    }
-  }
+  //if (cmd->base.type == COMMAND_NAVIGATE_RANDOMLY) {
+  //  while (result.path.dist < 1100) {
+  //    dst = (random_counter++ * random_multiplier) % 80;
+  //    int status = RequestPath(&result.path, cmd->train, src_node, dst);
+  //  }
+  //}
   result.train = cmd->train;
   result.speed = cmd->speed;
   switch (cmd->base.type) {

@@ -14,6 +14,7 @@
 #include <trains/navigation.h>
 #include <trains/reservoir.h>
 #include <priorities.h>
+#include <interactive/commands.h>
 
 int train_controllers[TRAINS_MAX];
 
@@ -34,7 +35,7 @@ typedef struct {
 
 
 #define DoCommand(command_task, train_val, spd_val) do { \
-    int command_tid = Create(PRIORITY_TRAIN_COMMAND_TASK, command_task); \
+    int command_tid = CreateRecyclable(PRIORITY_TRAIN_COMMAND_TASK, command_task); \
     train_task_t command_msg; \
     command_msg.train = train_val; \
     command_msg.speed = spd_val; \
@@ -289,10 +290,11 @@ void reverse_train_task() {
     buf[0] = 0;
     buf[1] = data.train;
     Putcs(COM1, buf, 2);
-    Delay(300);
+    Delay(Velocity(data.train, data.speed)/2);
     buf[0] = 15;
     Putcs(COM1, buf, 2);
     int lastSensor = WhereAmI(data.train);
+    SetTrainLocation(data.train, track[lastSensor].reverse->id);
     if (lastSensor >= 0) {
       RegisterTrainReverse(data.train, lastSensor);
     }
@@ -604,10 +606,46 @@ bool gluInvertMatrix(const float m[16], float invOut[16]) {
   return true;
 }
 
+void reserve_segment_pieces(reservoir_segment_edges_t *reserving, int distRemaining, int start, bool found_sensor, int n) {
+  int curr_node = start;
+  int total_dist = 0;
+  do {
+    if (track[curr_node].type == NODE_EXIT) {
+      break;
+    } else if (track[curr_node].type == NODE_BRANCH) {
+      reserving->edges[reserving->len] = &track[curr_node].edge[DIR_STRAIGHT];
+      reserving->len++;
+      if (found_sensor) {
+        total_dist += track[curr_node].edge[DIR_STRAIGHT].dist;
+      }
+      reserve_segment_pieces(reserving, distRemaining - total_dist,
+          track[curr_node].edge[DIR_STRAIGHT].dest->id, found_sensor, n+1);
+      reserving->edges[reserving->len] = &track[curr_node].edge[DIR_CURVED];
+      reserving->len++;
+      if (found_sensor) {
+        total_dist += track[curr_node].edge[DIR_CURVED].dist;
+      }
+      reserve_segment_pieces(reserving, distRemaining - total_dist,
+          track[curr_node].edge[DIR_CURVED].dest->id, found_sensor, n+1);
+      break;
+    } else {
+      if (track[curr_node].type == NODE_SENSOR) {
+        found_sensor = true;
+      }
+      reserving->edges[reserving->len] = &track[curr_node].edge[DIR_AHEAD];
+      reserving->len++;
+      if (found_sensor) {
+        total_dist += track[curr_node].edge[DIR_AHEAD].dist;
+      }
+      curr_node = track[curr_node].edge[DIR_AHEAD].dest->id;
+    }
+  } while (total_dist < distRemaining || !found_sensor);
+}
+
 int reserve_next_segments(path_t *path, int train, int speed, int sensor_no) {
   // @FIXME: Somewhere in here we're hitting an infinite loop, and everything stops
   //   For now just return 0 and don't reserve
-  return 0;
+  //return 0;
 
   int stopdist = offset_stop_dist(train, speed);
   reservoir_segment_edges_t reserving;
@@ -616,32 +654,11 @@ int reserve_next_segments(path_t *path, int train, int speed, int sensor_no) {
   Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor id:%d name:%4s", train, stopdist, sensor_no, track[sensor_no].name);
   bool found_another_sensor = false;
 
-  // Always start from the next sensor after the one we just hit, because we
-  //   need to make sure reservation has enough room to stop until we hit the next sensor.
-  track_node *curr_node = &track[sensor_no];
-  // This includes re-reserving the current node
-  reserving.edges[reserving.len] = get_next_edge(path, curr_node);
+  track_edge *next_edge = &track[sensor_no].edge[DIR_AHEAD];
+  reserving.edges[reserving.len] = next_edge;
   reserving.len++;
-  curr_node = get_next_node(path, curr_node);
+  reserve_segment_pieces(&reserving, stopdist - next_edge->dist, next_edge->dest->id, false, 0);
 
-  int from_sensor_no = sensor_no;
-  int dist_sum = 0;
-  // While all the next nodes are acquired by this sensors trigger, keep getting more
-  while ((path == NULL || curr_node != path->dest) && dist_sum - get_next_edge(path, curr_node)->dist < stopdist) {
-    if (curr_node->type == NODE_EXIT) {
-      break;
-    } else if (!found_another_sensor && curr_node->type == NODE_SENSOR) {
-      found_another_sensor = true;
-      from_sensor_no = curr_node->id;
-      dist_sum += get_next_edge(path, curr_node)->dist;
-    } else if (!found_another_sensor) {
-    } else {
-      dist_sum += get_next_edge(path, curr_node)->dist;
-    }
-    reserving.edges[reserving.len] = get_next_edge(path, curr_node);
-    reserving.len++;
-    curr_node = get_next_node(path, curr_node);
-  }
   int result = RequestSegmentEdgesAndReleaseRest(&reserving);
   if (result == 1) {
     Logf(EXECUTOR_LOGGING, "%d: failed to obtain segments", train);
@@ -655,6 +672,22 @@ int reserve_next_segments(path_t *path, int train, int speed, int sensor_no) {
     }
     return 0;
   }
+}
+
+void train_rnav_task() {
+    int executor_tid = WhoIsEnsured(NS_EXECUTOR);
+
+    train_task_t data;
+    int receiver;
+    ReceiveS(&receiver, data);
+    ReplyN(receiver);
+
+    cmd_data_t cmd_data;
+    cmd_data.base.packet.type = INTERPRETED_COMMAND;
+    cmd_data.base.type = COMMAND_NAVIGATE_RANDOMLY;
+    cmd_data.train = data.train;
+    cmd_data.speed = data.speed;
+    SendSN(executor_tid, cmd_data);
 }
 
 void train_controller() {
@@ -707,6 +740,8 @@ void train_controller() {
 
   // @FIXME: Eventually remove this. Only here to randomly navigate over and over.
   bool rnaving = false;
+  int rnav_detector_id = -1;
+  int rnav_speed = 10;
 
   int nav_switch_detector_id = -1;
   int nav_switch_detector_switch = -1;
@@ -746,18 +781,29 @@ void train_controller() {
           pathing = false;
           lastSpeed = 0;
           DoCommand(train_speed_task, train, 0);
+          if (rnaving) {
+            rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 400);
+          }
+        } else if (detector_msg->identifier == rnav_detector_id) {
+          int random = Time() % 2;
+          //if (random == 0) {
+          //  DoCommand(reverse_train_task, train, 0);
+          //}
+          DoCommand(train_rnav_task, train, rnav_speed);
         } else if (detector_msg->identifier == nav_switch_detector_id) {
           int idx = path_idx(&path, nav_switch_detector_switch);
           if (idx != -1) {
             track_node *br = path.nodes[idx];
-            int dir = 1;
+            int state = DIR_CURVED;
             if (br->type == NODE_MERGE) {
               br = br->reverse;
-              dir = -1;
-            }
-            int state = DIR_CURVED;
-            if (idx+dir < path.len && idx+dir >= 0 && path.nodes[idx+dir]->id == br->edge[DIR_STRAIGHT].dest->id) {
-              state = DIR_STRAIGHT;
+              if (idx-1 >= 0 && path.nodes[idx-1]->id == br->edge[DIR_STRAIGHT].dest->reverse->id) {
+                state = DIR_STRAIGHT;
+              }
+            } else {
+              if (idx+1 < path.len && path.nodes[idx+1]->id == br->edge[DIR_STRAIGHT].dest->id) {
+                state = DIR_STRAIGHT;
+              }
             }
             Logf(EXECUTOR_LOGGING, "%d: Setting Switch %s to %d", train, br->name, state);
             SetSwitch(br->num, state);
@@ -1011,6 +1057,13 @@ void train_controller() {
         break;
       case TRAIN_NAVIGATE_RANDOMLY_COMMAND:
         rnaving = true;
+        rnav_speed = navigate_msg->speed;
+
+        if (navigate_msg->path.len == -1) {
+          DoCommand(reverse_train_task, train, 0);
+          rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 100);
+          break;
+        }
       case TRAIN_NAVIGATE_COMMAND:
       case TRAIN_STOPFROM_COMMAND:
         path = navigate_msg->path; // Persist the path
@@ -1018,7 +1071,7 @@ void train_controller() {
           SetTrainLocation(train, path.src->id);
           DoCommand(reverse_train_task, train, 0);
         }
-        KASSERT(path.src->id == WhereAmI(train), "Path began from a different place then train. train=%d   WhereAmI %d  and path_src %s", train, WhereAmI(train), path.src->name);
+        KASSERT(path.src->id == WhereAmI(train), "Path began from a different place then train. train=%d  pathlen=%d  WhereAmI %d  and path_src %s", train, path.len, WhereAmI(train), path.src->name);
 
         sent_navigation_stop_delay = false;
         pathing = true;
