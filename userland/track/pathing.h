@@ -43,6 +43,9 @@ int adjSensorDist(int last, int current);
 // Finds the next sensor or branch, returns -1 on error or exit node
 node_dist_t findSensorOrBranch(int start);
 
+// Gets the next edge, taking into account the current switch state
+track_edge *nextEdge(int start);
+
 // Same idea as findSensorOrBranch, but uses current switch state to bypass branches
 node_dist_t nextSensor(int start);
 

@@ -9,6 +9,7 @@ typedef enum {
   // sensor attribution internal message
   SENSOR_ATTRIB_ASSIGN_TRAIN,
   SENSOR_ATTRIB_TRAIN_REVERSE,
+  SENSOR_ATTRIB_TRAIN_REREGISTER,
 
   /**
    * Train controller messages

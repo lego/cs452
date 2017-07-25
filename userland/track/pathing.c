@@ -115,6 +115,17 @@ node_dist_t findSensorOrBranch(int start) {
   return nd;
 }
 
+track_edge *nextEdge(int node) {
+  if (track[node].type == NODE_EXIT) {
+    return NULL;
+  } else if (track[node].type == NODE_BRANCH) {
+    int state = GetSwitchState(track[node].num);
+    return &track[node].edge[state];
+  } else {
+    return &track[node].edge[DIR_AHEAD];
+  }
+}
+
 node_dist_t nextSensor(int node) {
   node_dist_t nd;
   nd.node = -1;

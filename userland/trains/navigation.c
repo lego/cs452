@@ -51,6 +51,24 @@ void InitNavigation() {
   //stopping_distance[71][12] = 400; // reasonably accurate
   //stopping_distance[71][14] = -140; // reasonably accurate
 
+  velocity[58][5] = 90;
+  velocity[58][7] = 170;
+  velocity[58][11] = 400;
+  velocity[58][13] = 542;
+
+  // Act
+  velocity[63][5] = 225;
+  velocity[63][7] = 332;
+  velocity[63][11] = 530;
+  velocity[63][13] = 576;
+  // Est
+  velocity[63][6] = 276;
+  velocity[63][8] = 387;
+  velocity[63][9] = 441;
+  velocity[63][10] = 489;
+  velocity[63][12] = 559;
+  //velocity[63][14] = 575;
+
   velocity[70][5] = 230;
   velocity[70][7] = 343;
   velocity[70][11] = 548;
@@ -60,6 +78,11 @@ void InitNavigation() {
   velocity[71][7] = 164;
   velocity[71][11] = 389;
   velocity[71][13] = 538;
+
+  velocity[76][5] = 164;
+  velocity[76][7] = 172;
+  velocity[76][11] = 179;
+  velocity[76][13] = 186;
 
   for (i = 0; i < TRAINS_MAX; i++) {
     state.train_locations[i] = -1;

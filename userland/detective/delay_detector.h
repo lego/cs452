@@ -17,4 +17,5 @@
  * @param ticks   to wait on
  * @return        returns the unique identifier (for delay detectors)
  */
+int StartRecyclableDelayDetector(const char * name, int send_to, int ticks);
 int StartDelayDetector(const char * name, int send_to, int ticks);

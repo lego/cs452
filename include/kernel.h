@@ -30,7 +30,8 @@
  */
 #define Create(priority, code) _CreateWithName(priority, code, #code, false)
 #define CreateRecyclable(priority, code) _CreateWithName(priority, code, #code, true)
-#define CreateWithName(priority, code, name) _CreateWithName(priority, code, name, false);
+#define CreateWithName(priority, code, name) _CreateWithName(priority, code, name, false)
+#define CreateRecyclableWithName(priority, code, name) _CreateWithName(priority, code, name, true)
 int _CreateWithName(int priority, void (*code)( ), const char *name, bool is_recyclable);
 
 

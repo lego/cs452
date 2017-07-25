@@ -22,9 +22,6 @@ int next_free_stack(task_descriptor_t * task) {
 
 task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void (*entrypoint)(), const char *func_name, bool is_recyclable) {
   int tid = ctx->used_descriptors;
-  if (ctx->used_descriptors >= MAX_TASKS) {
-    ctx->used_descriptors = 0;
-  }
   for (; ctx->descriptors[tid].state != STATE_ZOMBIE; tid=(tid+1)%MAX_TASKS) {
     KASSERT((tid+1)%MAX_TASKS != ctx->used_descriptors, "Warning: maximum tasks reached tid=%d", tid);
   }

@@ -14,3 +14,4 @@ void sensor_collector_task();
 
 int RegisterTrain(int train);
 int RegisterTrainReverse(int train, int lastSensor);
+int ReRegisterTrain(int train, int lastSensor);
