@@ -70,6 +70,9 @@ int main() {
   context_t stack_context;
   stack_context.used_descriptors = 0;
   stack_context.used_stacks = 0;
+  for (int i = 0; i < MAX_TASKS; i++) {
+    stack_context.descriptors[i].state = STATE_ZOMBIE;
+  }
   cbuffer_init(&stack_context.freed_stacks, stack_context.freed_stacks_buffer, MAX_TASK_STACKS);
   ctx = &stack_context;
 
