@@ -91,6 +91,7 @@ void sensor_attributer() {
       ret = lastTrainAtSensor[sensor][0];
       jmemmove(&lastTrainAtSensor[sensor][0], &lastTrainAtSensor[sensor][1], (SENSOR_MEMORY-1)*sizeof(int));
       lastTrainAtSensor[sensor][SENSOR_MEMORY-1] = -1;
+      KASSERT(ret == -1 || (ret >= 0 && ret <= 80), "OH NO! %d", ret);
     }
     return ret;
   }
@@ -242,7 +243,10 @@ void sensor_attributer() {
 
           }
           // Finally, notify the appropriate train controller as a new task
-          KASSERT(attrib == -1 || attrib == 63 || attrib == 71, "OH NO! %d", attrib);
+          if (!(attrib == -1 || (attrib >= 0 && attrib <= 80))) {
+
+          }
+          KASSERT(attrib == -1 || (attrib >= 0 && attrib <= 80), "OH NO! %d", attrib);
           { //if (attrib == 71 || attrib == 63){
             // TODO: break this out into a AlertSensorAttribution func
             int notifier = CreateRecyclable(PRIORITY_UART2_TX_SERVER, sensor_notifier);

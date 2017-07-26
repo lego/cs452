@@ -157,7 +157,7 @@ int AwaitEventPut( await_event_t event_type, char ch) {
 
 io_time_t GetIdleTaskExecutionTime() {
   int i;
-  for (i = 0; i < MAX_TASKS; i++) {
+  for (i = 0; i < ctx->used_descriptors; i++) {
     if (ctx->descriptors[i].priority == 31) {
       return ctx->descriptors[i].execution_time;
     }

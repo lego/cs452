@@ -45,7 +45,8 @@ void train_control_entry_task() {
 
   // FIXME: priority
   Create(PRIORITY_SWITCH_CONTROLLER+1, sensor_attributer);
-  Create(PRIORITY_SWITCH_CONTROLLER+2, fake_sensor_collector_task);
+  // Create(PRIORITY_SWITCH_CONTROLLER+2, fake_sensor_collector_task);
+  Create(PRIORITY_SWITCH_CONTROLLER+2, sensor_collector_task);
 
   Create(PRIORITY_INTERACTIVE, interactive);
   // FIXME: priority
