@@ -241,7 +241,8 @@ void syscall_send(task_descriptor_t *task, kernel_request_t *arg) {
   KASSERT(is_valid_task(msg->tid), "Sending to impossible task %d from %d (%s)", msg->tid, task->tid, task->name);
 
   if (ctx->descriptors[msg->tid].state == STATE_ZOMBIE) {
-    msg->status = -3;
+    syscall_message_t *ret_val = arg->ret_val;
+    ret_val->status = -3;
     task->state = STATE_READY;
     scheduler_requeue_task(task);
     return;
