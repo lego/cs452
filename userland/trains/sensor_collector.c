@@ -239,9 +239,10 @@ void sensor_attributer() {
           // If we found a train, and have a next sensor, set it to be expected
           if (attrib != -1) {
             expectTrainAtNext(attrib, sensor);
-          }
 
+          }
           // Finally, notify the appropriate train controller as a new task
+          KASSERT(attrib == -1 || attrib == 63 || attrib == 71, "OH NO! %d", attrib);
           { //if (attrib == 71 || attrib == 63){
             // TODO: break this out into a AlertSensorAttribution func
             int notifier = CreateRecyclable(PRIORITY_UART2_TX_SERVER, sensor_notifier);
@@ -255,6 +256,51 @@ void sensor_attributer() {
       default:
         KASSERT(false, "Unhandled packet type=%d", packet->type);
     }
+  }
+}
+
+void fake_sensor_collector_task() {
+  int sensor_detector_multiplexer_tid = WhoIsEnsured(NS_SENSOR_DETECTOR_MULTIPLEXER);
+
+  int sensors[16]= {
+    Name2Node("E14"),
+    Name2Node("E1"),
+
+    Name2Node("E9"),
+    Name2Node("C1"),
+
+    Name2Node("D5"),
+    Name2Node("B4"),
+
+    Name2Node("E6"),
+    Name2Node("C9"),
+
+    Name2Node("E3"),
+    Name2Node("B15"),
+
+    Name2Node("D1"),
+    Name2Node("A3"),
+
+    Name2Node("B14"),
+    Name2Node("C11"),
+
+    Name2Node("D16"),
+    Name2Node("E16"),
+  };
+
+  int index = 0;
+  sensor_data_t req;
+  req.packet.type = SENSOR_DATA;
+
+  while (true) {
+    req.timestamp = Time();
+    req.sensor_no = sensors[index];
+    SendSN(sensor_attributer_tid, req);
+    // Send to detector multiplexer
+    SendSN(sensor_detector_multiplexer_tid, req);
+
+    index = (index+1) % 16;
+    Delay(2);
   }
 }
 
@@ -332,7 +378,7 @@ int RegisterTrain(int train) {
 }
 
 int RegisterTrainReverse(int train, int lastSensor) {
-  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when registering with sensor attributer. Got %d", train);
+  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when registering reverse with sensor attributer. Got %d", train);
   if (sensor_attributer_tid == -1) {
     // Don't make data syscall, but still reschedule
     Pass();
@@ -348,7 +394,7 @@ int RegisterTrainReverse(int train, int lastSensor) {
 }
 
 int ReRegisterTrain(int train, int lastSensor) {
-  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when registering with sensor attributer. Got %d", train);
+  KASSERT(train >= 0 && train <= TRAINS_MAX, "Invalid train when re-registering with sensor attributer. Got %d", train);
   if (sensor_attributer_tid == -1) {
     // Don't make data syscall, but still reschedule
     Pass();

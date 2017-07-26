@@ -59,6 +59,10 @@ void warehouse() {
       courier_ready = true;
     } else {
       queueLength += 1;
+      if (queueLength > setup.warehouseSize) {
+        queueLength -= 1;
+        start = (start+1) % setup.warehouseSize;
+      }
       ReplyN(requester);
     }
 

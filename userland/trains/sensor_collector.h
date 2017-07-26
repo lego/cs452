@@ -10,6 +10,7 @@ typedef struct {
 } sensor_data_t;
 
 void sensor_attributer();
+void fake_sensor_collector_task();
 void sensor_collector_task();
 
 int RegisterTrain(int train);
