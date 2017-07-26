@@ -21,6 +21,7 @@
 #include <priorities.h>
 #include <entries.h>
 
+volatile int program_ended = -1;
 int next_starting_task = -1;
 int last_started_task = -1;
 

@@ -44,6 +44,7 @@ void uart_tx_notifier() {
     KASSERT(bytes < 512, "Packet buffer overflown. Re-evaluate buffer sizes.");
     ReplyN(requester);
     log_uart_server("uart_notifer channel=%d", channel);
+    if (program_ended == 1) continue;
     switch(channel) {
       case COM1:
         for (int i = 0; i < packet->len; i++) {

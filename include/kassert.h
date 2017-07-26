@@ -1,5 +1,7 @@
 #pragma once
 
+extern volatile int program_ended;
+
 #ifndef NO_KASSERT
 
 #include <bwio.h>
@@ -10,7 +12,7 @@
 #define assert(_)
 #include <debug.h>
 #define KASSERT(a, msg, ...) do { if (!(a)) { \
-  cleanup(false); bwputstr(COM2, SCROLL_DOWN_20); \
+  program_ended = 1; cleanup(false); bwputstr(COM2, SCROLL_DOWN_20); \
   bwprintf(COM2, "\n\r" RED_BG "KASSERT" RESET_ATTRIBUTES ": " msg "\n\rin %s:%d\n\r", ## __VA_ARGS__, __FILE__, __LINE__); \
   PrintBacktrace() \
   exit_kernel(); \
