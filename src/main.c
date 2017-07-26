@@ -74,6 +74,7 @@ int main() {
   for (int i = 0; i < MAX_TASKS; i++) {
     stack_context.descriptors[i].state = STATE_ZOMBIE;
     stack_context.descriptors[i].parent_tid = -1;
+    stack_context.descriptors[i].is_recyclable = true;
   }
   cbuffer_init(&stack_context.freed_stacks, stack_context.freed_stacks_buffer, MAX_TASK_STACKS);
   ctx = &stack_context;

@@ -18,14 +18,14 @@ ifndef PACKETS
 PACKETS=true
 endif
 
-GCC_ROOT := /u/wbcowan/gnuarm-4.0.2
-GCC_TYPE := arm-elf
-GCC_VERSION := 4.0.2
+GCC_ROOT := /u3/j5pereira/arm-gcc-5.3.1
+GCC_TYPE := arm-none-eabi
+GCC_VERSION := 5.3.1
 
 STANDARD_INCLUDES=-include stdbool.h -include stddef.h -include stdint.h
 CFLAGS_BACKTRACE := -mpoke-function-name -fverbose-asm -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs -mno-thumb-interwork -marm
-CFLAGS_COMPILE_WARNINGS := -Winline -Werror -Wno-unused-variable -Wno-format-security
-CFLAGS_OPTIMIZATIONS := -O0 -finline-functions -finline-functions-called-once -fno-optimize-sibling-calls
+CFLAGS_COMPILE_WARNINGS := -Winline -Werror -Wno-unused-variable -Wno-format-security -Wno-error=unused-but-set-variable
+CFLAGS_OPTIMIZATIONS := -O2 -finline-functions -finline-functions-called-once -fno-optimize-sibling-calls
 
 ifndef LOCAL
 # Set of compiler settings for compiling ARM on the student environment

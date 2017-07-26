@@ -138,7 +138,7 @@ void PrintAllTaskStacks(int focused_task) {
   int i;
   task_descriptor_t *task;
 
-  for (i = 0; i < MAX_TASKS; i++) {
+  for (i = 0; i < ctx->used_descriptors; i++) {
     task = &ctx->descriptors[i];
     if (task->state == STATE_ZOMBIE) continue;
     if (i == focused_task) continue;
@@ -166,7 +166,7 @@ void PrintAllTaskStacks(int focused_task) {
 
 
 static inline bool is_valid_task(int tid) {
-  return tid < MAX_TASKS;
+  return tid < ctx->used_descriptors;
 }
 
 void PrintTaskBacktrace(int tid) {
@@ -210,11 +210,11 @@ void print_stats() {
   bwputstr(COM2, "Execution time\n\r");
   int i;
   #if !defined(DEBUG_MODE)
-  for (i = 0; i < MAX_TASKS; i++) {
+  for (i = 0; i < ctx->used_descriptors; i++) {
     task_descriptor_t *task = &ctx->descriptors[i];
-    if (task->state == STATE_ZOMBIE) continue;
+    // if (task->state == STATE_ZOMBIE) continue;
     // Skip recyclable tasks
-    if (task->is_recyclable) continue;
+    // if (task->is_recyclable) continue;
     bwprintf(COM2, " Task%s %3d:%-40s %10ums (Total) %10uus (Send) %10uus (Recv) %10uus (Repl)\n\r",
       task->state == STATE_ZOMBIE ? ":Z" : "  ",
       i, task->name,

@@ -130,7 +130,7 @@ void free_message_blocked_tasks(int tid) {
   }
 
   // Free up REPLY_BLOCKED tasks
-  for (int i = 0; i < MAX_TASKS; i++) {
+  for (int i = 0; i < ctx->used_descriptors; i++) {
     task_descriptor_t *task = &ctx->descriptors[i];
 
     if (task->reply_blocked_on == tid && task->state == STATE_REPLY_BLOCKED) {
@@ -162,7 +162,7 @@ void syscall_destroy(task_descriptor_t *task, kernel_request_t *arg) {
       free_message_blocked_tasks(next_to_kill);
     }
     // We still need to recursively search for it's children
-    for (int i = 0; i < MAX_TASKS; i++) {
+    for (int i = 0; i < ctx->used_descriptors; i++) {
       if (ctx->descriptors[i].parent_tid == next_to_kill) {
         cbuffer_add(&children, (void *) i);
       }
