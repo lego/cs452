@@ -102,15 +102,24 @@ node_dist_t findSensorOrBranch(int start) {
   node_dist_t nd;
   nd.node = start;
   nd.dist = 0;
+
+  // ensure we don't do this in the beginning
+  if (track[nd.node].type == NODE_EXIT) {
+    nd.node = -1;
+    nd.dist = 0;
+    return nd;
+  }
+
   do {
-    if (track[nd.node].edge[DIR_AHEAD].dest != 0) {
-      nd.dist += track[nd.node].edge[DIR_AHEAD].dist;
-      nd.node = track[nd.node].edge[DIR_AHEAD].dest->id;
-    } else {
-      nd.node = -1;
-      nd.dist = 0;
-    }
-  } while(nd.node >= 0 && track[nd.node].type != NODE_SENSOR && track[nd.node].type != NODE_BRANCH);
+    nd.dist += track[nd.node].edge[DIR_AHEAD].dist;
+    nd.node = track[nd.node].edge[DIR_AHEAD].dest->id;
+  } while(nd.node >= 0 && track[nd.node].type != NODE_EXIT && track[nd.node].type != NODE_SENSOR && track[nd.node].type != NODE_BRANCH);
+
+  // if we found an exit, we needed to exit early
+  if (track[nd.node].type == NODE_EXIT) {
+    nd.node = -1;
+    nd.dist = 0;
+  }
 
   return nd;
 }
@@ -138,6 +147,7 @@ node_dist_t nextSensor(int node) {
       break;
     } else if (track[nd.node].type == NODE_BRANCH) {
       int state = GetSwitchState(track[nd.node].num);
+      KASSERT(state == -1 || state == 0 || state == 1, "Invalid switch state retrieved.");
       nd.dist += track[nd.node].edge[state].dist;
       nd.node = track[nd.node].edge[state].dest->id;
     } else {
@@ -146,7 +156,7 @@ node_dist_t nextSensor(int node) {
       nd.node = other_nd.node;
     }
   }
-  if (!(nd.node >= 0 && track[nd.node].type == NODE_SENSOR)) {
+  if (nd.node < 0 || track[nd.node].type != NODE_SENSOR) {
     nd.node = -1;
     nd.dist = 0;
   }
