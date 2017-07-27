@@ -1246,7 +1246,7 @@ void train_controller() {
         }
         break;
       default:
-        KASSERT(false, "Train controller received unhandled packet. Got type=%d", packet->type);
+        KASSERT(false, "Train controller received unhandled packet. Got type=%d sender=%d", packet->type, requester);
         break;
     }
   }
