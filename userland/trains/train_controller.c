@@ -807,17 +807,7 @@ void train_controller() {
       // We picked up the last sensor for this path! Woo
       Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", train);
       pathing = false;
-    // } else if (sensor_data->sensor_no != next_expected_sensor) {
-    //   // We picked up the wrong sensor!
-    //   // We will try 1 of 2 things:
-    //   // 1) we missed a sensor (it was broken) and this is just the sensor after that
-    //   // 2) this is an incorrect sensor (and route), due to a switch failure. we need to repath
-    //   if (sensor_data->sensor_no == get_next_sensor(&path, next_expected_sensor)) {
-    //     // Correct route! Adjust!
-    //   } else {
-    //     // Incorrect route! Re-path
-    //   }
-    } else {
+    } else if (sensor_data->sensor_no == next_expected_sensor || sensor_data->sensor_no == get_next_sensor(&path, next_expected_sensor)){
       // We picked up the right sensor. Do reservations as expected
 
       // Reserve more track based on this sensor trigger
@@ -855,6 +845,8 @@ void train_controller() {
           }
           if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.nodes[node_to_sense_on]->id && !sent_navigation_stop_delay) {
             sent_navigation_stop_delay = true;
+          } else {
+
           }
         }
       } else {
@@ -881,6 +873,17 @@ void train_controller() {
           stop_delay_detector_id = do_navigation_stop(&path, sensor_data->sensor_no, train, lastSpeed);
         }
       }
+    } else {
+      // We picked up the wrong sensor!
+      // this is an incorrect sensor (and route), due to a switch failure or the
+      // like, we need to repath!
+      int command_tid = CreateRecyclable(PRIORITY_TRAIN_COMMAND_TASK, train_nav_task);
+      train_task_t command_msg;
+      command_msg.train = train;
+      command_msg.speed = lastNonzeroSpeed;
+      SendSN(command_tid, command_msg);
+      SendSN(command_tid, destination);
+      pathing = false;
     }
   }
 
