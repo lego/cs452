@@ -258,7 +258,7 @@ int reserve_track_from_sensor(int train, int speed, path_t *path, int sensor_id)
 }
 
 void train_speed_task() {
-    Logf(PACKET_LOG_INFO, "train_speed_task (tid=%d)", MyTid());
+    Logf(EXECUTOR_LOGGING, "train_speed_task (tid=%d)", MyTid());
     train_task_t data;
     int receiver;
     ReceiveS(&receiver, data);
@@ -704,6 +704,22 @@ void train_rnav_task() {
     SendSN(executor_tid, cmd_data);
 }
 
+int get_next_expected_sensor(path_t *path, int current_node) {
+  // find the current node
+  int i = 0;
+  while (i < path->len && path->nodes[i]->id != current_node) i++;
+  i++;
+  // if it wasn't found, or it was the end, return -1
+  if (i == path->len) return -1;
+
+  // find the next sensor after the current_node
+  while (i < path->len && path->nodes[i]->type != NODE_SENSOR) i++;
+  // if there was no sensor after, return -1
+  if (i == path->len) return -1;
+
+  return path->nodes[i]->id;
+}
+
 void train_controller() {
   int requester;
   pathing_operation_t pathing_operation = -1;
@@ -760,7 +776,7 @@ void train_controller() {
   int nav_switch_detector_id = -1;
   int nav_switch_detector_switch = -1;
 
-  Logf(PACKET_LOG_INFO, "Starting train controller (tid=%d)", MyTid());
+  Logf(EXECUTOR_LOGGING, "Starting train controller (tid=%d)", MyTid());
 
   bool calibrating = false;
   const int numLastVelocities = 3;
@@ -807,8 +823,9 @@ void train_controller() {
       // We picked up the last sensor for this path! Woo
       Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", train);
       pathing = false;
-    } else if (sensor_data->sensor_no == next_expected_sensor || sensor_data->sensor_no == get_next_sensor(&path, next_expected_sensor)){
+    } else if (next_expected_sensor == -1 || sensor_data->sensor_no == next_expected_sensor || sensor_data->sensor_no == get_next_sensor(&path, next_expected_sensor)){
       // We picked up the right sensor. Do reservations as expected
+      next_expected_sensor = get_next_expected_sensor(&path, sensor_data->sensor_no);
 
       // Reserve more track based on this sensor trigger
       int status = reserve_next_segments_offset(&path, train, lastSpeed, prediction_last_loc, prediction_dist);
@@ -938,12 +955,12 @@ void train_controller() {
           prediction_detector_id = StartRecyclableDelayDetector("prediction detector", MyTid(), 20);
         } else if (detector_msg->identifier == collision_restart_id) {
           collision_restart_id = -1;
-          Logf(PACKET_LOG_INFO, "%d: Collision detector:", train);
+          Logf(EXECUTOR_LOGGING, "%d: Collision detector:", train);
           if (destination != -1) {
-            Logf(PACKET_LOG_INFO, "  ...continuing to destination, %s", track[destination].name);
+            Logf(EXECUTOR_LOGGING, "  ...continuing to destination, %s", track[destination].name);
             int result = reserve_next_segments(&path, train, lastNonzeroSpeed, prediction_last_loc);
             if (result == -1) {
-              Logf(PACKET_LOG_INFO, "  ...but reversing first");
+              Logf(EXECUTOR_LOGGING, "  ...but reversing first");
               DoCommand(reverse_train_task, train, 0);
               collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
             } else {
@@ -955,7 +972,7 @@ void train_controller() {
               SendSN(command_tid, destination);
             }
           } else {
-            Logf(PACKET_LOG_INFO, "  ...no destination, so waiting");
+            Logf(EXECUTOR_LOGGING, "  ...no destination, so waiting");
             int result = reserve_next_segments(NULL, train, lastNonzeroSpeed, WhereAmI(train));
             if (result == -1) {
               lastSpeed = 0;
@@ -969,7 +986,7 @@ void train_controller() {
             }
           }
         } else if (detector_msg->identifier == stop_delay_detector_id) {
-          Logf(PACKET_LOG_INFO, "%d: Navigation stop detector: queueing up another nav", train);
+          Logf(EXECUTOR_LOGGING, "%d: Navigation stop detector: queueing up another nav", train);
           stop_delay_detector_id = -1;
           pathing = false;
           lastSpeed = 0;
@@ -1042,7 +1059,7 @@ void train_controller() {
                 lastVels[lastVelsStart] = avgV;
                 lastVelsStart = (lastVelsStart + 1) % numLastVelocities;
                 if (same) {
-                  Logf(PACKET_LOG_INFO, "Calibrated train %d velocity for speed %d: %d",
+                  Logf(EXECUTOR_LOGGING, "Calibrated train %d velocity for speed %d: %d",
                       train, lastSpeed, avgV);
                   {
                     calibratedSpeeds[calibrationSpeedN] = avgV;
@@ -1051,9 +1068,9 @@ void train_controller() {
                       calibrationSpeedN += 1;
                       nextSpeed = calibrationSpeeds[calibrationSpeedN];
                     } else {
-                      Logf(PACKET_LOG_INFO, "Calibration Done!");
+                      Logf(EXECUTOR_LOGGING, "Calibration Done!");
                       for (int i = 0; i < 4; i++) {
-                        Logf(PACKET_LOG_INFO, "Calibration[%d] = %d!", calibrationSpeeds[i], calibratedSpeeds[i]);
+                        Logf(EXECUTOR_LOGGING, "Calibration[%d] = %d!", calibrationSpeeds[i], calibratedSpeeds[i]);
                       }
                       float coeffMat[16];
                       float invMat[16];
@@ -1076,7 +1093,7 @@ void train_controller() {
                       for (int i = 0; i < 10; i++) {
                         int x = i + 5;
                         int est = (int)(coeffs[0]*x*x*x + coeffs[1]*x*x + coeffs[2]*x + coeffs[3]);
-                        Logf(PACKET_LOG_INFO, "Est[%d] = %d!", x, est);
+                        Logf(EXECUTOR_LOGGING, "Est[%d] = %d!", x, est);
                         set_velocity(train, x, est);
                       }
                       calibrating = false;
@@ -1093,12 +1110,12 @@ void train_controller() {
                 }
               }
             }
-            Logf(PACKET_LOG_INFO, "Train %d velocity sample at %s: %d, avg: %d",
+            Logf(EXECUTOR_LOGGING, "Train %d velocity sample at %s: %d, avg: %d",
                 train, track[sensor_data->sensor_no].name,
                 velocity, Velocity(train, lastSpeed));
 
           }
-          //Logf(PACKET_LOG_INFO, "Train %d velocity sample at %s: %d, avg: %d",
+          //Logf(EXECUTOR_LOGGING, "Train %d velocity sample at %s: %d, avg: %d",
           //    train, track[sensor_data->sensor_no].name,
           //    velocity, Velocity(train, lastSpeed));
 
@@ -1168,7 +1185,7 @@ void train_controller() {
         rnav_speed = navigate_msg->speed;
 
         if (navigate_msg->path.len == -1) {
-          Logf(PACKET_LOG_INFO, "%d: Rnav backwards, trying another", train);
+          Logf(EXECUTOR_LOGGING, "%d: Rnav backwards, trying another", train);
           DoCommand(reverse_train_task, train, 0);
           if (rnav_detector_id == -1) {
             rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 100);
@@ -1177,10 +1194,10 @@ void train_controller() {
         }
       case TRAIN_NAVIGATE_COMMAND:
       case TRAIN_STOPFROM_COMMAND:
-        Logf(PACKET_LOG_INFO, "%d: Nav!", train);
+        Logf(EXECUTOR_LOGGING, "%d: Nav!", train);
         path = navigate_msg->path; // Persist the path
         if (path.len == -1) {
-          Logf(PACKET_LOG_INFO, "%d: Broken path!!!", train);
+          Logf(EXECUTOR_LOGGING, "%d: Broken path!!!", train);
         } else {
           destination = path.dest->id;
         }
@@ -1188,6 +1205,7 @@ void train_controller() {
           SetTrainLocation(train, path.src->id);
           DoCommand(reverse_train_task, train, 0);
         }
+        next_expected_sensor = get_next_expected_sensor(&path, 0);
         KASSERT(path.src->id == WhereAmI(train), "Path began from a different place then train. train=%d  pathlen=%d  WhereAmI %d  and path_src %s", train, path.len, WhereAmI(train), path.src->name);
 
         sent_navigation_stop_delay = false;
@@ -1219,7 +1237,7 @@ void train_controller() {
         // FIXME: deal with failure result
         if (result == -1) {
           // Try pathing from the reverse?
-          Logf(PACKET_LOG_INFO, "  ...Can't nav, so reverse first");
+          Logf(EXECUTOR_LOGGING, "  ...Can't nav, so reverse first");
           DoCommand(reverse_train_task, train, 0);
           int command_tid = CreateRecyclable(PRIORITY_TRAIN_COMMAND_TASK, train_nav_task);
           train_task_t command_msg;
