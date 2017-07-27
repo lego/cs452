@@ -17,6 +17,7 @@
 #define MAX_PIECE_PER_STATION 30
 #define MAX_PIECE_PER_TRAIN 10
 #define TIME_TO_TRANSFER_PIECE 50
+#define TIME_PER_PIECE_SPAWN 400
 
 static unsigned int seed = 1;
 void _srand (int newseed) {
@@ -193,7 +194,7 @@ void game_task() {
   detector_message_t *detector_msg = (detector_message_t *)request_buffer;
   station_arrival_t *arrival = (station_arrival_t *)request_buffer;
 
-  StartIntervalDetector("game 1s timer", MyTid(), 100);
+  StartIntervalDetector("game timer", MyTid(), TIME_PER_PIECE_SPAWN);
 
   while (true) {
     int result = Receive(&sender, request_buffer, sizeof(request_buffer));

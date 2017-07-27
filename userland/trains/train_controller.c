@@ -1205,10 +1205,8 @@ void train_controller() {
           pathing_operation = OPERATION_STOPFROM;
         }
 
-        int dist_sum = 0;
         for (int i = 0; i < path.len; i++) {
-          dist_sum += path.node_dist[i];
-          Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", train, path.nodes[i]->name, dist_sum);
+          Logf(EXECUTOR_LOGGING, "%d:   node %4s dist %5dmm", train, path.nodes[i]->name, path.node_dist[i]);
         }
 
         // FIXME: using path.src->id here assumes that the first node is always a sensor.
