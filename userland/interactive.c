@@ -719,6 +719,12 @@ void interactive() {
           Putf(COM2, "Set velocity train=%d speed=%d to %dmm/s", cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
           set_velocity(cmd_data->train, cmd_data->speed, cmd_data->extra_arg);
           break;
+        case COMMAND_GAME_START:
+          Putf(COM2, "Starting the game.");
+          break;
+        case COMMAND_GAME_TRAIN:
+          Putf(COM2, "Added train=%d to the game. Navigating it to the first station.", cmd_data->train);
+          break;
         case COMMAND_PRINT_VELOCITY:
           // Putf(COM2, "velocity=%dmm/s", Velocity(active_train, active_speed));
           break;

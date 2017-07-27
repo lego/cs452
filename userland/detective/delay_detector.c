@@ -21,7 +21,7 @@ void delay_detector() {
   detector_message_t msg;
   msg.packet.type = DELAY_DETECT;
   msg.details = init.ticks;
-  msg.identifier = MyTid();
+  msg.identifier = init.identifier;
 
   Delay(init.ticks);
   SendSN(init.send_to, msg);
@@ -33,7 +33,18 @@ int StartRecyclableDelayDetector(const char * name, int send_to, int ticks) {
   delay_detector_init_t init;
   init.send_to = send_to;
   init.ticks = ticks;
-  init.identifier = delay_detector_counter++;
+  init.identifier = tid;
+  SendSN(tid, init);
+  return tid;
+}
+
+int StartRecyclableDelayDetectorWithDetails(const char * name, int send_to, int ticks, int details) {
+  KASSERT(ticks <= 1000 && ticks >= 0, "StartDelayDetector got a negative or huge value Please fix me! ticks=%d", ticks);
+  int tid = CreateRecyclableWithName(PRIORITY_DELAY_DETECTOR, delay_detector, name);
+  delay_detector_init_t init;
+  init.send_to = send_to;
+  init.ticks = ticks;
+  init.identifier = details;
   SendSN(tid, init);
   return tid;
 }
@@ -44,7 +55,7 @@ int StartDelayDetector(const char * name, int send_to, int ticks) {
   delay_detector_init_t init;
   init.send_to = send_to;
   init.ticks = ticks;
-  init.identifier = delay_detector_counter++;
+  init.identifier = tid;
   SendSN(tid, init);
   return tid;
 }

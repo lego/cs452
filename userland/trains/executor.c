@@ -12,6 +12,7 @@
 #include <train_command_server.h>
 #include <interactive/commands.h>
 #include <trains/train_controller.h>
+#include <game.h>
 
 // deterministic "random"
 int random_counter = 11;
@@ -159,6 +160,7 @@ void executor_task() {
   pathing_worker_result_t * pathing_result = (pathing_worker_result_t *) request_buffer;
   route_failure_t *route_failure = (route_failure_t *) request_buffer;
   int sender;
+  int game_tid = -1;
 
   while (true) {
     ReceiveS(&sender, request_buffer);
@@ -167,6 +169,18 @@ void executor_task() {
     switch (packet->type) {
     // Command line input invocations
     case INTERPRETED_COMMAND:
+      if (cmd->base.type == COMMAND_GAME_START) {
+        if (game_tid != -1) Destroy(game_tid);
+        game_tid = Create(5, game_task);
+        break;
+      } else if (cmd->base.type == COMMAND_GAME_TRAIN) {
+        station_arrival_t game_init_msg;
+        game_init_msg.packet.type = GAME_ADD_TRAIN;
+        game_init_msg.train = cmd->train;
+        SendSN(game_tid, game_init_msg);
+        break;
+      }
+
       execute_command(cmd);
       break;
     case ROUTE_FAILURE:

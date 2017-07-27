@@ -57,6 +57,12 @@ typedef enum {
   RESERVOIR_RELEASE,
   RESERVOIR_PATHING_REQUEST,
   RESERVOIR_AND_RELEASE_REQUEST,
+
+  /**
+   * Game messages
+   */
+  GAME_STATION_ARRIVAL,
+  GAME_ADD_TRAIN,
 } packet_type_t;
 
 typedef struct {
