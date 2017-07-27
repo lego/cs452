@@ -102,7 +102,6 @@ void sensor_attributer() {
       ret = lastTrainAtSensor[sensor][0];
       jmemmove(&lastTrainAtSensor[sensor][0], &lastTrainAtSensor[sensor][1], (SENSOR_MEMORY-1)*sizeof(int));
       lastTrainAtSensor[sensor][SENSOR_MEMORY-1] = -1;
-      KASSERT(ret == -1 || (ret >= 0 && ret <= 80), "OH NO! %d", ret);
     }
     return ret;
   }

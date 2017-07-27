@@ -5,8 +5,6 @@
 
 void cleanup(bool should_print_backtraces);
 
-void hex_dump(char *description, char *mem, int len);
-
 void exit_kernel();
 
 

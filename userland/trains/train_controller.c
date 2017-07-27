@@ -1,6 +1,5 @@
 #include <trains/train_controller.h>
 #include <basic.h>
-#include <jstring.h>
 #include <util.h>
 #include <bwio.h>
 #include <cbuffer.h>
@@ -1253,9 +1252,7 @@ void train_controller() {
 }
 
 int CreateTrainController(int train) {
-  char buffer[128];
-  jformatf(buffer, 128, "train controller (train=%d)", train);
-  int tid = CreateWithName(PRIORITY_TRAIN_CONTROLLER, train_controller, buffer);
+  int tid = Create(PRIORITY_TRAIN_CONTROLLER, train_controller);
   train_controllers[train] = tid;
   SendSN(tid, train);
   return tid;
