@@ -27,7 +27,7 @@ int ticker = 1;
 //   route_failure_t *failure = (route_failure_t *) buffer;
 //   int sender;
 //   while (true) {
-//     ReceiveS(&sender, buffer);
+//     Receive(&sender, buffer, sizeof(buffer));
 //     ReplyN(sender);
 //     switch (packet->type) {
 //       case ROUTE_FAILURE:

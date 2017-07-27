@@ -3,6 +3,7 @@
 #include <priorities.h>
 #include <kernel.h>
 #include <servers/clock_server.h>
+#include <servers/uart_tx_server.h>
 
 volatile int delay_detector_counter = 1;
 
@@ -24,7 +25,7 @@ void delay_detector() {
   msg.identifier = MyTid();
 
   Delay(init.ticks);
-  SendSN(init.send_to, msg);
+  int result = SendSN(init.send_to, msg);
 }
 
 int StartRecyclableDelayDetector(const char * name, int send_to, int ticks) {

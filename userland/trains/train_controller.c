@@ -50,7 +50,7 @@ int path_idx(path_t *path, int node_id) {
 }
 
 int offset_stop_dist(int train, int speed) {
-  return StoppingDistance(train, speed) + 50;
+  return StoppingDistance(train, speed) + 150;
 }
 
 int do_navigation_stop(path_t *path, int source_node, int train, int speed) {
@@ -640,34 +640,52 @@ void reserve_segment_pieces(reservoir_segment_edges_t *reserving, int distRemain
   } while (total_dist < distRemaining);
 }
 
-#define reserve_next_segments(path, train, speed, sensor_no) reserve_next_segments_offset(path, train, speed, sensor_no, 0)
+#define reserve_next_segments(path, train, speed, node) reserve_next_segments_offset(path, train, speed, node, 0)
 
-int reserve_next_segments_offset(path_t *path, int train, int speed, int sensor_no, int offset) {
+int reserve_next_segments_offset(path_t *path, int train, int speed, int node, int offset) {
   int stopdist = offset_stop_dist(train, speed) + offset;
   reservoir_segment_edges_t reserving;
   reserving.len = 0;
   reserving.owner = train;
-  Logf(EXECUTOR_LOGGING, "%d: Running reservation with stopdist %3dmm for sensor id:%d name:%4s", train, stopdist, sensor_no, track[sensor_no].name);
   bool found_another_sensor = false;
 
-  track_edge *next_edge = nextEdge(sensor_no);
+  track_edge *next_edge = nextEdge(node);
+  if (next_edge == NULL) return -1;
   reserving.edges[reserving.len] = next_edge;
   reserving.len++;
   reserve_segment_pieces(&reserving, stopdist - next_edge->dist, next_edge->dest->id, false, false, 0);
 
   int result = RequestSegmentEdgesAndReleaseRest(&reserving);
   if (result == 1) {
-    Logf(EXECUTOR_LOGGING, "%d: failed to obtain segments", train);
     return -1;
   } else {
     // Keep track of all owned segments
     // NOTE: we only do this after a successful RequestSegment above
-    Logf(EXECUTOR_LOGGING, "%d: requesting %d segments.", train, reserving.len);
-    for (int i = 0; i < reserving.len; i++) {
-      Logf(EXECUTOR_LOGGING, "%d:    acquired edge (dest=%4s)", train, reserving.edges[i]->dest->name);
-    }
     return 0;
   }
+}
+
+void train_nav_task() {
+    int executor_tid = WhoIsEnsured(NS_EXECUTOR);
+
+    train_task_t data;
+    int receiver;
+    ReceiveS(&receiver, data);
+    ReplyN(receiver);
+
+    int node = -1;
+    ReceiveS(&receiver, node);
+    ReplyN(receiver);
+
+    Delay(100);
+
+    cmd_data_t cmd_data;
+    cmd_data.base.packet.type = INTERPRETED_COMMAND;
+    cmd_data.base.type = COMMAND_NAVIGATE;
+    cmd_data.train = data.train;
+    cmd_data.speed = data.speed;
+    cmd_data.dest_node = node;
+    SendSN(executor_tid, cmd_data);
 }
 
 void train_rnav_task() {
@@ -759,28 +777,135 @@ void train_controller() {
   int prediction_dist = 0;
   int prediction_last_loc = -1;
 
+  int destination = -1;
+
+  void reserve_things() {
+    if (!pathing) {
+      /**
+       * If we're not pathing, but we still are moving we need to reserve
+       * This segment releases the previous chunk and requests the next chunk
+       */
+
+      /*
+       * Reservation for current segment
+       */
+      int result = reserve_next_segments_offset(NULL, train, lastSpeed, prediction_last_loc, prediction_dist);
+      if (result == -1 && collision_restart_id == -1) {
+        lastNonzeroSpeed = lastSpeed;
+        lastSpeed = 0;
+        DoCommand(train_speed_task, train, 0);
+        Logf(EXECUTOR_LOGGING, "Starting collision procedure from regular train movement. train=%d", train);
+        collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
+      }
+    } else if (pathing_operation == OPERATION_STOPFROM && sensor_data->sensor_no == path.dest->id) {
+      // We're doing a stopfrom, and this was the place we're stopping from
+        Logf(EXECUTOR_LOGGING, "%d: Route Executor is doing stopfrom stopping for %4s. Bye \\o", train, path.dest->name);
+        // Tell this train to stop immediately
+        DoCommand(train_speed_task, train, 0);
+        pathing = false;
+    } else if (sensor_data->sensor_no == path.dest->id) {
+      // We picked up the last sensor for this path! Woo
+      Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", train);
+      pathing = false;
+    // } else if (sensor_data->sensor_no != next_expected_sensor) {
+    //   // We picked up the wrong sensor!
+    //   // We will try 1 of 2 things:
+    //   // 1) we missed a sensor (it was broken) and this is just the sensor after that
+    //   // 2) this is an incorrect sensor (and route), due to a switch failure. we need to repath
+    //   if (sensor_data->sensor_no == get_next_sensor(&path, next_expected_sensor)) {
+    //     // Correct route! Adjust!
+    //   } else {
+    //     // Incorrect route! Re-path
+    //   }
+    } else {
+      // We picked up the right sensor. Do reservations as expected
+
+      // Reserve more track based on this sensor trigger
+      int status = reserve_next_segments_offset(&path, train, lastSpeed, prediction_last_loc, prediction_dist);
+
+      if (status == -1) {
+        // Alert the Executor that we failed so it can find us another path
+        route_failure_t failure;
+        failure.packet.type = ROUTE_FAILURE;
+        failure.train = train;
+        failure.dest_id = path.dest->id;
+        SendSN(executor_tid, failure);
+        pathing = false;
+        lastSpeed = 0;
+        DoCommand(train_speed_task, train, 0);
+        if (rnaving) {
+          if (rnav_detector_id == -1) {
+            rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 600);
+          }
+        } else {
+
+          // @FIXME: currently setting navigating as finished if we stop to avoid a collision, and it's the last segment
+          // @TODO: replace when we have something approximating short stops
+          // Idea: set remaining distance assuming stopping distance is close-ish,
+          //   then slowly go until we need to stop inside the delay-detect handler
+
+          // If we need to navigate and there are no more sensors within stopdist
+          // then we calculate a delay based off of this sensor
+          int node_to_sense_on = 0;
+          for (int i = path.len; i >= 0; i--) {
+            if (path.nodes[i]->type == NODE_SENSOR && path.dist - path.node_dist[i] > StoppingDistance(train, lastSpeed)) {
+              node_to_sense_on = i;
+              break;
+            }
+          }
+          if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.nodes[node_to_sense_on]->id && !sent_navigation_stop_delay) {
+            sent_navigation_stop_delay = true;
+          }
+        }
+      } else {
+        // Flip switches for any branches on the recently reserved segments
+        if (nav_switch_detector_id != -1) {
+          Destroy(nav_switch_detector_id);
+          nav_switch_detector_id = -1;
+        }
+        set_switches_result_t result = set_switches(train, lastSpeed, &path, prediction_last_loc);
+        nav_switch_detector_id = result.task;
+        nav_switch_detector_switch = result.sw;
+
+        // If we need to navigate and there are no more sensors within stopdist
+        // then we calculate a delay based off of this sensor
+        int node_to_sense_on = 0;
+        for (int i = path.len-1; i >= 0; i--) {
+          if (path.nodes[i]->type == NODE_SENSOR && path.dist - path.node_dist[i] > StoppingDistance(train, lastSpeed)) {
+            node_to_sense_on = i;
+            break;
+          }
+        }
+        if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.nodes[node_to_sense_on]->id && !sent_navigation_stop_delay) {
+          sent_navigation_stop_delay = true;
+          stop_delay_detector_id = do_navigation_stop(&path, sensor_data->sensor_no, train, lastSpeed);
+        }
+      }
+    }
+  }
+
   while (true) {
-    ReceiveS(&requester, request_buffer);
+    int received = Receive(&requester, request_buffer, sizeof(request_buffer));
+    KASSERT(received > 0, "This is really really bad if this happens. Give up. %d %d", received, requester);
     ReplyN(requester);
     int time = Time();
     switch (packet->type) {
       case DELAY_DETECT:
         if (detector_msg->identifier == prediction_detector_id) {
+          prediction_detector_id = -1;
           {
             if (prediction_last_loc != -1) {
               track_edge *next = nextEdge(prediction_last_loc);
               prediction_dist += Velocity(train, lastSpeed) * (time - prediction_last_time) / 100;
-              while (next != NULL && prediction_dist > next->dist) {
+              while (next != NULL && next->dest->type != NODE_SENSOR && next->dest->type != NODE_EXIT && prediction_dist > next->dist) {
                 prediction_last_loc = next->dest->id;
                 prediction_dist -= next->dist;
                 next = nextEdge(prediction_last_loc);
-                if (next->dest->type == NODE_SENSOR) {
-                  prediction_last_loc = -1;
-                  next = NULL;
-                  break;
-                }
               }
               if (next != NULL) {
+                if (next->dest->type == NODE_SENSOR && prediction_dist > next->dist) {
+                  prediction_dist = next->dist;
+                }
                 uart_packet_fixed_size_t packet;
                 packet.type = PACKET_TRAIN_LOCATION_PREDICTION_DATA;
                 packet.len = 8;
@@ -794,24 +919,7 @@ void train_controller() {
               prediction_last_time = time;
 
               if (prediction_last_loc != -1) {
-                if (!pathing) {
-                  /**
-                   * If we're not pathing, but we still are moving we need to reserve
-                   * This segment releases the previous chunk and requests the next chunk
-                   */
-
-                  /*
-                   * Reservation for current segment
-                   */
-                  int result = reserve_next_segments_offset(NULL, train, lastSpeed, prediction_last_loc, prediction_dist);
-                  if (result == -1 && collision_restart_id == -1) {
-                    lastNonzeroSpeed = lastSpeed;
-                    lastSpeed = 0;
-                    DoCommand(train_speed_task, train, 0);
-                    Logf(EXECUTOR_LOGGING, "Starting collision procedure from regular train movement. train=%d", train);
-                    collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
-                  }
-                }
+                reserve_things();
               } else {
                   int result = reserve_next_segments(NULL, train, lastSpeed, WhereAmI(train));
                   if (result == -1 && collision_restart_id == -1) {
@@ -827,25 +935,49 @@ void train_controller() {
           prediction_detector_id = StartRecyclableDelayDetector("prediction detector", MyTid(), 20);
         } else if (detector_msg->identifier == collision_restart_id) {
           collision_restart_id = -1;
-          int result = reserve_next_segments(NULL, train, lastNonzeroSpeed, WhereAmI(train));
-          if (result == -1 && collision_restart_id == -1) {
-            lastSpeed = 0;
-            DoCommand(train_speed_task, train, 0);
-            Logf(EXECUTOR_LOGGING, "Starting collision procedure from regular train movement. train=%d", train);
-            collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
+          Logf(PACKET_LOG_INFO, "%d: Collision detector:", train);
+          if (destination != -1) {
+            Logf(PACKET_LOG_INFO, "  ...continuing to destination, %s", track[destination].name);
+            int result = reserve_next_segments(&path, train, lastNonzeroSpeed, prediction_last_loc);
+            if (result == -1) {
+              Logf(PACKET_LOG_INFO, "  ...but reversing first");
+              DoCommand(reverse_train_task, train, 0);
+              collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
+            } else {
+              int command_tid = CreateRecyclable(PRIORITY_TRAIN_COMMAND_TASK, train_nav_task);
+              train_task_t command_msg;
+              command_msg.train = train;
+              command_msg.speed = lastNonzeroSpeed;
+              SendSN(command_tid, command_msg);
+              SendSN(command_tid, destination);
+            }
           } else {
-            Logf(EXECUTOR_LOGGING, "No more collision! Yay!. train=%d", train);
-            lastSpeed = lastNonzeroSpeed;
-            DoCommand(train_speed_task, train, lastNonzeroSpeed);
+            Logf(PACKET_LOG_INFO, "  ...no destination, so waiting");
+            int result = reserve_next_segments(NULL, train, lastNonzeroSpeed, WhereAmI(train));
+            if (result == -1) {
+              lastSpeed = 0;
+              DoCommand(train_speed_task, train, 0);
+              Logf(EXECUTOR_LOGGING, "Starting collision procedure from regular train movement. train=%d", train);
+              collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
+            } else {
+              Logf(EXECUTOR_LOGGING, "No more collision! Yay!. train=%d", train);
+              lastSpeed = lastNonzeroSpeed;
+              DoCommand(train_speed_task, train, lastNonzeroSpeed);
+            }
           }
         } else if (detector_msg->identifier == stop_delay_detector_id) {
+          Logf(PACKET_LOG_INFO, "%d: Navigation stop detector: queueing up another nav", train);
+          stop_delay_detector_id = -1;
           pathing = false;
           lastSpeed = 0;
           DoCommand(train_speed_task, train, 0);
           if (rnaving) {
-            rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 600);
+            if (rnav_detector_id == -1) {
+              rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 600);
+            }
           }
         } else if (detector_msg->identifier == rnav_detector_id) {
+          rnav_detector_id = -1;
           int random = Time() % 2;
           //if (random == 0) {
           //  DoCommand(reverse_train_task, train, 0);
@@ -877,7 +1009,7 @@ void train_controller() {
             nav_switch_detector_switch = -1;
           }
         } else {
-          KASSERT(false, "Unexpected delay detector! identifier=%d ticks=%d. stop_delay_detector_id=%d collision_restart_id=%d", detector_msg->identifier, detector_msg->details, stop_delay_detector_id, collision_restart_id);
+          KASSERT(false, "Unexpected delay detector! identifier=%d ticks=%d. stop_delay_detector_id=%d collision_restart_id=%d prediction_detector_id=%d nav_switch_detector_id=%d", detector_msg->identifier, detector_msg->details, stop_delay_detector_id, collision_restart_id, prediction_detector_id, nav_switch_detector_id);
         }
         break;
       case SENSOR_DATA:
@@ -987,109 +1119,14 @@ void train_controller() {
             PutFixedPacket(&packet);
           }
 
-          if (!pathing) {
-            /**
-             * If we're not pathing, but we still are moving we need to reserve
-             * This segment releases the previous chunk and requests the next chunk
-             */
-
-            /*
-             * Reservation for current segment
-             */
-            int result = reserve_next_segments(NULL, train, lastSpeed, sensor_data->sensor_no);
-            if (result == -1 && collision_restart_id == -1) {
-              lastNonzeroSpeed = lastSpeed;
-              lastSpeed = 0;
-              DoCommand(train_speed_task, train, 0);
-              Logf(EXECUTOR_LOGGING, "Starting collision procedure from regular train movement. train=%d", train);
-              collision_restart_id = StartDelayDetector("collision restart", MyTid(), 100);
-            }
-          } else if (pathing_operation == OPERATION_STOPFROM && sensor_data->sensor_no == path.dest->id) {
-            // We're doing a stopfrom, and this was the place we're stopping from
-              Logf(EXECUTOR_LOGGING, "%d: Route Executor is doing stopfrom stopping for %4s. Bye \\o", train, path.dest->name);
-              // Tell this train to stop immediately
-              DoCommand(train_speed_task, train, 0);
-              pathing = false;
-          } else if (sensor_data->sensor_no == path.dest->id) {
-            // We picked up the last sensor for this path! Woo
-            Logf(EXECUTOR_LOGGING, "%d: Route Executor has completed all sensors on route. Bye \\o", train);
-            pathing = false;
-          // } else if (sensor_data->sensor_no != next_expected_sensor) {
-          //   // We picked up the wrong sensor!
-          //   // We will try 1 of 2 things:
-          //   // 1) we missed a sensor (it was broken) and this is just the sensor after that
-          //   // 2) this is an incorrect sensor (and route), due to a switch failure. we need to repath
-          //   if (sensor_data->sensor_no == get_next_sensor(&path, next_expected_sensor)) {
-          //     // Correct route! Adjust!
-          //   } else {
-          //     // Incorrect route! Re-path
-          //   }
-          } else {
-            // We picked up the right sensor. Do reservations as expected
-
-            // Reserve more track based on this sensor trigger
-            int status = reserve_next_segments(&path, train, lastSpeed, sensor_data->sensor_no);
-
-            if (status == -1) {
-              // Alert the Executor that we failed so it can find us another path
-              route_failure_t failure;
-              failure.packet.type = ROUTE_FAILURE;
-              failure.train = train;
-              failure.dest_id = path.dest->id;
-              SendSN(executor_tid, failure);
-              pathing = false;
-              lastSpeed = 0;
-              DoCommand(train_speed_task, train, 0);
-
-              // @FIXME: currently setting navigating as finished if we stop to avoid a collision, and it's the last segment
-              // @TODO: replace when we have something approximating short stops
-              // Idea: set remaining distance assuming stopping distance is close-ish,
-              //   then slowly go until we need to stop inside the delay-detect handler
-
-              // If we need to navigate and there are no more sensors within stopdist
-              // then we calculate a delay based off of this sensor
-              int node_to_sense_on = 0;
-              for (int i = path.len; i >= 0; i--) {
-                if (path.nodes[i]->type == NODE_SENSOR && path.dist - path.node_dist[i] > StoppingDistance(train, lastSpeed)) {
-                  node_to_sense_on = i;
-                  break;
-                }
-              }
-              if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.nodes[node_to_sense_on]->id && !sent_navigation_stop_delay) {
-                sent_navigation_stop_delay = true;
-              }
-            } else {
-              // Flip switches for any branches on the recently reserved segments
-              if (nav_switch_detector_id != -1) {
-                Destroy(nav_switch_detector_id);
-              }
-              set_switches_result_t result = set_switches(train, lastSpeed, &path, sensor_data->sensor_no);
-              nav_switch_detector_id = result.task;
-              nav_switch_detector_switch = result.sw;
-
-              // If we need to navigate and there are no more sensors within stopdist
-              // then we calculate a delay based off of this sensor
-              int node_to_sense_on = 0;
-              for (int i = path.len-1; i >= 0; i--) {
-                Logf(EXECUTOR_LOGGING, "Check path[%d]: %s -> dist: %d but need at least %d", i, path.nodes[i]->name, path.dist - path.node_dist[i], StoppingDistance(train, lastSpeed));
-                if (path.nodes[i]->type == NODE_SENSOR && path.dist - path.node_dist[i] > StoppingDistance(train, lastSpeed)) {
-                  node_to_sense_on = i;
-                  break;
-                }
-              }
-              if (pathing_operation == OPERATION_NAVIGATE && sensor_data->sensor_no == path.nodes[node_to_sense_on]->id && !sent_navigation_stop_delay) {
-                sent_navigation_stop_delay = true;
-                stop_delay_detector_id = do_navigation_stop(&path, sensor_data->sensor_no, train, lastSpeed);
-              }
-            }
-          }
-
-          lastSensor = sensor_data->sensor_no;
-          lastSensorTime = sensor_data->timestamp;
-
           prediction_last_time = time;
           prediction_dist = 0;
           prediction_last_loc = sensor_data->sensor_no;
+
+          reserve_things();
+
+          lastSensor = sensor_data->sensor_no;
+          lastSensorTime = sensor_data->timestamp;
         }
         break;
       case TRAIN_CONTROLLER_COMMAND:
@@ -1123,17 +1160,27 @@ void train_controller() {
         }
         break;
       case TRAIN_NAVIGATE_RANDOMLY_COMMAND:
+        Logf(EXECUTOR_LOGGING, "TC executing rnav cmd");
         rnaving = true;
         rnav_speed = navigate_msg->speed;
 
         if (navigate_msg->path.len == -1) {
+          Logf(PACKET_LOG_INFO, "%d: Rnav backwards, trying another", train);
           DoCommand(reverse_train_task, train, 0);
-          rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 100);
+          if (rnav_detector_id == -1) {
+            rnav_detector_id = StartDelayDetector("random navigation", MyTid(), 100);
+          }
           break;
         }
       case TRAIN_NAVIGATE_COMMAND:
       case TRAIN_STOPFROM_COMMAND:
+        Logf(PACKET_LOG_INFO, "%d: Nav!", train);
         path = navigate_msg->path; // Persist the path
+        if (path.len == -1) {
+          Logf(PACKET_LOG_INFO, "%d: Broken path!!!", train);
+        } else {
+          destination = path.dest->id;
+        }
         if (path.src->reverse->id == WhereAmI(train)) {
           SetTrainLocation(train, path.src->id);
           DoCommand(reverse_train_task, train, 0);
@@ -1171,10 +1218,19 @@ void train_controller() {
         // FIXME: deal with failure result
         if (result == -1) {
           // Try pathing from the reverse?
+          Logf(PACKET_LOG_INFO, "  ...Can't nav, so reverse first");
+          DoCommand(reverse_train_task, train, 0);
+          int command_tid = CreateRecyclable(PRIORITY_TRAIN_COMMAND_TASK, train_nav_task);
+          train_task_t command_msg;
+          command_msg.train = train;
+          command_msg.speed = lastNonzeroSpeed;
+          SendSN(command_tid, command_msg);
+          SendSN(command_tid, destination);
         } else {
           // Flip switches for any branches on the recently reserved segments
           if (nav_switch_detector_id != -1) {
             Destroy(nav_switch_detector_id);
+            nav_switch_detector_id = -1;
           }
           set_switches_result_t result = set_switches(train, lastSpeed, &path, path.src->id);
           nav_switch_detector_id = result.task;

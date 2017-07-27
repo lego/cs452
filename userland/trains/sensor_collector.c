@@ -99,7 +99,6 @@ void sensor_attributer() {
   int expectTrainAt(int train, int sensor) {
     for (int i = 0; i < SENSOR_MEMORY; i++) {
       if (lastTrainAtSensor[sensor][i] == -1) {
-        Logf(PACKET_LOG_INFO, "EXPECT %d at %s", train, track[sensor].name);
         lastTrainAtSensor[sensor][i] = train;
         return 0;
       }
@@ -141,14 +140,12 @@ void sensor_attributer() {
           }
         }
         if (node != -1 && lastTrainAtSensor[node][0] != -1) {
-          Logf(PACKET_LOG_INFO, "SWITCH %s broken", track[branch].name);
           return getNextExpectedTrainAt(node);
         }
       }
 
       // If it's not a switch that failed, check if a sensor failed
       if (lastTrainAtSensor[prevSensor][0] != -1) {
-        Logf(PACKET_LOG_INFO, "SENSOR %s broken or it was reversed on", track[prevSensor].name);
         return getNextExpectedTrainAt(prevSensor);
       }
     }
@@ -193,7 +190,7 @@ void sensor_attributer() {
   }
 
   while (true) {
-    ReceiveS(&requester, buffer);
+    Receive(&requester, buffer, sizeof(buffer));
     ReplyN(requester);
     switch (packet->type) {
       case SENSOR_ATTRIB_ASSIGN_TRAIN:
@@ -217,24 +214,20 @@ void sensor_attributer() {
       case SENSOR_DATA: {
           int attrib = -1;
           int sensor = data->sensor_no;
-          Logf(PACKET_LOG_INFO, "--------");
 
           // First check if we expected a train here
           attrib = getNextExpectedTrainAt(sensor);
-          Logf(PACKET_LOG_INFO, "  attrib %d at %s", attrib, track[sensor].name);
 
           // Next, check if we have an unattributed train
           if (attrib == -1 && active_train != -1) {
             attrib = active_train;
             active_train = -1;
           }
-          Logf(PACKET_LOG_INFO, "  attrib %d at %s", attrib, track[sensor].name);
 
           // Next, check if we found a broken switch or sensor
           if (attrib == -1) {
             attrib = checkForBrokenSwitchOrSensor(sensor);
           }
-          Logf(PACKET_LOG_INFO, "  attrib %d at %s", attrib, track[sensor].name);
 
           // If we found a train, and have a next sensor, set it to be expected
           if (attrib != -1) {
@@ -242,7 +235,6 @@ void sensor_attributer() {
 
           }
           // Finally, notify the appropriate train controller as a new task
-          KASSERT(attrib == -1 || attrib == 63 || attrib == 71, "OH NO! %d", attrib);
           { //if (attrib == 71 || attrib == 63){
             // TODO: break this out into a AlertSensorAttribution func
             int notifier = CreateRecyclable(PRIORITY_UART2_TX_SERVER, sensor_notifier);
@@ -262,45 +254,24 @@ void sensor_attributer() {
 void fake_sensor_collector_task() {
   int sensor_detector_multiplexer_tid = WhoIsEnsured(NS_SENSOR_DETECTOR_MULTIPLEXER);
 
-  int sensors[16]= {
-    Name2Node("E14"),
-    Name2Node("E1"),
+  int last = Name2Node("E14");
 
-    Name2Node("E9"),
-    Name2Node("C1"),
-
-    Name2Node("D5"),
-    Name2Node("B4"),
-
-    Name2Node("E6"),
-    Name2Node("C9"),
-
-    Name2Node("E3"),
-    Name2Node("B15"),
-
-    Name2Node("D1"),
-    Name2Node("A3"),
-
-    Name2Node("B14"),
-    Name2Node("C11"),
-
-    Name2Node("D16"),
-    Name2Node("E16"),
-  };
+  Delay(600);
 
   int index = 0;
   sensor_data_t req;
   req.packet.type = SENSOR_DATA;
 
   while (true) {
+    int next = nextSensor(last).node;
     req.timestamp = Time();
-    req.sensor_no = sensors[index];
+    req.sensor_no = next;
     SendSN(sensor_attributer_tid, req);
     // Send to detector multiplexer
     SendSN(sensor_detector_multiplexer_tid, req);
 
-    index = (index+1) % 16;
-    Delay(2);
+    last = next;
+    Delay(100);
   }
 }
 

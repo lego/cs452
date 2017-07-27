@@ -281,10 +281,7 @@ void syscall_receive(task_descriptor_t *task, kernel_request_t *arg) {
     }
 
     if (sending_task->state == STATE_ZOMBIE) {
-      syscall_message_t * msg = arg->ret_val;
-      msg->status = -2;
-      task->state = STATE_READY;
-      scheduler_requeue_task(task);
+      RecordLogf("WARN: Zombie task sent a thing to %d/%s: %d/%s", task->tid, task->name, sending_task->tid, sending_task->name);
       return;
     }
 

@@ -23,7 +23,7 @@ void sensor_detector_multiplexer_task() {
   sensor_data_t * data = (sensor_data_t *) request_buffer;
 
   while (true) {
-    ReceiveS(&sender, request_buffer);
+    Receive(&sender, request_buffer, sizeof(request_buffer));
     switch (packet->type) {
     case SENSOR_DETECTOR_REQUEST:
       cbuffer_add(&sensor_detectors, (void *) sender);

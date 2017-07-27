@@ -40,7 +40,7 @@ void uart_tx_notifier() {
   char * packet_data = request_buffer + sizeof(uart_packet_t);
 
   while (true) {
-    int bytes = ReceiveS(&requester, request_buffer);
+    int bytes = Receive(&requester, request_buffer, sizeof(request_buffer));
     KASSERT(bytes < 512, "Packet buffer overflown. Re-evaluate buffer sizes.");
     ReplyN(requester);
     log_uart_server("uart_notifer channel=%d", channel);

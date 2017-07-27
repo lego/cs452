@@ -590,7 +590,7 @@ void interactive() {
   }
 
   while (true) {
-    ReceiveS(&sender, request_buffer);
+    Receive(&sender, request_buffer, sizeof(request_buffer));
     switch (packet->type) {
       case INTERACTIVE_ECHO:
         Putstr(COM2, echo_data->echo);

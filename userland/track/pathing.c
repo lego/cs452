@@ -116,10 +116,12 @@ node_dist_t findSensorOrBranch(int start) {
 }
 
 track_edge *nextEdge(int node) {
+  KASSERT(node >= 0 && node <= 143, "Invalid starting node, %d", node);
   if (track[node].type == NODE_EXIT) {
     return NULL;
   } else if (track[node].type == NODE_BRANCH) {
     int state = GetSwitchState(track[node].num);
+    KASSERT(state == DIR_STRAIGHT || state == DIR_CURVED, "Invalid switch state, %d", state);
     return &track[node].edge[state];
   } else {
     return &track[node].edge[DIR_AHEAD];

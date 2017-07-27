@@ -161,7 +161,7 @@ void executor_task() {
   int sender;
 
   while (true) {
-    ReceiveS(&sender, request_buffer);
+    Receive(&sender, request_buffer, sizeof(request_buffer));
     ReplyN(sender);
     Logf(EXECUTOR_LOGGING, "Executor got message type=%d", packet->type);
     switch (packet->type) {

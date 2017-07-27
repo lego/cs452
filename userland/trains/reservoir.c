@@ -39,14 +39,16 @@ void set_segment_owner(segment_t * segment, int owner) {
 
 void put_resevoir_packet(int type, reservoir_segments_t * request, int owner) {
   int time = Time();
-  char message_buffer[32] __attribute__ ((aligned (4)));;
+  int msg_buf_len = sizeof(uart_packet_t) + 4 + 1 + RESERVING_LIMIT*2;
+  char message_buffer[msg_buf_len] __attribute__ ((aligned (4)));;
   uart_packet_t * packet = (uart_packet_t *) message_buffer;
   char * packet_data = message_buffer + sizeof(uart_packet_t);
   packet->type = type;
   packet->len = 5 + request->len*2;
   jmemcpy(&packet_data[0], &time, sizeof(int));
   packet_data[4] = owner;
-  for (int i = 0; i < request->len; i++) {
+  KASSERT(request->len < RESERVING_LIMIT, "Trying to reserve too many segments, %d", request->len);
+  for (int i = 0; i < request->len && i < RESERVING_LIMIT; i++) {
     packet_data[5+2*i] = (char)request->segments[i].track_node;
     packet_data[5+2*i+1] = (char)track[request->segments[i].track_node].edge[request->segments[i].dir].dest->id;
   }
@@ -59,13 +61,11 @@ void put_resevoir_packet_one_item(int type, int src_node, int dest_node, int own
   uart_packet_t * packet = (uart_packet_t *) message_buffer;
   char * packet_data = message_buffer + sizeof(uart_packet_t);
   packet->type = type;
-  packet->len = 5 + 1*2;
+  packet->len = 7;
   jmemcpy(&packet_data[0], &time, sizeof(int));
   packet_data[4] = owner;
-  for (int i = 0; i < 1; i++) {
-    packet_data[5+2*i] = (char)src_node;
-    packet_data[5+2*i+1] = (char)dest_node;
-  }
+  packet_data[5] = (char)src_node;
+  packet_data[6] = (char)dest_node;
   PutPacket(packet);
 }
 
@@ -129,7 +129,7 @@ void reservoir_task() {
 
   int sender;
   while (true) {
-    ReceiveS(&sender, request_buffer);
+    Receive(&sender, request_buffer, sizeof(request_buffer));
     switch (packet->type) {
     case RESERVOIR_REQUEST:
       if (all_segments_available(resv_request, resv_request->owner)) {
