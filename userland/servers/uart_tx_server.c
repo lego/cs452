@@ -60,6 +60,7 @@ void uart_tx_notifier() {
           break;
         }
 #endif
+        KASSERT(packet->len < 256, "Big packet %d", packet->len);
         for (int i = 0; i < packet->len; i++) {
           AwaitEventPut(EVENT_UART2_TX, packet_data[i]);
           log_uart_server("uart_notifer COM2 putc=%c", packet_data[i]);

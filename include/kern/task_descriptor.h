@@ -69,5 +69,5 @@ task_descriptor_t *td_create(context_t *ctx, int parent_tid, int priority, void 
 
 void td_free_stack(int tid);
 
-#define _TaskStackSize 0x09000
+#define _TaskStackSize 0x10000
 extern char *TaskStack;

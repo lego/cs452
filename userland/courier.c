@@ -45,7 +45,7 @@ void courier() {
       setup.fcn(msgData);
     }
     result = Send(setup.dst, &msgData, result, NULL, 0);
-    KASSERT(!using_default_size || result < DEFAULT_BUFFER_SIZE, "Default courier buffer overflowed. Please re-evaluate buffer sizes.");
+    KASSERT(!using_default_size || result < DEFAULT_BUFFER_SIZE, "Default courier buffer overflowed. Please re-evaluate buffer sizes. src:%d, dst:%d, size:%d", setup.src, setup.dst, result);
     if (result < 0) Destroy(tid);
   }
 }
