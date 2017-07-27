@@ -18,9 +18,9 @@ ifndef PACKETS
 PACKETS=true
 endif
 
-GCC_ROOT := /u3/j5pereira/arm-gcc-5.3.1
-GCC_TYPE := arm-none-eabi
-GCC_VERSION := 5.3.1
+GCC_ROOT := /u/wbcowan/gnuarm-4.0.2
+GCC_TYPE := arm-elf
+GCC_VERSION := 4.0.2
 
 STANDARD_INCLUDES=-include stdbool.h -include stddef.h -include stdint.h
 CFLAGS_BACKTRACE := -mpoke-function-name -fverbose-asm -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs -mno-thumb-interwork -marm
