@@ -17,7 +17,7 @@
 #define UPTIME_LOGGING 100
 #define IDLE_LOGGING 101
 #define EXECUTOR_LOGGING 150
-
+#define PACKET_GAME_LOGGING 155
 
 typedef struct {
   int len;

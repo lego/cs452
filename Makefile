@@ -24,7 +24,7 @@ GCC_VERSION := 5.3.1
 
 STANDARD_INCLUDES=-include stdbool.h -include stddef.h -include stdint.h
 CFLAGS_BACKTRACE := -mpoke-function-name -fverbose-asm -fno-omit-frame-pointer -mapcs-frame -mabi=aapcs -mno-thumb-interwork -marm
-CFLAGS_COMPILE_WARNINGS := -Winline -Werror -Wno-unused-variable -Wno-format-security -Wno-error=unused-but-set-variable
+CFLAGS_COMPILE_WARNINGS := -Winline -Werror -Wno-unused-variable -Wno-format-security
 CFLAGS_OPTIMIZATIONS := -O2 -finline-functions -finline-functions-called-once -fno-optimize-sibling-calls
 
 ifndef LOCAL

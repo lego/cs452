@@ -19,3 +19,5 @@
  */
 int StartRecyclableDelayDetector(const char * name, int send_to, int ticks);
 int StartDelayDetector(const char * name, int send_to, int ticks);
+
+int StartRecyclableDelayDetectorWithDetails(const char * name, int send_to, int ticks, int details);

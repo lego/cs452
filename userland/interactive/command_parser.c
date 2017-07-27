@@ -51,7 +51,11 @@ command_t get_command_type(char *command) {
   DEF_COMMAND("stopdistn", COMMAND_SET_STOPPING_DISTANCEN)
   // moves the train to a node and sends the stop command on arrival
   // (only works for sensor nodes)
-  DEF_COMMAND("stopfrom", COMMAND_STOP_FROM) {
+  DEF_COMMAND("stopfrom", COMMAND_STOP_FROM)
+  // starts the game
+  DEF_COMMAND("game", COMMAND_GAME_START)
+  // inits a train int othe game
+  DEF_COMMAND("gameinit", COMMAND_GAME_TRAIN) {
     // KASSERT(false, "Command not valid: %s", command);
     return COMMAND_INVALID;
   }

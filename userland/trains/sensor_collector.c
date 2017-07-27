@@ -59,6 +59,16 @@ void sensor_notifier() {
   }
 }
 
+// To compile locally (with clang), we need to yank out these functions
+// because clang doesn't support nested functions
+#if defined(DEBUG_MODE)
+int getNextExpectedTrainAt(int sensor) {return 0;}
+int expectTrainAt(int train, int sensor) {return 0;}
+int expectTrainAtNext(int train, int sensor) {return 0;}
+int checkForBrokenSwitchOrSensor(int sensor) {return 0;}
+int clearTrainAttribution(int train, int lastSensor) {return 0;}
+#endif
+
 void sensor_attributer() {
   sensor_attributer_tid = MyTid();
   RegisterAs(NS_SENSOR_ATTRIBUTER);
@@ -84,6 +94,7 @@ void sensor_attributer() {
   sensor_attributer_train_update_t *train_update = (sensor_attributer_train_update_t *)buffer;
   sensor_data_t *data = (sensor_data_t *)buffer;
 
+  #if !defined(DEBUG_MODE)
   // Returns the next expected train for some sensor
   int getNextExpectedTrainAt(int sensor) {
     int ret = -1;
@@ -189,6 +200,7 @@ void sensor_attributer() {
     }
     return foundTrainAt;
   }
+  #endif
 
   while (true) {
     Receive(&requester, buffer, sizeof(buffer));

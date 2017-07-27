@@ -263,6 +263,24 @@ static void command_set_stopping_distanceneg(int interactive_tid, int executor_t
   SendSN(interactive_tid, msg);
 }
 
+static void command_game_start(int interactive_tid, int executor_tid, parsed_command_t *data) {
+  CMD_ASSERT_ARGC(data, 0);
+  cmd_data_t msg;
+  msg.base.packet.type = INTERPRETED_COMMAND;
+  msg.base.type = COMMAND_GAME_START;
+  SendToBoth(msg);
+}
+
+static void command_game_init_train(int interactive_tid, int executor_tid, parsed_command_t *data) {
+  CMD_ASSERT_ARGC(data, 1);
+  CMD_ASSERT_IS_TRAIN(data, 0);
+  cmd_data_t msg;
+  msg.base.packet.type = INTERPRETED_COMMAND;
+  msg.base.type = COMMAND_GAME_TRAIN;
+  msg.train = GetInt(data, 0);
+  SendToBoth(msg);
+}
+
 static void command_manual_sense(int interactive_tid, int executor_tid, parsed_command_t *data) {
   CMD_ASSERT(data->argc < 10, "Got too many arguments.");
   for (int i = 0; i < data->argc; i++) {
@@ -339,6 +357,8 @@ void command_interpreter_task() {
     DEF_CASE(COMMAND_PATH, command_path);
     DEF_CASE(COMMAND_STOP_FROM, command_stop_from);
     DEF_CASE(COMMAND_MANUAL_SENSE, command_manual_sense);
+    DEF_CASE(COMMAND_GAME_TRAIN, command_game_init_train);
+    DEF_CASE(COMMAND_GAME_START, command_game_start);
 
     case COMMAND_INVALID:
       jformatf(cmd.error, sizeof(cmd.error), "Invalid command: %s", data->cmd);
